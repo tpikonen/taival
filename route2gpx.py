@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-import gpxpy.gpx, overpy, argparse, requests
+import sys, gpxpy.gpx, overpy, argparse, requests, json
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--version', '-v', action='version', version='0.0.1')
 parser.add_argument('--line', '-l', dest='line', metavar='<lineno>', help='Public transport line to process')
 
-api = overpy.Overpass()
 
-def write_gpx(latlon, fname, waypoints=None):
+
+def write_gpx(latlon, fname, waypoints=[]):
     gpx = gpxpy.gpx.GPX()
     gpx_track = gpxpy.gpx.GPXTrack()
     gpx.tracks.append(gpx_track)
@@ -15,15 +15,74 @@ def write_gpx(latlon, fname, waypoints=None):
     gpx_track.segments.append(gpx_segment)
     for ll in latlon:
         gpx_segment.points.append(gpxpy.gpx.GPXTrackPoint(ll[0], ll[1]))
-    if waypoints:
-        for w in waypoints:
-            gpx.waypoints.append(gpxpy.gpx.GPXWaypoint(w[0], w[1], name=w[2], description=w[3]))
-
+    for w in waypoints:
+        gpx.waypoints.append(gpxpy.gpx.GPXWaypoint(w[0], w[1], name=w[2],
+                                                   description=w[3]))
     with open(fname, "w") as ff:
         ff.write(gpx.to_xml())
 
+# HSL data from GraphQL API
+
+hslurl = "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql"
+headers = {'Content-type': 'application/graphql'}
+
+def get_patterns(lineid):
+    """Return a list of pattern codes corresponding to a given line ID."""
+    query = '{routes(name:"%s") {\nshortName\npatterns {code}}}' % (lineid)
+    #print(query)
+    r = requests.post(url=hslurl, data=query, headers=headers)
+    #print(r.text)
+    rts = json.loads(r.text)["data"]["routes"]
+    patterns = [r["patterns"] for r in rts if r["shortName"] == lineid]
+    if patterns:
+        codes = [d["code"] for d in patterns[0]]
+    else:
+        codes = []
+    return codes
 
 
+def get_geom(code):
+    """Return geometry for given pattern code as tuple (directionId, latlon)."""
+    query = '{pattern(id:"%s") {directionId\ngeometry {lat\nlon}}}' % (code)
+    #print(query)
+    r = requests.post(url=hslurl, data=query, headers=headers)
+    #print(r.text)
+    pat = json.loads(r.text)["data"]["pattern"]
+    dirid = pat["directionId"] # int
+    latlon = [[c["lat"], c["lon"]] for c in pat["geometry"]]
+    return (dirid, latlon)
+
+
+def get_stops(code):
+    """Return stops for a given pattern code as waypoint list
+    [[lat, lon, stopcode, name]]."""
+    query = '{pattern(id:"%s") {stops {code\nname\nlat\nlon}}}' % (code)
+    #print(query)
+    r = requests.post(url=hslurl, data=query, headers=headers)
+    #print(r.text)
+    stops = json.loads(r.text)["data"]["pattern"]["stops"]
+    return [[s["lat"], s["lon"], s["code"], s["name"]] for s in stops]
+
+
+def pattern2gpx(code, fname):
+    """Write a gpx file fname with track (shape) and waypoint (stops) data
+    from given pattern code."""
+    (dirid, latlon) = get_geom(code)
+
+def hsl2gpx(lineref):
+    """Write gpx files for given lineref from HSL digitransit API data."""
+    codes = get_patterns(lineref)
+    #print(codes)
+    for c in codes:
+        (dirid, latlon) = get_geom(c)
+        stops = get_stops(c)
+        fname = "%s_hsl_%s_%d.gpx" % (lineref, c, dirid)
+        write_gpx(latlon, fname, waypoints=stops)
+        print(fname)
+
+# OSM data from Overpass API
+
+api = overpy.Overpass()
 
 def route2gpx(rel, fname):
     """Write a gpx-file fname from an overpy relation containing
@@ -100,15 +159,21 @@ def osm_rels(lineref):
     return rr
 
 
-if __name__ == '__main__' and '__file__' in globals ():
-    args = parser.parse_args()
-    line = args.line
-    print("Processing line %s" % line)
-    rr = osm_rels(line)
+def osm2gpx(lineref):
+    rr = osm_rels(lineref)
     if len(rr.relations) > 0:
         for i in range(len(rr.relations)):
-            fn = "%s_osm_%d.gpx" % (line, i)
+            fn = "%s_osm_%d.gpx" % (lineref, i)
             route2gpx(rr.relations[i], fn)
             print(fn)
     else:
-        print("Line '%s' not found." % line)
+        print("Line '%s' not found." % lineref)
+
+if __name__ == '__main__' and '__file__' in globals ():
+    args = parser.parse_args()
+    line = args.line
+    if line is None:
+        sys.exit(1)
+    print("Processing line %s" % line)
+    #osm2gpx(line)
+    hsl2gpx(line)
