@@ -294,17 +294,18 @@ def compare(lineref):
     if len(rr.relations) > 2:
         print("More than 2 OSM routes found, giving up.")
         return
-    codes = hsl_patterns_after_date(lineref, \
-                                    datetime.date.today().strftime("%Y%m%d"))
-    print("Found HSL pattern codes: %s" % (codes))
-    if len(codes) > 2:
-        print("More than 2 HSL patterns found, giving up.")
-        return
-    #test_route_master(lineref, [r.id for r in rr.relations])
     for rel in rr.relations:
         #print("OSM route %s" % (rel.id))
         if rel.tags.get("public_transport:version", "0") != "2":
             print("Tag public_transport:version=2 not set in OSM route %s. Giving up." % (rel.id))
+            return
+    codes = hsl_patterns_after_date(lineref, \
+                                    datetime.date.today().strftime("%Y%m%d"))
+    print("Found HSL pattern codes: %s" % (codes))
+    if len(codes) > 2:
+        print("More than 2 HSL patterns found. This is a bug, giving up.")
+        return
+    test_route_master(lineref, [r.id for r in rr.relations])
     osmshapes = [osm_shape(rel) for rel in rr.relations]
     hslshapes = [hsl_shape(c)[1] for c in codes]
     (osm2hsl, hsl2osm) = get_correspondance(relids, codes, osmshapes, hslshapes)
