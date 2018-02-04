@@ -207,11 +207,60 @@ def osm2gpx(lineref):
     else:
         print("Line '%s' not found." % lineref)
 
+# Comparison between OSM and HSL data
+
+
+def test_route_master(lineref, route_ids):
+    """Test if a route_master relation for lineref exists and contains the
+    given route_ids."""
+    q = '[out:json][timeout:25];(%s);(rel(br)["type"="route_master"]);out body;' \
+      % (";".join(["rel(%d)" % x for x in route_ids]))
+    rr = api.query(q)
+    nr = len(rr.relations)
+    if nr < 1:
+        print("No route_master relation found.")
+        return
+    elif nr == 1:
+        print("route_master relation exists.")
+    elif nr > 1:
+        print("More than one route_master relations exist!")
+        return
+    memrefs = [m.ref for m in rr.relations[0].members]
+    refs_not_in_routes = [r for r in memrefs if r not in route_ids]
+    if refs_not_in_routes:
+        print("route_master has extra members, ids: %s" \
+          % (str(refs_not_in_routes)))
+    routes_not_in_refs = [r for r in route_ids if r not in memrefs]
+    if routes_not_in_refs:
+        print("Found matching routes not in route_master, ids: %s" \
+          % (str(routes_not_in_refs)))
+    tags = rr.relations[0].tags
+    if tags.get("public_transport:version", "0") != "2":
+        print("Tag public_transport:version=2 not set.")
+    if tags.get("network", "") != "HSL":
+        print("Tag network is not 'HSL'.")
+
+
+
+def compare(lineref):
+    """Report on differences between OSM and HSL data for a given line."""
+    rr = osm_rels(lineref)
+    if(len(rr.relations) < 1):
+        print("No route relations found in OSM.")
+        return
+    print("Found OSM route ids: %s" % ([r.id for r in rr.relations]))
+    test_route_master(lineref, [r.id for r in rr.relations])
+    for rel in rr.relations:
+        print("OSM route %s" % (rel.id))
+        if rel.tags.get("public_transport:version", "0") != "2":
+            print("Tag public_transport:version=2 not set.")
+
+
 if __name__ == '__main__' and '__file__' in globals ():
     args = parser.parse_args()
     line = args.line
     if line is None:
         sys.exit(1)
     print("Processing line %s" % line)
-    #osm2gpx(line)
+    osm2gpx(line)
     hsl2gpx(line)
