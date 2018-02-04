@@ -28,7 +28,7 @@ def write_gpx(latlon, fname, waypoints=[]):
 hslurl = "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql"
 headers = {'Content-type': 'application/graphql'}
 
-def get_patterns(lineid):
+def hsl_patterns(lineid):
     """Return a list of pattern codes corresponding to a given line ID."""
     query = '{routes(name:"%s") {\nshortName\npatterns {code}}}' % (lineid)
     #print(query)
@@ -43,10 +43,10 @@ def get_patterns(lineid):
     return codes
 
 
-def get_patterns_for_date(lineid, datestr):
+def hsl_patterns_for_date(lineid, datestr):
     """Get patterns which are valid (have trips) on a date given in
     YYYYMMDD format."""
-    codes = get_patterns(lineid)
+    codes = hsl_patterns(lineid)
     valids = []
     for c in codes:
         query = '{pattern(id:"%s"){tripsForDate(serviceDate:"%s"){id}}}' \
@@ -57,11 +57,11 @@ def get_patterns_for_date(lineid, datestr):
     return valids
 
 
-def get_patterns_after_date(lineid, datestr):
+def hsl_patterns_after_date(lineid, datestr):
     """Get patterns which are valid (have trips) after a date given in
     YYYYMMDD format. Can be used to discard patterns which not valid
     any more."""
-    codes = get_patterns(lineid)
+    codes = hsl_patterns(lineid)
     valids = []
     dateint = int(datestr)
     for c in codes:
@@ -75,7 +75,7 @@ def get_patterns_after_date(lineid, datestr):
     return valids
 
 
-def get_geom(code):
+def hsl_shape(code):
     """Return geometry for given pattern code as tuple (directionId, latlon)."""
     query = '{pattern(id:"%s") {directionId\ngeometry {lat\nlon}}}' % (code)
     #print(query)
@@ -87,7 +87,7 @@ def get_geom(code):
     return (dirid, latlon)
 
 
-def get_stops(code):
+def hsl_platforms(code):
     """Return stops for a given pattern code as waypoint list
     [[lat, lon, stopcode, name]]."""
     query = '{pattern(id:"%s") {stops {code\nname\nlat\nlon}}}' % (code)
@@ -100,11 +100,11 @@ def get_stops(code):
 
 def hsl2gpx(lineref):
     """Write gpx files for given lineref from HSL digitransit API data."""
-    codes = get_patterns(lineref)
+    codes = hsl_patterns(lineref)
     #print(codes)
     for c in codes:
-        (dirid, latlon) = get_geom(c)
-        stops = get_stops(c)
+        (dirid, latlon) = hsl_shape(c)
+        stops = hsl_platforms(c)
         fname = "%s_hsl_%s_%d.gpx" % (lineref, c, dirid)
         write_gpx(latlon, fname, waypoints=stops)
         print(fname)
@@ -176,7 +176,7 @@ def rel2nodes(rel):
     return nodes
 
 
-def get_rel(relno):
+def osm_rel(relno):
     rr = api.query("rel(id:%d);(._;>;>;);out body;" % (relno))
     return rr.relations[0]
 
