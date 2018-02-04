@@ -23,6 +23,8 @@ def write_gpx(latlon, fname, waypoints=[]):
 
 # HSL data from GraphQL API
 
+# Digitransit API modes: BUS, RAIL, TRAM, SUBWAY, FERRY
+
 hslurl = "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql"
 headers = {'Content-type': 'application/graphql'}
 
@@ -39,6 +41,38 @@ def get_patterns(lineid):
     else:
         codes = []
     return codes
+
+
+def get_patterns_for_date(lineid, datestr):
+    """Get patterns which are valid (have trips) on a date given in
+    YYYYMMDD format."""
+    codes = get_patterns(lineid)
+    valids = []
+    for c in codes:
+        query = '{pattern(id:"%s"){tripsForDate(serviceDate:"%s"){id}}}' \
+          % (c, datestr)
+        r = requests.post(url=hslurl, data=query, headers=headers)
+        if len(json.loads(r.text)["data"]["pattern"]["tripsForDate"]) > 0:
+            valids.append(c)
+    return valids
+
+
+def get_patterns_after_date(lineid, datestr):
+    """Get patterns which are valid (have trips) after a date given in
+    YYYYMMDD format. Can be used to discard patterns which not valid
+    any more."""
+    codes = get_patterns(lineid)
+    valids = []
+    dateint = int(datestr)
+    for c in codes:
+        query = '{pattern(id:"%s"){trips{activeDates}}}' % (c)
+        r = requests.post(url=hslurl, data=query, headers=headers)
+        trips = json.loads(r.text)["data"]["pattern"]["trips"]
+        for t in trips:
+           if any(int(d) > dateint for d in t["activeDates"]):
+                valids.append(c)
+                break
+    return valids
 
 
 def get_geom(code):
