@@ -98,11 +98,6 @@ def get_stops(code):
     return [[s["lat"], s["lon"], s["code"], s["name"]] for s in stops]
 
 
-def pattern2gpx(code, fname):
-    """Write a gpx file fname with track (shape) and waypoint (stops) data
-    from given pattern code."""
-    (dirid, latlon) = get_geom(code)
-
 def hsl2gpx(lineref):
     """Write gpx files for given lineref from HSL digitransit API data."""
     codes = get_patterns(lineref)
@@ -117,6 +112,7 @@ def hsl2gpx(lineref):
 # OSM data from Overpass API
 
 api = overpy.Overpass()
+area = """area[admin_level=7]["name"="Helsingin seutukunta"]["ref"="011"][boundary=administrative]->.hel;"""
 
 def route2gpx(rel, fname):
     """Write a gpx-file fname from an overpy relation containing
@@ -185,16 +181,24 @@ def get_rel(relno):
     return rr.relations[0]
 
 
-def osm_rels(lineref):
-    """Get public transport lines corresponding to lineno in Helsinki area."""
-    area = """area[admin_level=7]["name"="Helsingin seutukunta"]["ref"="011"][boundary=administrative]->.hel;"""
-    q = '%s rel(area.hel)[route="bus"][ref="%s"]["public_transport:version"="2"];(._;>;>;);out body;' % (area, lineref)
+def osm_rels_v2(lineref, mode="bus"):
+    """Get public transport v2 lines corresponding to lineref in Helsinki area.
+    """
+    q = '%s rel(area.hel)[route="%s"][ref="%s"]["public_transport:version"="2"];(._;>;>;);out body;' % (area, mode, lineref)
+    rr = api.query(q)
+    return rr
+
+
+def osm_rels(lineref, mode="bus"):
+    """Get all bus lines corresponding to lineref in Helsinki area.
+    """
+    q = '%s rel(area.hel)[route="%s"][ref="%s"];(._;>;>;);out body;' % (area, mode, lineref)
     rr = api.query(q)
     return rr
 
 
 def osm2gpx(lineref):
-    rr = osm_rels(lineref)
+    rr = osm_rels_v2(lineref)
     if len(rr.relations) > 0:
         for i in range(len(rr.relations)):
             fn = "%s_osm_%d.gpx" % (lineref, i)
