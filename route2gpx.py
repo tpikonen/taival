@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import sys, gpxpy.gpx, overpy, argparse, requests, json
+import sys, datetime, gpxpy.gpx, overpy, argparse, requests, json
+import difflib
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--version', '-v', action='version', version='0.0.1')
@@ -114,12 +115,16 @@ def hsl2gpx(lineref):
 api = overpy.Overpass()
 area = """area[admin_level=7]["name"="Helsingin seutukunta"]["ref"="011"][boundary=administrative]->.hel;"""
 
-def route2gpx(rel, fname):
-    """Write a gpx-file fname from an overpy relation containing
-    an OSM public_transport:version=2 route."""
+def osm_shape(rel):
+    """Get route shape from overpy relation."""
     nodes = rel2nodes(rel)
+    latlon = [[float(n.lat), float(n.lon)] for n in nodes]
+    return latlon
+
+
+def osm_platforms(rel):
+    retval = []
     platforms = [mem.resolve() for mem in rel.members if mem.role == "platform"]
-    waypts = []
     for x in platforms:
         if type(x) == overpy.Way:
             lat = x.nodes[0].lat
@@ -129,18 +134,26 @@ def route2gpx(rel, fname):
             lon = x.lon
         name = x.tags['ref']
         desc = x.tags['name']
-        waypts.append([lat,lon,name,desc])
-    #latlon = [[n.lat, n.lon] for w in ways for n in w.nodes]
+        retval.append([float(lat),float(lon),name,desc])
+    return retval
+
+
+def route2gpx(rel, fname):
+    """Write a gpx-file fname from an overpy relation containing
+    an OSM public_transport:version=2 route."""
+    nodes = rel2nodes(rel)
+    waypts = osm_platforms(rel)
     latlon = [[n.lat, n.lon] for n in nodes]
     write_gpx(latlon, fname, waypoints=waypts)
 
+
+def ndist2(n1, n2):
+    """Return distance metric squared for two nodes n1 and n2."""
+    return (n1.lat - n2.lat)**2 + (n1.lon - n2.lon)**2
+
+
 def rel2nodes(rel):
     """Write a gpx-file to fname from given overpy relation object."""
-
-    def ndist2(n1, n2):
-        """Return distance metric squared for two nodes n1 and n2."""
-        return (n1.lat - n2.lat)**2 + (n1.lon - n1.lon)**2
-
     ways = [mem.resolve() for mem in rel.members
         if isinstance(mem, overpy.RelationWay) and (mem.role is None)]
     # Initialize nodes list with first way, correctly oriented
@@ -241,6 +254,34 @@ def test_route_master(lineref, route_ids):
         print("Tag network is not 'HSL'.")
 
 
+def ldist2(p1, p2):
+    """Return distance metric squared for two latlon pairs."""
+    d = (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2
+    return d
+
+
+def get_correspondance(ids1, ids2, shapes1, shapes2):
+    """Determine corresponding shape ids from their geometries.
+    Return permutation indices for both directions."""
+    m1to2 = [-1]*len(ids1)
+    m2to1 = [-1]*len(ids2)
+    for i in range(len(ids1)):
+        mind = 1.0e10
+        minind = 0
+        cbeg = shapes1[i][0]
+        cend = shapes1[i][-1]
+        for j in range(len(ids2)):
+            d = min(ldist2(cbeg, shapes2[j][0]), ldist2(cend, shapes2[j][-1]))
+            if d < mind:
+                mind = d
+                minind = j
+        m1to2[i] = minind
+    for i in range(len(m1to2)):
+        m2to1[m1to2[i]] = i
+    if any(v < 0 for v in m1to2 + m2to1):
+        print("No good route correspondance found.")
+    return (m1to2, m2to1)
+
 
 def compare(lineref):
     """Report on differences between OSM and HSL data for a given line."""
@@ -248,12 +289,37 @@ def compare(lineref):
     if(len(rr.relations) < 1):
         print("No route relations found in OSM.")
         return
-    print("Found OSM route ids: %s" % ([r.id for r in rr.relations]))
-    test_route_master(lineref, [r.id for r in rr.relations])
+    relids = [r.id for r in rr.relations]
+    print("Found OSM route ids: %s" % (relids))
+    if len(rr.relations) > 2:
+        print("More than 2 OSM routes found, giving up.")
+        return
+    codes = hsl_patterns_after_date(lineref, \
+                                    datetime.date.today().strftime("%Y%m%d"))
+    print("Found HSL pattern codes: %s" % (codes))
+    if len(codes) > 2:
+        print("More than 2 HSL patterns found, giving up.")
+        return
+    #test_route_master(lineref, [r.id for r in rr.relations])
     for rel in rr.relations:
-        print("OSM route %s" % (rel.id))
+        #print("OSM route %s" % (rel.id))
         if rel.tags.get("public_transport:version", "0") != "2":
-            print("Tag public_transport:version=2 not set.")
+            print("Tag public_transport:version=2 not set in OSM route %s. Giving up." % (rel.id))
+    osmshapes = [osm_shape(rel) for rel in rr.relations]
+    hslshapes = [hsl_shape(c)[1] for c in codes]
+    (osm2hsl, hsl2osm) = get_correspondance(relids, codes, osmshapes, hslshapes)
+    for i in range(len(relids)):
+        print("%s -> %s" % (relids[i], codes[osm2hsl[i]]))
+    for i in range(len(codes)):
+        print("%s -> %s" % (codes[i], relids[hsl2osm[i]]))
+    osmplatforms = [osm_platforms(rel) for rel in rr.relations]
+    hslplatforms = [hsl_platforms(c) for c in codes]
+    for i in range(len(osmplatforms)):
+        print("Comparing platforms for OSM id %d vs pattern %s" \
+            % (relids[i], codes[osm2hsl[i]]))
+        osmp = [p[2]+"\n" for p in osmplatforms[i]]
+        hslp = [p[2]+"\n" for p in hslplatforms[osm2hsl[i]]]
+        sys.stdout.writelines(difflib.unified_diff(osmp, hslp))
 
 
 if __name__ == '__main__' and '__file__' in globals ():
