@@ -25,6 +25,16 @@ def write_gpx(latlon, fname, waypoints=[]):
 # HSL data from GraphQL API
 
 # Digitransit API modes: BUS, RAIL, TRAM, SUBWAY, FERRY
+mode_osm2hsl = {
+    "train":    "RAIL",
+    "subway":   "SUBWAY",
+    "monorail": "",
+    "tram":     "TRAM",
+    "bus":      "BUS",
+    "trolleybus": "",
+    "aerialway": "",
+    "ferry":    "FERRY"
+}
 
 hslurl = "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql"
 headers = {'Content-type': 'application/graphql'}
@@ -99,6 +109,17 @@ def hsl_platforms(code):
     return [[s["lat"], s["lon"], s["code"], s["name"]] for s in stops]
 
 
+def hsl_all_linerefs(mode="bus"):
+    """Return a list of all linerefs for a given mode."""
+    query = '{routes(modes:"%s") {\nshortName\ntype\n}}' % (mode_osm2hsl[mode])
+    r = requests.post(url=hslurl, data=query, headers=headers)
+    rts = json.loads(r.text)["data"]["routes"]
+    # Also filter out taxibuses (lähibussit) (type == 704)
+    refs = [r["shortName"] for r in rts if r["type"] != 704]
+    refs.sort()
+    return refs
+
+
 def hsl2gpx(lineref):
     """Write gpx files for given lineref from HSL digitransit API data."""
     codes = hsl_patterns(lineref)
@@ -114,6 +135,14 @@ def hsl2gpx(lineref):
 
 api = overpy.Overpass()
 area = """area[admin_level=7]["name"="Helsingin seutukunta"]["ref"="011"][boundary=administrative]->.hel;"""
+
+def osm_all_linerefs(mode="bus"):
+    """Get a list of all linerefs in Helsinki region."""
+    q = '%s rel(area.hel)[route="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
+    rr = api.query(q)
+    refs = [r.tags["ref"] for r in rr.relations if "ref" in r.tags.keys()]
+    refs.sort()
+    return refs
 
 def osm_shape(rel):
     """Get route shape from overpy relation."""
@@ -321,6 +350,7 @@ def compare(lineref):
         osmp = [p[2]+"\n" for p in osmplatforms[i]]
         hslp = [p[2]+"\n" for p in hslplatforms[osm2hsl[i]]]
         sys.stdout.writelines(difflib.unified_diff(osmp, hslp))
+    # Test for tag network="hsl" <- lower case
 
 
 if __name__ == '__main__' and '__file__' in globals ():
