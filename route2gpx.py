@@ -39,6 +39,7 @@ mode_osm2hsl = {
 hslurl = "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql"
 headers = {'Content-type': 'application/graphql'}
 
+# TODO: Add mode arg for hsl_patters* functions
 def hsl_patterns(lineid):
     """Return a list of pattern codes corresponding to a given line ID."""
     query = '{routes(name:"%s") {\nshortName\npatterns {code}}}' % (lineid)
@@ -109,14 +110,21 @@ def hsl_platforms(code):
     return [[s["lat"], s["lon"], s["code"], s["name"]] for s in stops]
 
 
+def hsl_gtfsid2url(gtfs):
+    return "https://www.reittiopas.fi/linjat/" + str(gtfs)
+
+
 def hsl_all_linerefs(mode="bus"):
-    """Return a list of all linerefs for a given mode."""
-    query = '{routes(modes:"%s") {\nshortName\ntype\n}}' % (mode_osm2hsl[mode])
+    """Return a lineref:url dict of all linerefs for a given mode.
+    URL points to a reittiopas page for the line."""
+    query = '{routes(modes:"%s"){shortName\ntype\ngtfsId\n}}' \
+        %(mode_osm2hsl[mode])
     r = requests.post(url=hslurl, data=query, headers=headers)
     rts = json.loads(r.text)["data"]["routes"]
     # Also filter out taxibuses (lähibussit) (type == 704)
-    refs = [r["shortName"] for r in rts if r["type"] != 704]
-    refs.sort()
+    #refs = [r["shortName"] for r in rts if r["type"] != 704]
+    refs = {r["shortName"]:hsl_gtfsid2url(r["gtfsId"])
+            for r in rts if r["type"] != 704}
     return refs
 
 
@@ -136,12 +144,19 @@ def hsl2gpx(lineref):
 api = overpy.Overpass()
 area = """area[admin_level=7]["name"="Helsingin seutukunta"]["ref"="011"][boundary=administrative]->.hel;"""
 
+
+def osm_relid2url(relid):
+    return "https://www.openstreetmap.org/relation/" + str(relid)
+
+
 def osm_all_linerefs(mode="bus"):
-    """Get a list of all linerefs in Helsinki region."""
+    """Return a lineref:url dict of all linerefs in Helsinki region.
+    URL is """
     q = '%s rel(area.hel)[route="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
     rr = api.query(q)
-    refs = [r.tags["ref"] for r in rr.relations if "ref" in r.tags.keys()]
-    refs.sort()
+    #refs = [r.tags["ref"] for r in rr.relations if "ref" in r.tags.keys()]
+    refs = {r.tags["ref"]:osm_relid2url(r.id)
+            for r in rr.relations if "ref" in r.tags.keys()}
     return refs
 
 def osm_shape(rel):
@@ -247,7 +262,7 @@ def osm2gpx(lineref):
             route2gpx(rr.relations[i], fn)
             print(fn)
     else:
-        print("Line '%s' not found." % lineref)
+        print("Line '%s' not found in OSM PTv2 relations." % lineref)
 
 # Comparison between OSM and HSL data
 
