@@ -2,11 +2,6 @@
 import sys, datetime, gpxpy.gpx, overpy, argparse, requests, json
 import difflib
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--version', '-v', action='version', version='0.0.1')
-parser.add_argument('--line', '-l', dest='line', metavar='<lineno>', help='Public transport line to process')
-
-
 
 def write_gpx(latlon, fname, waypoints=[]):
     gpx = gpxpy.gpx.GPX()
@@ -138,6 +133,8 @@ def hsl2gpx(lineref):
         fname = "%s_hsl_%s_%d.gpx" % (lineref, c, dirid)
         write_gpx(latlon, fname, waypoints=stops)
         print(fname)
+    if not codes:
+        print("Line '%s' not found in HSL." % lineref)
 
 # OSM data from Overpass API
 
@@ -368,11 +365,64 @@ def compare(lineref):
     # Test for tag network="hsl" <- lower case
 
 
-if __name__ == '__main__' and '__file__' in globals ():
-    args = parser.parse_args()
+def compare(mode="bus"):
+    osmdict = osm_all_linerefs(mode)
+    hsldict = hsl_all_linerefs(mode)
+    osmlines = set(osmdict)
+    hsllines = set(hsldict)
+    print("= Buslines =")
+    print("%d lines in OSM." % len(osmlines))
+    print("%d lines in HSL." % len(hsllines))
+    print("")
+    sortf = lambda x: (len([c for c in x if c.isdigit()]), x)
+    osmextra = list(osmlines.difference(hsllines))
+    osmextra.sort(key=sortf)
+    print("%d lines in OSM but not in HSL:" % len(osmextra))
+    #print("     %s." % ", ".join(osmextra))
+    print("     %s." % ", ".join(["[%s %s]" % (osmdict[x], x) for x in osmextra]))
+    print("")
+    hslextra = list(hsllines.difference(osmlines))
+    hslextra.sort(key=sortf)
+    print("%d lines in HSL but not in OSM:" % len(hslextra))
+    #print("     %s." % ", ".join(hslextra))
+    print("     %s." % ", ".join(["[%s %s]" % (hsldict[x], x) for x in hslextra]))
+    print("")
+    # TODO: split into PTv2 routes and legacy routes
+    commons = list(hsllines.intersection(osmlines))
+    commons.sort(key=sortf)
+    print("%d lines in both HSL and OSM." % len(commons))
+    print("     %s." % ", ".join(commons))
+
+
+def sub_gpx(args):
     line = args.line
-    if line is None:
-        sys.exit(1)
     print("Processing line %s" % line)
     osm2gpx(line)
     hsl2gpx(line)
+
+
+def sub_report(args):
+    line = args.line
+    mode = args.mode
+    compare_line(line)
+
+if __name__ == '__main__' and '__file__' in globals ():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--version', '-v', action='version', version='0.0.1')
+    parser.set_defaults(func=lambda _: print(parser.format_help()))
+    subparsers = parser.add_subparsers(help='sub-command')
+    parser_gpx = subparsers.add_parser('gpx', help='Output gpx files for given line.')
+    parser_gpx.add_argument('line', metavar='<lineid>',
+        help='Line id to process.')
+    parser_gpx.set_defaults(func=sub_gpx)
+
+    parser_report = subparsers.add_parser('report', help='Create a report for a given line.')
+    parser_report.add_argument('line', metavar='<lineid>',
+        help='Line id to report on.')
+    parser_report.add_argument('--mode', '-m', metavar='<mode>', default="bus",
+        help='Transport mode: train, subway, tram, bus or ferry')
+    parser_report.set_defaults(func=sub_report)
+
+    args = parser.parse_args()
+    #sys.exit(1)
+    args.func(args)
