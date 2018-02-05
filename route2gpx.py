@@ -148,13 +148,24 @@ def osm_relid2url(relid):
 
 def osm_all_linerefs(mode="bus"):
     """Return a lineref:url dict of all linerefs in Helsinki region.
-    URL is """
+    URL points to the relation in OSM."""
     q = '%s rel(area.hel)[route="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
     rr = api.query(q)
-    #refs = [r.tags["ref"] for r in rr.relations if "ref" in r.tags.keys()]
     refs = {r.tags["ref"]:osm_relid2url(r.id)
             for r in rr.relations if "ref" in r.tags.keys()}
     return refs
+
+
+def osm_ptv2_linerefs(mode="bus"):
+    """Return a lineref:url dict of linerefs with public_transport:version=2
+    tag in Helsinki region.
+    URL points to the relation in OSM."""
+    q = '%s rel(area.hel)[route="%s"][network~"HSL|Helsinki|Espoo|Vantaa"]["public_transport:version"="2"];out tags;' % (area, mode)
+    rr = api.query(q)
+    refs = {r.tags["ref"]:osm_relid2url(r.id)
+            for r in rr.relations if "ref" in r.tags.keys()}
+    return refs
+
 
 def osm_shape(rel):
     """Get route shape from overpy relation."""
@@ -392,7 +403,14 @@ def compare(mode="bus"):
     commons.sort(key=sortf)
     print("%d lines in both HSL and OSM." % len(commons))
     print("     %s." % ", ".join(commons))
-
+    print("")
+    osm2dict = osm_ptv2_linerefs(mode)
+    osm2lines = set(osm2dict)
+    commons2 = list(hsllines.intersection(osm2lines))
+    commons2.sort(key=sortf)
+    print("%d lines in both HSL and OSM with public_transport:version=2 tagging." % len(commons2))
+    print("     %s." % ", ".join(commons2))
+    print("")
 
 def sub_gpx(args):
     line = args.line
@@ -409,7 +427,7 @@ def sub_report(args):
 if __name__ == '__main__' and '__file__' in globals ():
     parser = argparse.ArgumentParser()
     parser.add_argument('--version', '-v', action='version', version='0.0.1')
-    parser.set_defaults(func=lambda _: print(parser.format_help()))
+    parser.set_defaults(func=lambda _: print(parser.format_usage()))
     subparsers = parser.add_subparsers(help='sub-command')
     parser_gpx = subparsers.add_parser('gpx', help='Output gpx files for given line.')
     parser_gpx.add_argument('line', metavar='<lineid>',
