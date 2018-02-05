@@ -34,10 +34,10 @@ mode_osm2hsl = {
 hslurl = "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql"
 headers = {'Content-type': 'application/graphql'}
 
-# TODO: Add mode arg for hsl_patters* functions
-def hsl_patterns(lineid):
+def hsl_patterns(lineid, mode="bus"):
     """Return a list of pattern codes corresponding to a given line ID."""
-    query = '{routes(name:"%s") {\nshortName\npatterns {code}}}' % (lineid)
+    query = '{routes(name:"%s", modes:"%s") {\nshortName\npatterns {code}}}' \
+        % (lineid, mode_osm2hsl[mode])
     #print(query)
     r = requests.post(url=hslurl, data=query, headers=headers)
     #print(r.text)
@@ -50,10 +50,10 @@ def hsl_patterns(lineid):
     return codes
 
 
-def hsl_patterns_for_date(lineid, datestr):
+def hsl_patterns_for_date(lineid, datestr, mode="bus"):
     """Get patterns which are valid (have trips) on a date given in
     YYYYMMDD format."""
-    codes = hsl_patterns(lineid)
+    codes = hsl_patterns(lineid, mode=mode)
     valids = []
     for c in codes:
         query = '{pattern(id:"%s"){tripsForDate(serviceDate:"%s"){id}}}' \
@@ -64,11 +64,11 @@ def hsl_patterns_for_date(lineid, datestr):
     return valids
 
 
-def hsl_patterns_after_date(lineid, datestr):
+def hsl_patterns_after_date(lineid, datestr, mode="bus"):
     """Get patterns which are valid (have trips) after a date given in
     YYYYMMDD format. Can be used to discard patterns which not valid
     any more."""
-    codes = hsl_patterns(lineid)
+    codes = hsl_patterns(lineid, mode=mode)
     valids = []
     dateint = int(datestr)
     for c in codes:
@@ -324,9 +324,9 @@ def get_correspondance(ids1, ids2, shapes1, shapes2):
     return (m1to2, m2to1)
 
 
-def compare(lineref):
+def compare_line(lineref, mode="bus"):
     """Report on differences between OSM and HSL data for a given line."""
-    rr = osm_rels(lineref)
+    rr = osm_rels(lineref, mode)
     if(len(rr.relations) < 1):
         print("No route relations found in OSM.")
         return
@@ -341,7 +341,7 @@ def compare(lineref):
             print("Tag public_transport:version=2 not set in OSM route %s. Giving up." % (rel.id))
             return
     codes = hsl_patterns_after_date(lineref, \
-                                    datetime.date.today().strftime("%Y%m%d"))
+                datetime.date.today().strftime("%Y%m%d"), mode)
     print("Found HSL pattern codes: %s" % (codes))
     if len(codes) > 2:
         print("More than 2 HSL patterns found. This is a bug, giving up.")
