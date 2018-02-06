@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys, datetime, gpxpy.gpx, overpy, argparse, requests, json
 import difflib
-
+from collections import defaultdict
 
 def write_gpx(latlon, fname, waypoints=[]):
     gpx = gpxpy.gpx.GPX()
@@ -147,13 +147,16 @@ def osm_relid2url(relid):
 
 
 def osm_all_linerefs(mode="bus"):
-    """Return a lineref:url dict of all linerefs in Helsinki region.
-    URL points to the relation in OSM."""
+    """Return a lineref:[urllist] dict of all linerefs in Helsinki region.
+    URLs points to the relations in OSM."""
     q = '%s rel(area.hel)[route="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
     rr = api.query(q)
-    # FIXME: There can of course be more than one route with the same ref.
-    refs = {r.tags["ref"]:osm_relid2url(r.id)
-            for r in rr.relations if "ref" in r.tags.keys()}
+    refs = defaultdict(list)
+    for r in rr.relations:
+        if "ref" in r.tags.keys():
+            refs[r.tags["ref"]].append(osm_relid2url(r.id))
+    #refs = {r.tags["ref"]:osm_relid2url(r.id)
+    #        for r in rr.relations if "ref" in r.tags.keys()}
     return refs
 
 
@@ -430,7 +433,9 @@ def compare(mode="bus"):
     osmextra = list(osmlines.difference(hsllines))
     osmextra.sort(key=sortf)
     print("%d lines in OSM but not in HSL:" % len(osmextra))
-    print(" %s." % ", ".join(["[%s %s]" % (osmdict[x], x) for x in osmextra]))
+    print(" %s." % ", ".join(["%s (%s)" % \
+        (x, ", ".join(["[%s %d]" % (osmdict[x][z], z+1) \
+            for z in range(len(osmdict[x]))])) for x in osmextra ] ))
     print("")
     hslextra = list(hsllines.difference(osmlines))
     hslextra.sort(key=sortf)
@@ -440,7 +445,9 @@ def compare(mode="bus"):
     commons = list(hsllines.intersection(osmlines))
     commons.sort(key=sortf)
     print("%d lines in both HSL and OSM." % len(commons))
-    print(" %s." % ", ".join(commons))
+    print(" %s." % ", ".join(["%s (%s)" % \
+        (x, ", ".join(["[%s %d]" % (osmdict[x][z], z+1) \
+            for z in range(len(osmdict[x]))])) for x in commons] ))
     print("")
     osm2dict = osm_ptv2_linerefs(mode)
     osm2lines = set(osm2dict)
@@ -453,6 +460,7 @@ def compare(mode="bus"):
     for line in commons2:
         compare_line(line, mode)
         print("")
+
 
 def sub_gpx(args):
     line = args.line
