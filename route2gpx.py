@@ -351,6 +351,7 @@ def get_correspondance(shapes1, shapes2):
 
 def compare_line(lineref, mode="bus"):
     """Report on differences between OSM and HSL data for a given line."""
+    print("== %s ==" % lineref)
     rr = osm_rels(lineref, mode)
     if(len(rr.relations) < 1):
         print("No route relations found in OSM.")
@@ -371,22 +372,31 @@ def compare_line(lineref, mode="bus"):
     if len(codes) > 2:
         print("More than 2 HSL patterns found. This is a bug, giving up.")
         return
-    test_route_master(lineref, [r.id for r in rr.relations])
-    osmshapes = [osm_shape(rel) for rel in rr.relations]
-    hslshapes = [hsl_shape(c)[1] for c in codes]
-    (osm2hsl, hsl2osm) = get_correspondance(relids, codes, osmshapes, hslshapes)
-    for i in range(len(relids)):
-        print("%s -> %s" % (relids[i], codes[osm2hsl[i]]))
-    for i in range(len(codes)):
-        print("%s -> %s" % (codes[i], relids[hsl2osm[i]]))
-    osmplatforms = [osm_platforms(rel) for rel in rr.relations]
-    hslplatforms = [hsl_platforms(c) for c in codes]
-    for i in range(len(osmplatforms)):
-        print("Comparing platforms for OSM id %d vs pattern %s" \
-            % (relids[i], codes[osm2hsl[i]]))
-        osmp = [p[2]+"\n" for p in osmplatforms[i]]
-        hslp = [p[2]+"\n" for p in hslplatforms[osm2hsl[i]]]
-        sys.stdout.writelines(difflib.unified_diff(osmp, hslp))
+    #test_route_master(lineref, [r.id for r in rr.relations])
+    if test_osm_shapes_have_v1_roles(rr.relations):
+        print("OSM route(s) tagged with public_transport:version=2, \n   but have members with 'forward' or 'backward' roles.")
+        print("Skipping shape and platform tests.")
+    else:
+        osmshapes = [osm_shape(rel) for rel in rr.relations]
+        hslshapes = [hsl_shape(c)[1] for c in codes]
+        (osm2hsl, hsl2osm) = get_correspondance(osmshapes, hslshapes)
+        for i in range(len(relids)):
+            print("%s -> %s" % (relids[i], codes[osm2hsl[i]]))
+        for i in range(len(codes)):
+            print("%s -> %s" % (codes[i], relids[hsl2osm[i]]))
+        osmplatforms = [osm_platforms(rel) for rel in rr.relations]
+        hslplatforms = [hsl_platforms(c) for c in codes]
+        for i in range(len(osmplatforms)):
+            print("Comparing platforms for OSM id %d vs pattern %s" \
+                % (relids[i], codes[osm2hsl[i]]))
+            osmp = [p[2]+"\n" for p in osmplatforms[i]]
+            hslp = [p[2]+"\n" for p in hslplatforms[osm2hsl[i]]]
+            diff = list(difflib.unified_diff(osmp, hslp, "OSM", "HSL"))
+            if diff:
+                sys.stdout.writelines(diff)
+            else:
+                print("=> Identical platform sequences.")
+            print("")
     # Test for tag network="hsl" <- lower case
 
 
@@ -425,6 +435,9 @@ def compare(mode="bus"):
     print("%d lines in both HSL and OSM with public_transport:version=2 tagging." % len(commons2))
     print("     %s." % ", ".join(commons2))
     print("")
+    for line in commons2:
+        compare_line(line, mode)
+        print("")
 
 def sub_gpx(args):
     line = args.line
