@@ -328,30 +328,41 @@ def ldist2(p1, p2):
     return d
 
 
-def get_correspondance(shapes1, shapes2):
-    """Determine corresponding shape ids from their geometries.
-    Return permutation indices for both directions."""
-    m1to2 = [-1]*len(shapes1)
-    m2to1 = [-1]*len(shapes2)
-    for i in range(len(shapes1)):
-        if not shapes1[i]: # Handle empty shape
+def match_shapes(shapes1, shapes2):
+    """Determine a mapping from one set of shapes to another, based on
+    geometry. Return permutation indices for both directions."""
+    if len(shapes1) > len(shapes2):
+        swap = True
+        s1 = shapes2
+        s2 = shapes1
+    else:
+        swap = False
+        s1 = shapes1
+        s2 = shapes2
+    m1to2 = [None]*len(s1)
+    m2to1 = [None]*len(s2)
+    for i in range(len(s1)):
+        if not s1[i]: # Handle empty shape
             m1to2[i] = 0
             break
         mind = 1.0e10
         minind = 0
-        cbeg = shapes1[i][0]
-        cend = shapes1[i][-1]
-        for j in range(len(shapes2)):
-            d = min(ldist2(cbeg, shapes2[j][0]), ldist2(cend, shapes2[j][-1]))
+        cbeg = s1[i][0]
+        cend = s1[i][-1]
+        for j in range(len(s2)):
+            d = min(ldist2(cbeg, s2[j][0]), ldist2(cend, shapes2[j][-1]))
             if d < mind:
                 mind = d
                 minind = j
         m1to2[i] = minind
     for i in range(len(m1to2)):
         m2to1[m1to2[i]] = i
-    if any(v < 0 for v in m1to2 + m2to1):
-        print("No good route correspondance found.")
-    return (m1to2, m2to1)
+    if any(v is None for v in m1to2 + m2to1):
+        print("(mapping is not a bijection)")
+    if swap:
+        return (m2to1, m1to2)
+    else:
+        return (m1to2, m2to1)
 
 
 def compare_line(lineref, mode="bus"):
@@ -399,15 +410,19 @@ def compare_line(lineref, mode="bus"):
     else:
         osmshapes = [osm_shape(rel) for rel in rels]
         hslshapes = [hsl_shape(c)[1] for c in codes]
-        (osm2hsl, hsl2osm) = get_correspondance(osmshapes, hslshapes)
+        print("Shape mapping:")
+        (osm2hsl, hsl2osm) = match_shapes(osmshapes, hslshapes)
         for i in range(len(relids)):
-            print("%s -> %s\n" % (relids[i], codes[osm2hsl[i]]))
+            print(" %s -> %s" % \
+              (relids[i], "None" if osm2hsl[i] is None else codes[osm2hsl[i]]))
         for i in range(len(codes)):
-            print("%s -> %s\n" % (codes[i], relids[hsl2osm[i]]))
+            print(" %s -> %s" % \
+              (codes[i], "None" if hsl2osm[i] is None else relids[hsl2osm[i]]))
+        print("")
         osmplatforms = [osm_platforms(rel) for rel in rels]
         hslplatforms = [hsl_platforms(c) for c in codes]
         for i in range(len(osmplatforms)):
-            print("Comparing platforms for OSM id %d vs pattern %s\n" \
+            print("Comparing platforms for OSM id %d vs pattern %s" \
                 % (relids[i], codes[osm2hsl[i]]))
             osmp = [p[2]+"\n" for p in osmplatforms[i]]
             hslp = [p[2]+"\n" for p in hslplatforms[osm2hsl[i]]]
@@ -415,7 +430,7 @@ def compare_line(lineref, mode="bus"):
             if diff:
                 sys.stdout.writelines(" " + d for d in diff)
             else:
-                print("=> Identical platform sequences.\n")
+                print(" => Identical platform sequences.\n")
             print("")
     # Test for tag network="hsl" <- lower case
 
