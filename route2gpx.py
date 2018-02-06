@@ -323,17 +323,20 @@ def ldist2(p1, p2):
     return d
 
 
-def get_correspondance(ids1, ids2, shapes1, shapes2):
+def get_correspondance(shapes1, shapes2):
     """Determine corresponding shape ids from their geometries.
     Return permutation indices for both directions."""
-    m1to2 = [-1]*len(ids1)
-    m2to1 = [-1]*len(ids2)
-    for i in range(len(ids1)):
+    m1to2 = [-1]*len(shapes1)
+    m2to1 = [-1]*len(shapes2)
+    for i in range(len(shapes1)):
+        if not shapes1[i]: # Handle empty shape
+            m1to2[i] = 0
+            break
         mind = 1.0e10
         minind = 0
         cbeg = shapes1[i][0]
         cend = shapes1[i][-1]
-        for j in range(len(ids2)):
+        for j in range(len(shapes2)):
             d = min(ldist2(cbeg, shapes2[j][0]), ldist2(cend, shapes2[j][-1]))
             if d < mind:
                 mind = d
