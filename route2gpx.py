@@ -151,6 +151,7 @@ def osm_all_linerefs(mode="bus"):
     URL points to the relation in OSM."""
     q = '%s rel(area.hel)[route="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
     rr = api.query(q)
+    # FIXME: There can of course be more than one route with the same ref.
     refs = {r.tags["ref"]:osm_relid2url(r.id)
             for r in rr.relations if "ref" in r.tags.keys()}
     return refs
@@ -465,6 +466,10 @@ def sub_report(args):
     mode = args.mode
     compare_line(line)
 
+
+def sub_fullreport(args):
+    compare()
+
 if __name__ == '__main__' and '__file__' in globals ():
     parser = argparse.ArgumentParser()
     parser.add_argument('--version', '-v', action='version', version='0.0.1')
@@ -481,6 +486,9 @@ if __name__ == '__main__' and '__file__' in globals ():
     parser_report.add_argument('--mode', '-m', metavar='<mode>', default="bus",
         help='Transport mode: train, subway, tram, bus or ferry')
     parser_report.set_defaults(func=sub_report)
+
+    parser_fullreport = subparsers.add_parser('fullreport', help='Create a report for all lines.')
+    parser_fullreport.set_defaults(func=sub_fullreport)
 
     args = parser.parse_args()
     #sys.exit(1)
