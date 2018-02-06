@@ -255,7 +255,7 @@ def osm_rels_v2(lineref, mode="bus"):
     """
     q = '%s rel(area.hel)[route="%s"][ref="%s"]["public_transport:version"="2"];(._;>;>;);out body;' % (area, mode, lineref)
     rr = api.query(q)
-    return rr
+    return rr.relations
 
 
 def osm_rels(lineref, mode="bus"):
@@ -263,15 +263,15 @@ def osm_rels(lineref, mode="bus"):
     """
     q = '%s rel(area.hel)[route="%s"][ref="%s"];(._;>;>;);out body;' % (area, mode, lineref)
     rr = api.query(q)
-    return rr
+    return rr.relations
 
 
 def osm2gpx(lineref):
-    rr = osm_rels_v2(lineref)
-    if len(rr.relations) > 0:
-        for i in range(len(rr.relations)):
+    rels = osm_rels_v2(lineref)
+    if len(rels) > 0:
+        for i in range(len(rels)):
             fn = "%s_osm_%d.gpx" % (lineref, i)
-            route2gpx(rr.relations[i], fn)
+            route2gpx(rels[i], fn)
             print(fn)
     else:
         print("Line '%s' not found in OSM PTv2 relations." % lineref)
@@ -308,6 +308,7 @@ def test_route_master(lineref, route_ids):
         print("Tag public_transport:version=2 not set.")
     if tags.get("network", "") != "HSL":
         print("Tag network is not 'HSL'.")
+    print("")
 
 
 def test_osm_shapes_have_v1_roles(rels):
@@ -352,50 +353,65 @@ def get_correspondance(shapes1, shapes2):
 def compare_line(lineref, mode="bus"):
     """Report on differences between OSM and HSL data for a given line."""
     print("== %s ==" % lineref)
-    rr = osm_rels(lineref, mode)
-    if(len(rr.relations) < 1):
+    rels = osm_rels(lineref, mode)
+    if(len(rels) < 1):
         print("No route relations found in OSM.")
         return
-    relids = [r.id for r in rr.relations]
-    print("Found OSM route ids: %s" % (relids))
-    if len(rr.relations) > 2:
-        print("More than 2 OSM routes found, giving up.")
-        return
-    for rel in rr.relations:
+    relids = [r.id for r in rels]
+    print("Found OSM route ids: %s\n" % (relids))
+    if len(rels) > 2:
+        print("More than 2 OSM routes found.")
+        rels = [r for r in rels \
+                if (r.tags.get("public_transport:version", "") == "2") and
+                    (r.tags.get("network", "") == "HSL"
+                    or r.tags.get("network", "") == "Helsinki"
+                    or r.tags.get("network", "") == "Espoo"
+                    or r.tags.get("network", "") == "Vantaa")]
+        relids = [r.id for r in rels]
+        print("After filtering, found OSM route ids: %s\n" % (relids))
+        if len(rels) > 2:
+            print("More than 2 OSM routes found, giving up.")
+            return
+
+    for rel in rels:
         #print("OSM route %s" % (rel.id))
         if rel.tags.get("public_transport:version", "0") != "2":
             print("Tag public_transport:version=2 not set in OSM route %s. Giving up." % (rel.id))
             return
+
     codes = hsl_patterns_after_date(lineref, \
                 datetime.date.today().strftime("%Y%m%d"), mode)
-    print("Found HSL pattern codes: %s" % (codes))
+    print("Found HSL pattern codes: %s\n" % (codes))
     if len(codes) > 2:
         print("More than 2 HSL patterns found. This is a bug, giving up.")
         return
-    #test_route_master(lineref, [r.id for r in rr.relations])
-    if test_osm_shapes_have_v1_roles(rr.relations):
-        print("OSM route(s) tagged with public_transport:version=2, \n   but have members with 'forward' or 'backward' roles.")
-        print("Skipping shape and platform tests.")
+
+    #test_route_master(lineref, [r.id for r in rels])
+
+    if test_osm_shapes_have_v1_roles(rels):
+        print("OSM route(s) tagged with public_transport:version=2,")
+        print("but have members with 'forward' or 'backward' roles.")
+        print("Skipping shape and platform tests.\n")
     else:
-        osmshapes = [osm_shape(rel) for rel in rr.relations]
+        osmshapes = [osm_shape(rel) for rel in rels]
         hslshapes = [hsl_shape(c)[1] for c in codes]
         (osm2hsl, hsl2osm) = get_correspondance(osmshapes, hslshapes)
         for i in range(len(relids)):
-            print("%s -> %s" % (relids[i], codes[osm2hsl[i]]))
+            print("%s -> %s\n" % (relids[i], codes[osm2hsl[i]]))
         for i in range(len(codes)):
-            print("%s -> %s" % (codes[i], relids[hsl2osm[i]]))
-        osmplatforms = [osm_platforms(rel) for rel in rr.relations]
+            print("%s -> %s\n" % (codes[i], relids[hsl2osm[i]]))
+        osmplatforms = [osm_platforms(rel) for rel in rels]
         hslplatforms = [hsl_platforms(c) for c in codes]
         for i in range(len(osmplatforms)):
-            print("Comparing platforms for OSM id %d vs pattern %s" \
+            print("Comparing platforms for OSM id %d vs pattern %s\n" \
                 % (relids[i], codes[osm2hsl[i]]))
             osmp = [p[2]+"\n" for p in osmplatforms[i]]
             hslp = [p[2]+"\n" for p in hslplatforms[osm2hsl[i]]]
             diff = list(difflib.unified_diff(osmp, hslp, "OSM", "HSL"))
             if diff:
-                sys.stdout.writelines(diff)
+                sys.stdout.writelines(" " + d for d in diff)
             else:
-                print("=> Identical platform sequences.")
+                print("=> Identical platform sequences.\n")
             print("")
     # Test for tag network="hsl" <- lower case
 
@@ -405,36 +421,34 @@ def compare(mode="bus"):
     hsldict = hsl_all_linerefs(mode)
     osmlines = set(osmdict)
     hsllines = set(hsldict)
-    print("= Buslines =")
-    print("%d lines in OSM." % len(osmlines))
-    print("%d lines in HSL." % len(hsllines))
+    print("= Summary for mode '%s' =" % mode)
+    print("%d lines in OSM.\n" % len(osmlines))
+    print("%d lines in HSL.\n" % len(hsllines))
     print("")
     sortf = lambda x: (len([c for c in x if c.isdigit()]), x)
     osmextra = list(osmlines.difference(hsllines))
     osmextra.sort(key=sortf)
     print("%d lines in OSM but not in HSL:" % len(osmextra))
-    #print("     %s." % ", ".join(osmextra))
-    print("     %s." % ", ".join(["[%s %s]" % (osmdict[x], x) for x in osmextra]))
+    print(" %s." % ", ".join(["[%s %s]" % (osmdict[x], x) for x in osmextra]))
     print("")
     hslextra = list(hsllines.difference(osmlines))
     hslextra.sort(key=sortf)
     print("%d lines in HSL but not in OSM:" % len(hslextra))
-    #print("     %s." % ", ".join(hslextra))
-    print("     %s." % ", ".join(["[%s %s]" % (hsldict[x], x) for x in hslextra]))
+    print(" %s." % ", ".join(["[%s %s]" % (hsldict[x], x) for x in hslextra]))
     print("")
-    # TODO: split into PTv2 routes and legacy routes
     commons = list(hsllines.intersection(osmlines))
     commons.sort(key=sortf)
     print("%d lines in both HSL and OSM." % len(commons))
-    print("     %s." % ", ".join(commons))
+    print(" %s." % ", ".join(commons))
     print("")
     osm2dict = osm_ptv2_linerefs(mode)
     osm2lines = set(osm2dict)
     commons2 = list(hsllines.intersection(osm2lines))
     commons2.sort(key=sortf)
-    print("%d lines in both HSL and OSM with public_transport:version=2 tagging." % len(commons2))
-    print("     %s." % ", ".join(commons2))
+    print("%d lines in both HSL and OSM with public_transport:version=2 tagging.\n" % len(commons2))
+    print(" %s." % ", ".join("[[#%s|%s]]" % (s, s) for s in commons2))
     print("")
+    print("= Lines =")
     for line in commons2:
         compare_line(line, mode)
         print("")
