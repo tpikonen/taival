@@ -208,6 +208,10 @@ def rel2nodes(rel):
     """Write a gpx-file to fname from given overpy relation object."""
     ways = [mem.resolve() for mem in rel.members
         if isinstance(mem, overpy.RelationWay) and (mem.role is None)]
+    if not ways:
+        return []
+    elif len(ways) == 1:
+        return ways[0].nodes
     # Initialize nodes list with first way, correctly oriented
     if (ways[0].nodes[-1] == ways[1].nodes[0]) \
       or (ways[0].nodes[-1] == ways[1].nodes[-1]):
