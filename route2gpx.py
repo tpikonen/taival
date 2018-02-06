@@ -310,6 +310,13 @@ def test_route_master(lineref, route_ids):
         print("Tag network is not 'HSL'.")
 
 
+def test_osm_shapes_have_v1_roles(rels):
+    """Return True any of the relations in rels contain members with
+    'forward' or 'backward' roles."""
+    return any(mem.role == 'forward' or mem.role == 'backward'
+        for r in rels for mem in r.members)
+
+
 def ldist2(p1, p2):
     """Return distance metric squared for two latlon pairs."""
     d = (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2
