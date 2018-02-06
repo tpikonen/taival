@@ -109,6 +109,11 @@ def hsl_gtfsid2url(gtfs):
     return "https://www.reittiopas.fi/linjat/" + str(gtfs)
 
 
+def hsl_pattern2url(code):
+    return "https://www.reittiopas.fi/linjat/" \
+        + ":".join(code.split(':')[:2]) +"/pysakit/" + str(code)
+
+
 def hsl_all_linerefs(mode="bus"):
     """Return a lineref:url dict of all linerefs for a given mode.
     URL points to a reittiopas page for the line."""
@@ -373,7 +378,8 @@ def compare_line(lineref, mode="bus"):
         print("No route relations found in OSM.")
         return
     relids = [r.id for r in rels]
-    print("Found OSM route ids: %s\n" % (relids))
+    print("Found OSM route ids: %s\n" % \
+        (", ".join("[%s %d]" % (osm_relid2url(rid), rid) for rid in relids)))
     if len(rels) > 2:
         print("More than 2 OSM routes found.")
         rels = [r for r in rels \
@@ -383,7 +389,8 @@ def compare_line(lineref, mode="bus"):
                     or r.tags.get("network", "") == "Espoo"
                     or r.tags.get("network", "") == "Vantaa")]
         relids = [r.id for r in rels]
-        print("After filtering, found OSM route ids: %s\n" % (relids))
+        print("After filtering, found OSM route ids: %s\n" % \
+          (", ".join("[%s %d]" % (osm_relid2url(rid), rid) for rid in relids)))
         if len(rels) > 2:
             print("More than 2 OSM routes found, giving up.")
             return
@@ -396,7 +403,8 @@ def compare_line(lineref, mode="bus"):
 
     codes = hsl_patterns_after_date(lineref, \
                 datetime.date.today().strftime("%Y%m%d"), mode)
-    print("Found HSL pattern codes: %s\n" % (codes))
+    print("Found HSL pattern codes: %s\n" %
+        (", ".join("[%s %s]" % (hsl_pattern2url(c), c) for c in codes)))
     if len(codes) > 2:
         print("More than 2 HSL patterns found. This is a bug, giving up.")
         return
