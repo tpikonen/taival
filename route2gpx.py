@@ -492,33 +492,45 @@ def sub_gpx(args):
     hsl2gpx(line)
 
 
-def sub_report(args):
+def sub_line(args):
     line = args.line
     mode = args.mode
     compare_line(line)
 
 
+def sub_report(args):
+    compare(mode=args.mode)
+
+
 def sub_fullreport(args):
-    compare()
+    pass
+
 
 if __name__ == '__main__' and '__file__' in globals ():
     parser = argparse.ArgumentParser()
     parser.add_argument('--version', '-v', action='version', version='0.0.1')
     parser.set_defaults(func=lambda _: print(parser.format_usage()))
-    subparsers = parser.add_subparsers(help='sub-command')
+    subparsers = parser.add_subparsers(help='sub-command -h for help')
     parser_gpx = subparsers.add_parser('gpx', help='Output gpx files for given line.')
     parser_gpx.add_argument('line', metavar='<lineid>',
         help='Line id to process.')
     parser_gpx.set_defaults(func=sub_gpx)
 
-    parser_report = subparsers.add_parser('report', help='Create a report for a given line.')
-    parser_report.add_argument('line', metavar='<lineid>',
+    parser_line = subparsers.add_parser('line', help='Create a report for a given line.')
+    parser_line.add_argument('line', metavar='<lineid>',
         help='Line id to report on.')
-    parser_report.add_argument('--mode', '-m', metavar='<mode>', default="bus",
-        help='Transport mode: train, subway, tram, bus or ferry')
+    parser_line.add_argument('--mode', '-m', metavar='<mode>', default="bus",
+        help='Transport mode: train, subway, tram, bus (default) or ferry')
+    parser_line.set_defaults(func=sub_line)
+
+    parser_report = subparsers.add_parser('report',
+        help='Report on all lines for a given mode.')
+    parser_report.add_argument('mode', nargs='?', metavar='<mode>', default="bus",
+        help='Transport mode: train, subway, tram, bus (default) or ferry')
     parser_report.set_defaults(func=sub_report)
 
-    parser_fullreport = subparsers.add_parser('fullreport', help='Create a report for all lines.')
+    parser_fullreport = subparsers.add_parser('fullreport',
+        help='Create a report for all lines.')
     parser_fullreport.set_defaults(func=sub_fullreport)
 
     args = parser.parse_args()
