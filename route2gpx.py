@@ -193,8 +193,8 @@ def osm_platforms(rel):
         else:
             lat = x.lat
             lon = x.lon
-        name = x.tags['ref']
-        desc = x.tags['name']
+        name = x.tags.get('ref', '<no ref>')
+        desc = x.tags.get('name', '<no name>')
         retval.append([float(lat),float(lon),name,desc])
     return retval
 
