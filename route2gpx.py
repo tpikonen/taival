@@ -441,6 +441,9 @@ def compare_line(lineref, mode="bus"):
         for i in range(len(osmplatforms)):
             print("Comparing platforms for OSM id %d vs pattern %s" \
                 % (relids[i], codes[osm2hsl[i]]))
+            # TODO: print line name here
+            # FIXME: Should add something to the diff list for platforms
+            #        missing from OSM.
             osmp = [p[2]+"\n" for p in osmplatforms[i]]
             hslp = [p[2]+"\n" for p in hslplatforms[osm2hsl[i]]]
             diff = list(difflib.unified_diff(osmp, hslp, "OSM", "HSL"))
@@ -449,6 +452,7 @@ def compare_line(lineref, mode="bus"):
             else:
                 print(" => Identical platform sequences.\n")
             print("")
+    # TODO: stop position comparisons
     # Test for tag network="hsl" <- lower case
 
 
