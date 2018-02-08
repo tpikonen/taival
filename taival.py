@@ -19,6 +19,24 @@ def write_gpx(latlon, fname, waypoints=[]):
         ff.write(gpx.to_xml())
 
 
+# Haversine function nicked from: https://stackoverflow.com/questions/4913349/haversine-formula-in-python-bearing-and-distance-between-two-gps-points#
+def haversine(p1, p2):
+    """
+    Calculate the great circle distance between two points
+    on the earth (specified in decimal degrees)
+    """
+    (lat1, lon1) = (p1[0], p1[1])
+    (lat2, lon2) = (p2[0], p2[1])
+    # convert decimal degrees to radians
+    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+
+    # haversine formula
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * asin(sqrt(a))
+    r = 6371 # Radius of earth in kilometers. Use 3956 for miles
+    return c * r
 
 
 # OSM data from Overpass API
@@ -62,27 +80,39 @@ def osm_shape(rel):
     latlon = [[float(n.lat), float(n.lon)] for n in nodes]
     return latlon
 
+def osm_member_coord(x):
+    """Return (lat, lon) coordinates from a resolved relation member.
+    Could be improved by calculating center of mass from ways etc."""
+    if type(x) == overpy.Way:
+        x.get_nodes(resolve_missing=True)
+        lat = x.nodes[0].lat
+        lon = x.nodes[0].lon
+    elif type(x) == overpy.Relation:
+        m = x.members[0].resolve(resolve_missing=True)
+        (lat, lon) = osm_member_coord(m)
+    else:
+        lat = x.lat
+        lon = x.lon
+    return (lat, lon)
 
 def osm_platforms(rel):
-    def get_platform_coord(x):
-        """Return (lat, lon) coordinates from a resolved relation member.
-        Could be improved by calculating center of mass from ways etc."""
-        if type(x) == overpy.Way:
-            x.get_nodes(resolve_missing=True)
-            lat = x.nodes[0].lat
-            lon = x.nodes[0].lon
-        elif type(x) == overpy.Relation:
-            m = x.members[0].resolve(resolve_missing=True)
-            (lat, lon) = get_platform_coord(m)
-        else:
-            lat = x.lat
-            lon = x.lon
-        return (lat, lon)
     retval = []
     platforms = [mem.resolve(resolve_missing=True) \
       for mem in rel.members if mem.role == "platform"]
     for x in platforms:
-        (lat, lon) = get_platform_coord(x)
+        (lat, lon) = osm_member_coord(x)
+        name = x.tags.get('ref', '<no ref>')
+        desc = x.tags.get('name', '<no name>')
+        retval.append([float(lat),float(lon),name,desc])
+    return retval
+
+
+def osm_stops(rel):
+    retval = []
+    stops = [mem.resolve(resolve_missing=True) \
+      for mem in rel.members if mem.role == "stop"]
+    for x in stops:
+        (lat, lon) = osm_member_coord(x)
         name = x.tags.get('ref', '<no ref>')
         desc = x.tags.get('name', '<no name>')
         retval.append([float(lat),float(lon),name,desc])
@@ -307,6 +337,7 @@ def compare_line(lineref, mode="bus"):
     else:
         osmshapes = [osm_shape(rel) for rel in rels]
         hslshapes = [hsl_shape(c)[1] for c in codes]
+        # Mapping
         print("Shape mapping:")
         (osm2hsl, hsl2osm) = match_shapes(osmshapes, hslshapes)
         for i in range(len(relids)):
@@ -316,12 +347,13 @@ def compare_line(lineref, mode="bus"):
             print(" %s -> %s" % \
               (codes[i], "None" if hsl2osm[i] is None else relids[hsl2osm[i]]))
         print("")
+        # Platforms
         osmplatforms = [osm_platforms(rel) for rel in rels]
         hslplatforms = [hsl_platforms(c) for c in codes]
         for i in range(len(osmplatforms)):
-            print("Comparing platforms for OSM id %d vs pattern %s" \
+            print("Route '%s'." % (rels[i].tags.get("name", "<no-name-tag>")))
+            print("Platforms for OSM id %d vs pattern %s." \
                 % (relids[i], codes[osm2hsl[i]]))
-            # TODO: print line name here
             # FIXME: Should add something to the diff list for platforms
             #        missing from OSM.
             osmp = [p[2]+"\n" for p in osmplatforms[i]]
@@ -332,7 +364,26 @@ def compare_line(lineref, mode="bus"):
             else:
                 print(" => Identical platform sequences.\n")
             print("")
-    # TODO: stop position comparisons
+        # Stop positions
+        # start to complain if stop pos is farther than this from HSL platform
+        # FIXME: Turn the comparison around and complain about HSL platforms
+        # missing stop positions?
+        tol = 0.050 # km FIXME: needs to be bigger for mode=subway?
+        print("Stop positions:\n")
+        osmstops = [osm_stops(rel) for rel in rels]
+        for r in range(len(osmstops)):
+            print("Route '%s'." % (rels[r].tags.get("name", "<no-name-tag>")))
+            print("Stops: %d in OSM vs. %d in HSL.\n" \
+            % (len(osmstops[r]), len(hslplatforms[r])))
+            for i in range(len(osmstops[r])):
+                pdists = [haversine(osmstops[r][i][:2], hslplatforms[r][x][:2])\
+                    for x in range(len(hslplatforms[r])) ]
+                pind = pdists.index(min(pdists))
+                mind = pdists[pind]
+                if mind > tol:
+                    print(" Distance from OSM stop %s to HSL platform %s (%s) %.1f > %.1f !" % \
+                      (osmstops[r][i][2], hslplatforms[r][pind][2], \
+                      hslplatforms[r][pind][3], mind*1000, tol*1000))
     # Test for tag network="hsl" <- lower case
 
 
