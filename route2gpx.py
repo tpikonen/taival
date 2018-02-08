@@ -184,15 +184,25 @@ def osm_shape(rel):
 
 
 def osm_platforms(rel):
-    retval = []
-    platforms = [mem.resolve() for mem in rel.members if mem.role == "platform"]
-    for x in platforms:
+    def get_platform_coord(x):
+        """Return (lat, lon) coordinates from a resolved relation member.
+        Could be improved by calculating center of mass from ways etc."""
         if type(x) == overpy.Way:
+            x.get_nodes(resolve_missing=True)
             lat = x.nodes[0].lat
             lon = x.nodes[0].lon
+        elif type(x) == overpy.Relation:
+            m = x.members[0].resolve(resolve_missing=True)
+            (lat, lon) = get_platform_coord(m)
         else:
             lat = x.lat
             lon = x.lon
+        return (lat, lon)
+    retval = []
+    platforms = [mem.resolve(resolve_missing=True) \
+      for mem in rel.members if mem.role == "platform"]
+    for x in platforms:
+        (lat, lon) = get_platform_coord(x)
         name = x.tags.get('ref', '<no ref>')
         desc = x.tags.get('name', '<no name>')
         retval.append([float(lat),float(lon),name,desc])
