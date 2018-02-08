@@ -377,26 +377,25 @@ def compare_line(lineref, mode="bus"):
     if(len(rels) < 1):
         print("No route relations found in OSM.")
         return
+    allrelids = [r.id for r in rels]
+    rels = [r for r in rels \
+            if (r.tags.get("public_transport:version", "") == "2") and
+                (r.tags.get("network", "") == "HSL"
+                or r.tags.get("network", "") == "Helsinki"
+                or r.tags.get("network", "") == "Espoo"
+                or r.tags.get("network", "") == "Vantaa")]
     relids = [r.id for r in rels]
     print("Found OSM route ids: %s\n" % \
-        (", ".join("[%s %d]" % (osm_relid2url(rid), rid) for rid in relids)))
+      (", ".join("[%s %d]" % (osm_relid2url(rid), rid) for rid in relids)))
+    alsoids = [r for r in allrelids if r not in relids]
+    if alsoids:
+        print("Also in OSM with the same ref: %s\n" % \
+          (", ".join("[%s %d]" % (osm_relid2url(r), r) for r in alsoids)))
     if len(rels) > 2:
-        print("More than 2 OSM routes found.")
-        rels = [r for r in rels \
-                if (r.tags.get("public_transport:version", "") == "2") and
-                    (r.tags.get("network", "") == "HSL"
-                    or r.tags.get("network", "") == "Helsinki"
-                    or r.tags.get("network", "") == "Espoo"
-                    or r.tags.get("network", "") == "Vantaa")]
-        relids = [r.id for r in rels]
-        print("After filtering, found OSM route ids: %s\n" % \
-          (", ".join("[%s %d]" % (osm_relid2url(rid), rid) for rid in relids)))
-        if len(rels) > 2:
-            print("More than 2 OSM routes found, giving up.")
-            return
+        print("More than 2 OSM routes found, giving up.")
+        return
 
     for rel in rels:
-        #print("OSM route %s" % (rel.id))
         if rel.tags.get("public_transport:version", "0") != "2":
             print("Tag public_transport:version=2 not set in OSM route %s. Giving up." % (rel.id))
             return
