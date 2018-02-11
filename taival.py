@@ -195,8 +195,8 @@ def osm_rels(lineref, mode="bus"):
     return rr.relations
 
 
-def osm2gpx(lineref):
-    rels = osm_rels_v2(lineref)
+def osm2gpx(lineref, mode="bus"):
+    rels = osm_rels_v2(lineref, mode)
     if len(rels) > 0:
         for i in range(len(rels)):
             fn = "%s_osm_%d.gpx" % (lineref, i)
@@ -430,10 +430,9 @@ def compare(mode="bus"):
 
 
 def sub_gpx(args):
-    line = args.line
-    print("Processing line %s" % line)
-    osm2gpx(line)
-    hsl2gpx(line)
+    print("Processing line %s, mode '%s'" % (args.line, args.mode))
+    osm2gpx(args.line, args.mode)
+    hsl2gpx(args.line, args.mode)
 
 
 def sub_line(args):
@@ -458,6 +457,8 @@ if __name__ == '__main__' and '__file__' in globals ():
     parser_gpx = subparsers.add_parser('gpx', help='Output gpx files for given line.')
     parser_gpx.add_argument('line', metavar='<lineid>',
         help='Line id to process.')
+    parser_gpx.add_argument('mode', nargs='?', metavar='<mode>', default="bus",
+        help='Transport mode: train, subway, tram, bus (default) or ferry')
     parser_gpx.set_defaults(func=sub_gpx)
 
     parser_line = subparsers.add_parser('line', help='Create a report for a given line.')

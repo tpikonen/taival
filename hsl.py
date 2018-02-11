@@ -1,4 +1,5 @@
 import requests, json
+from taival import write_gpx
 
 # HSL data from GraphQL API
 
@@ -111,9 +112,9 @@ def hsl_all_linerefs(mode="bus"):
     return refs
 
 
-def hsl2gpx(lineref):
+def hsl2gpx(lineref, mode="bus"):
     """Write gpx files for given lineref from HSL digitransit API data."""
-    codes = hsl_patterns(lineref)
+    codes = hsl_patterns(lineref, mode)
     #print(codes)
     for c in codes:
         (dirid, latlon) = hsl_shape(c)
