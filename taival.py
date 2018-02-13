@@ -336,6 +336,32 @@ def interp_shape(s, tol=10):
     return sout
 
 
+def test_shape_overlap(s1, s2, tol=10.0, return_list=False):
+    """Return the fraction [0...1.0] by which shape s1 overlaps s2 with
+    tolerance tol (meters)."""
+    p = interp_shape(s2, tol/2.0)
+    ltol2 = inv_haversine(tol/2000.0)**2.0
+    startm = 0
+    overlaps = []
+    for s in s1:
+        found = False
+        for m in list(range(startm, len(p))) + list(range(0, startm)):
+            if ldist2(s, p[m]) < ltol2:
+                found = True
+                startm = m
+                break
+        if found:
+            overlaps.append(1)
+        else:
+            overlaps.append(0)
+    if return_list:
+        return overlaps
+    else:
+        return float(sum(overlaps))/len(s1)
+
+# plot([s[0] for s in hs1], [s[1] for s in hs1], '*-')
+# scatter([s[0] for s in s1], [s[1] for s in s1], c=['g' if o == 1 else 'r' for o in ovl])
+
 def match_shapes(shapes1, shapes2):
     """Determine a mapping from one set of shapes to another, based on
     geometry. Return permutation indices for both directions."""
@@ -452,6 +478,15 @@ def compare_line(lineref, mode="bus"):
             print("")
         # Stop positions
         test_stop_positions(rels)
+        for r in range(len(rels)):
+            if osm2hsl[r] is not None:
+                ovl = test_shape_overlap(osmshapes[r], hslshapes[osm2hsl[r]], \
+                  tol=30)
+                print("Route %s overlap with HSL pattern %s is %2.1f %%.\n" \
+                  % (relids[r], codes[r], ovl*100.0))
+            else:
+                print("Route %s overlap could not be calculated.\n" \
+                  % (relids[r]))
     # Test for tag network!="HSL"
     # Test for tag colour=<correct for mode>
     # Test for tag ref:findr existance/value
