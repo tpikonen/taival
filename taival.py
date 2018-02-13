@@ -247,6 +247,61 @@ def test_osm_shapes_have_v1_roles(rels):
         for r in rels for mem in r.members)
 
 
+def test_stop_positions(rels):
+    print("Stop positions:\n")
+    for rel in rels:
+        stops = [mem.resolve(resolve_missing=True) \
+          for mem in rel.members if mem.role == "stop"]
+        platforms = [mem.resolve(resolve_missing=True) \
+          for mem in rel.members if mem.role == "platform"]
+        print("Route [%s %s] '%s' " % (osm_relid2url(rel.id), rel.id, \
+          rel.tags.get("name", "<no-name-tag>")))
+        print("has %d stop_positions vs. %d platforms." \
+          % (len(stops), len(platforms)))
+        print("")
+        for p in platforms:
+            p_name = p.tags.get("name", "<platform-has-no-name>")
+            p_ref = p.tags.get("ref", "<platform-has-no-ref>")
+            refmatches = [s for s in stops \
+              if s.tags.get("ref", "") == p_ref]
+            namematches = [s for s in stops \
+              if s.tags.get("name", "") == p_name]
+            sout = " Platform %s %s:" % (p_ref, p_name)
+            linit = len(sout)
+            if len(refmatches) < 1:
+                sout += " No stop_position with matching ref!"
+            elif len(refmatches) > 1:
+                sout +=" More than one stop_position with matching ref!"
+            if len(namematches) < 1:
+                sout += " No stop_position with matching name!"
+            elif len(namematches) > 1:
+                sout += " More than one stop_position with matching name!"
+            if len(sout) > linit:
+                print(sout)
+        print("")
+
+
+def test_stop_locations():
+    # start to complain if stop pos is farther than this from HSL platform
+    # FIXME: Turn the comparison around and complain about HSL platforms
+    # missing stop positions?
+    tol = 0.050 # km FIXME: needs to be bigger for mode=subway?
+    osmstops = [osm_stops(rel) for rel in rels]
+    for r in range(len(osmstops)):
+        print("Route '%s'." % (rels[r].tags.get("name", "<no-name-tag>")))
+        print("Stops: %d in OSM vs. %d in HSL.\n" \
+        % (len(osmstops[r]), len(hslplatforms[r])))
+        for i in range(len(osmstops[r])):
+            pdists = [haversine(osmstops[r][i][:2], hslplatforms[r][x][:2])
+                for x in range(len(hslplatforms[r])) ]
+            pind = pdists.index(min(pdists))
+            mind = pdists[pind]
+            if mind > tol:
+                print(" Distance from OSM stop %s to HSL platform %s (%s)" %
+                  (osmstops[r][i][2], hslplatforms[r][pind][2], \
+                  hslplatforms[r][pind][3], mind*1000, tol*1000))
+
+
 def ldist2(p1, p2):
     """Return distance metric squared for two latlon pairs."""
     d = (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2
@@ -365,26 +420,11 @@ def compare_line(lineref, mode="bus"):
                 print(" => Identical platform sequences.\n")
             print("")
         # Stop positions
-        # start to complain if stop pos is farther than this from HSL platform
-        # FIXME: Turn the comparison around and complain about HSL platforms
-        # missing stop positions?
-        tol = 0.050 # km FIXME: needs to be bigger for mode=subway?
-        print("Stop positions:\n")
-        osmstops = [osm_stops(rel) for rel in rels]
-        for r in range(len(osmstops)):
-            print("Route '%s'." % (rels[r].tags.get("name", "<no-name-tag>")))
-            print("Stops: %d in OSM vs. %d in HSL.\n" \
-            % (len(osmstops[r]), len(hslplatforms[r])))
-            for i in range(len(osmstops[r])):
-                pdists = [haversine(osmstops[r][i][:2], hslplatforms[r][x][:2])\
-                    for x in range(len(hslplatforms[r])) ]
-                pind = pdists.index(min(pdists))
-                mind = pdists[pind]
-                if mind > tol:
-                    print(" Distance from OSM stop %s to HSL platform %s (%s) %.1f > %.1f !" % \
-                      (osmstops[r][i][2], hslplatforms[r][pind][2], \
-                      hslplatforms[r][pind][3], mind*1000, tol*1000))
-    # Test for tag network="hsl" <- lower case
+        test_stop_positions(rels)
+    # Test for tag network!="HSL"
+    # Test for tag colour=<correct for mode>
+    # Test for tag ref:findr existance/value
+    # Test for tag interval, infer it from timetable data
 
 
 def compare(mode="bus"):
