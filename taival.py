@@ -19,7 +19,7 @@ def write_gpx(latlon, fname, waypoints=[]):
         ff.write(gpx.to_xml())
 
 
-# Haversine function nicked from: https://stackoverflow.com/questions/4913349/haversine-formula-in-python-bearing-and-distance-between-two-gps-points#
+# Haversine function nicked from: https://stackoverflow.com/questions/4913349/haversine-formula-in-python-bearing-and-distance-between-two-gps-points
 def haversine(p1, p2):
     """
     Calculate the great circle distance between two points
@@ -348,6 +348,8 @@ def match_shapes(shapes1, shapes2):
 def compare_line(lineref, mode="bus"):
     """Report on differences between OSM and HSL data for a given line."""
     print("== %s ==" % lineref)
+    # Add link to Subway validator at http://osmz.ru/subways/finland.html
+    # for mode="subway"
     rels = osm_rels(lineref, mode)
     if(len(rels) < 1):
         print("No route relations found in OSM.")
@@ -403,6 +405,7 @@ def compare_line(lineref, mode="bus"):
               (codes[i], "None" if hsl2osm[i] is None else relids[hsl2osm[i]]))
         print("")
         # Platforms
+        print("Platforms:\n")
         osmplatforms = [osm_platforms(rel) for rel in rels]
         hslplatforms = [hsl_platforms(c) for c in codes]
         for i in range(len(osmplatforms)):
@@ -488,6 +491,8 @@ def sub_report(args):
 def sub_fullreport(args):
     pass
 
+
+# TODO: Add sub_stops(args) for creating a report on stops
 
 if __name__ == '__main__' and '__file__' in globals ():
     parser = argparse.ArgumentParser()
