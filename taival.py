@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys, datetime, gpxpy.gpx, overpy, argparse, requests, json, difflib
 from collections import defaultdict
-from math import radians, cos, sin, asin, sqrt
+from math import radians, degrees, cos, sin, asin, sqrt
 from hsl import *
 
 def write_gpx(latlon, fname, waypoints=[]):
@@ -37,6 +37,13 @@ def haversine(p1, p2):
     c = 2 * asin(sqrt(a))
     r = 6371 # Radius of earth in kilometers. Use 3956 for miles
     return c * r
+
+
+def inv_haversine(d):
+    """Return latitude difference in degrees of a north-south distance d.
+    Can be used as an approximate inverse of haversine function."""
+    r = 6371 # Radius of earth in kilometers. Use 3956 for miles
+    return degrees(d/r)
 
 
 # OSM data from Overpass API
