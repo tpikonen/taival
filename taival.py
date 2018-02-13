@@ -315,6 +315,27 @@ def ldist2(p1, p2):
     return d
 
 
+def interp_shape(s, tol=10):
+    """Given shape s defined as a list of latlon pairs, return a new shape
+    with at a distance of no more than tol (meters) between points. New
+    points are added with linear interpolation."""
+    ltol = inv_haversine(tol/1000.0)
+    ltol2 = ltol**2
+    sout = [s[0]]
+    for i in range(len(s)-1):
+        d2 = ldist2(s[i], s[i+1])
+        if d2 < ltol2:
+            sout.append(s[i+1])
+            continue
+        d = sqrt(d2)
+        n = int(d/ltol)+1
+        v = [(s[i+1][0] - s[i][0])/float(n), (s[i+1][1] - s[i][1])/float(n)]
+        for j in range(1,n):
+            sout.append([s[i][0] + float(j)*v[0], s[i][1] + float(j)*v[1]])
+        sout.append(s[i+1])
+    return sout
+
+
 def match_shapes(shapes1, shapes2):
     """Determine a mapping from one set of shapes to another, based on
     geometry. Return permutation indices for both directions."""
