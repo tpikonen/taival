@@ -215,35 +215,46 @@ def osm2gpx(lineref, mode="bus"):
 # Comparison between OSM and HSL data
 
 
-def test_route_master(lineref, route_ids):
+def test_route_master(lineref, route_ids, mode="bus"):
     """Test if a route_master relation for lineref exists and contains the
     given route_ids."""
     q = '[out:json][timeout:25];(%s);(rel(br)["type"="route_master"]);out body;' \
       % (";".join(["rel(%d)" % x for x in route_ids]))
     rr = api.query(q)
     nr = len(rr.relations)
+    print("'''Route master:'''")
     if nr < 1:
-        print("No route_master relation found.")
+        print("No route_master relation found.\n")
         return
     elif nr == 1:
-        print("route_master relation exists.")
+        rel = rr.relations[0]
+        print("Relation: [%s %s]\n" % (osm_relid2url(rel.id), rel.id))
     elif nr > 1:
-        print("More than one route_master relations exist!")
+        print("More than one route_master relations found: %s\n" \
+          % (", ".join("[%s %s]" \
+            % (osm_relid2url(r.id), r.id) for r in rr.relations)))
         return
-    memrefs = [m.ref for m in rr.relations[0].members]
+    memrefs = [m.ref for m in rel.members]
     refs_not_in_routes = [r for r in memrefs if r not in route_ids]
     if refs_not_in_routes:
-        print("route_master has extra members, ids: %s" \
-          % (str(refs_not_in_routes)))
+        print("route_master has extra members: %s\n" % (", ".join("[%s %s]" \
+          % (osm_relid2url(r.id), r.id) for r in refs_not_in_routes)))
     routes_not_in_refs = [r for r in route_ids if r not in memrefs]
     if routes_not_in_refs:
-        print("Found matching routes not in route_master, ids: %s" \
-          % (str(routes_not_in_refs)))
+        print("Found matching routes not in route_master: %s\n" \
+          % (", ".join("[%s %s]" \
+            % (osm_relid2url(r.id), r.id) for r in routes_not_in_refs)))
     tags = rr.relations[0].tags
     if tags.get("public_transport:version", "0") != "2":
-        print("Tag public_transport:version=2 not set.")
+        print("Tag public_transport:version=2 not set.\n")
     if tags.get("network", "") != "HSL":
-        print("Tag network is not 'HSL'.")
+        print("Tag network is not 'HSL' (is '%s').\n" % tags.get("network", ""))
+    if tags.get("ref", "") != lineref:
+        print("Tag ref does not match expected '%s' (is '%s').\n" \
+          % (lineref, tags.get("ref", "")))
+    if tags.get("route_master", "") != mode:
+        print("Tag route_master does not match mode '%s' (is: '%s').\n" \
+          % (mode, tags.get("route_master", "")))
     print("")
 
 
@@ -439,7 +450,7 @@ def compare_line(lineref, mode="bus"):
         print("More than 2 HSL patterns found. This is a bug, giving up.")
         return
 
-    #test_route_master(lineref, [r.id for r in rels])
+    test_route_master(lineref, [r.id for r in rels], mode)
 
     if test_osm_shapes_have_v1_roles(rels):
         print("OSM route(s) tagged with public_transport:version=2,")
