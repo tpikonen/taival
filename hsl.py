@@ -18,6 +18,17 @@ mode_osm2hsl = {
 hslurl = "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql"
 headers = {'Content-type': 'application/graphql'}
 
+def hsl_tags(lineref):
+    """Return a dict with tag-like info for a route with given lineref."""
+    query = '{routes(name:"%s") {shortName\nlongName\nmode\ntype\ndesc\ncolor\ntextColor\nbikesAllowed\nid\nurl\ngtfsId\n}}' % (lineref)
+    r = requests.post(url=hslurl, data=query, headers=headers)
+    data = json.loads(r.text)["data"]["routes"]
+    for d in data:
+        if d.get("shortName", "") == lineref:
+            return d
+    return []
+
+
 def hsl_patterns(lineid, mode="bus"):
     """Return a list of pattern codes corresponding to a given line ID."""
     query = '{routes(name:"%s", modes:"%s") {\nshortName\npatterns {code}}}' \

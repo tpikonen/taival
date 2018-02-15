@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import sys, datetime, gpxpy.gpx, overpy, argparse, requests, json, difflib
+import sys, datetime, gpxpy.gpx, overpy, argparse, requests, json, difflib, re
 from collections import defaultdict
 from math import radians, degrees, cos, sin, asin, sqrt
 from hsl import *
@@ -237,6 +237,25 @@ def test_tag(ts, key, value=None, badtag=False):
           % (key, tval, value))
 
 
+def test_hsl_routename(ts, lineref, longname):
+    """Do a special test for the route name-tag."""
+    # First, replace hyphens in know stop names and split and replace back
+    # to get a stop list from HSL longName.
+    # Match list from gtfs stops.txt:
+    # csvtool namedcol "stop_name" stops.txt | grep -o '.*-[[:upper:]]...' | sort -u | tr '\n' '|'
+    pat = "Ala-Malm|Ala-Souk|Ala-Tikk|Etelä-Kask|Etelä-Viin|Helsinki-Vant|Itä-Hakk|Kala-Matt|Kallio-Kuni|Koivu-Mank|Lill-Beng|Meri-Rast|Övre-Juss|Pohjois-Haag|Pohjois-Viin|S-Mark|Stor-Kvis|Stor-Rösi|Taka-Niip|Ukko-Pekk|Vanha-Mank|Vanha-Sten|Ylä-Souk|Yli-Finn|Yli-Juss"
+    subf = lambda m: m.group().replace('-', '☺')
+    stops = re.sub(pat, subf, longname).split('-')
+    stops = [s.replace('☺', '-') for s in stops]
+    name1 = lineref + " " + "-".join(stops)
+    stops.reverse()
+    name2 = lineref + " " + "-".join(stops)
+    tag = ts.get("name", "")
+    if tag != name1 and tag != name2:
+        print("Tag '''name''' has value '%s' (should be either '%s' or '%s')." \
+          % (tag, name1, name2))
+
+
 def test_route_master(lineref, route_ids, mode="bus"):
     """Test if a route_master relation for lineref exists and contains the
     given route_ids."""
@@ -468,6 +487,7 @@ def compare_line(lineref, mode="bus"):
         print("Giving up.")
         return
 
+    htags = hsl_tags(lineref)
     codes = hsl_patterns_after_date(lineref, \
                 datetime.date.today().strftime("%Y%m%d"), mode)
 #    print("Found HSL pattern codes: %s\n" %
@@ -496,6 +516,8 @@ def compare_line(lineref, mode="bus"):
           % (osm_relid2url(rel.id), rel.id, rel.tags.get("name", "")))
 
         print("'''Tags:'''\n")
+        # name-tag gets special treatment
+        test_hsl_routename(rel.tags, htags["shortName"],  htags["longName"])
         test_tag(rel.tags, "network", "HSL")
         # TODO: infer interval from timetable data
         test_tag(rel.tags, "interval")
@@ -529,7 +551,7 @@ def compare_line(lineref, mode="bus"):
         if hsli is not None:
             ovl = test_shape_overlap(osm_shape(rel), hslshapes[hsli], \
               tol=30)
-            print("Route [%s %s] overlap with HSL pattern [%s %s] is %2.1f %%.\n" \
+            print("Route [%s %s] overlap with HSL pattern [%s %s] is '''%2.1f %%'''.\n" \
               % (osm_relid2url(rel.id), rel.id, hsl_pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
         else:
             print("Route %s overlap could not be calculated.\n" \
