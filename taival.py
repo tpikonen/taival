@@ -265,38 +265,37 @@ def test_osm_shapes_have_v1_roles(rels):
         for r in rels for mem in r.members)
 
 
-def test_stop_positions(rels):
-    print("Stop positions:\n")
-    for rel in rels:
-        stops = [mem.resolve(resolve_missing=True) \
-          for mem in rel.members if mem.role == "stop"]
-        platforms = [mem.resolve(resolve_missing=True) \
-          for mem in rel.members if mem.role == "platform"]
-        print("Route [%s %s] '%s' " % (osm_relid2url(rel.id), rel.id, \
-          rel.tags.get("name", "<no-name-tag>")))
-        print("has %d stop_positions vs. %d platforms." \
-          % (len(stops), len(platforms)))
-        print("")
-        for p in platforms:
-            p_name = p.tags.get("name", "<platform-has-no-name>")
-            p_ref = p.tags.get("ref", "<platform-has-no-ref>")
-            refmatches = [s for s in stops \
-              if s.tags.get("ref", "") == p_ref]
-            namematches = [s for s in stops \
-              if s.tags.get("name", "") == p_name]
-            sout = " Platform %s %s:" % (p_ref, p_name)
-            linit = len(sout)
-            if len(refmatches) < 1:
-                sout += " No stop_position with matching ref!"
-            elif len(refmatches) > 1:
-                sout +=" More than one stop_position with matching ref!"
-            if len(namematches) < 1:
-                sout += " No stop_position with matching name!"
-            elif len(namematches) > 1:
-                sout += " More than one stop_position with matching name!"
-            if len(sout) > linit:
-                print(sout)
-        print("")
+def test_stop_positions(rel):
+    print("Stop positions: ")
+    stops = [mem.resolve(resolve_missing=True) \
+      for mem in rel.members if mem.role == "stop"]
+    platforms = [mem.resolve(resolve_missing=True) \
+      for mem in rel.members if mem.role == "platform"]
+#    print("Route [%s %s] '%s' " % (osm_relid2url(rel.id), rel.id, \
+#      rel.tags.get("name", "<no-name-tag>")))
+    print("%d stop_positions vs. %d platforms." \
+      % (len(stops), len(platforms)))
+    print("")
+    for p in platforms:
+        p_name = p.tags.get("name", "<platform-has-no-name>")
+        p_ref = p.tags.get("ref", "<platform-has-no-ref>")
+        refmatches = [s for s in stops \
+          if s.tags.get("ref", "") == p_ref]
+        namematches = [s for s in stops \
+          if s.tags.get("name", "") == p_name]
+        sout = " Platform %s %s:" % (p_ref, p_name)
+        linit = len(sout)
+        if len(refmatches) < 1:
+            sout += " No stop_position with matching ref!"
+        elif len(refmatches) > 1:
+            sout +=" More than one stop_position with matching ref!"
+        if len(namematches) < 1:
+            sout += " No stop_position with matching name!"
+        elif len(namematches) > 1:
+            sout += " More than one stop_position with matching name!"
+        if len(sout) > linit:
+            print(sout)
+    print("")
 
 
 def test_stop_locations():
@@ -413,8 +412,6 @@ def match_shapes(shapes1, shapes2):
 def compare_line(lineref, mode="bus"):
     """Report on differences between OSM and HSL data for a given line."""
     print("== %s ==" % lineref)
-    # Add link to Subway validator at http://osmz.ru/subways/finland.html
-    # for mode="subway"
     rels = osm_rels(lineref, mode)
     if(len(rels) < 1):
         print("No route relations found in OSM.")
@@ -427,84 +424,98 @@ def compare_line(lineref, mode="bus"):
                 or r.tags.get("network", "") == "Espoo"
                 or r.tags.get("network", "") == "Vantaa")]
     relids = [r.id for r in rels]
-    print("Found OSM route ids: %s\n" % \
-      (", ".join("[%s %d]" % (osm_relid2url(rid), rid) for rid in relids)))
+
+    test_route_master(lineref, [r.id for r in rels], mode)
+
+#    print("Found OSM route ids: %s\n" % \
+#      (", ".join("[%s %d]" % (osm_relid2url(rid), rid) for rid in relids)))
     alsoids = [r for r in allrelids if r not in relids]
     if alsoids:
-        print("Also in OSM with the same ref: %s\n" % \
+        print("Extra routes in OSM with the same ref: %s\n" % \
           (", ".join("[%s %d]" % (osm_relid2url(r), r) for r in alsoids)))
     if len(rels) > 2:
-        print("More than 2 OSM routes found, giving up.")
+        print("More than 2 matching OSM routes found: %s.\n" % \
+          (", ".join("[%s %d]" \
+            % (osm_relid2url(rid), rid) for rid in relids)))
+        print("Giving up.")
         return
-
-    for rel in rels:
-        if rel.tags.get("public_transport:version", "0") != "2":
-            print("Tag public_transport:version=2 not set in OSM route %s. Giving up." % (rel.id))
-            return
 
     codes = hsl_patterns_after_date(lineref, \
                 datetime.date.today().strftime("%Y%m%d"), mode)
-    print("Found HSL pattern codes: %s\n" %
-        (", ".join("[%s %s]" % (hsl_pattern2url(c), c) for c in codes)))
+#    print("Found HSL pattern codes: %s\n" %
+#        (", ".join("[%s %s]" % (hsl_pattern2url(c), c) for c in codes)))
     if len(codes) > 2:
         print("More than 2 HSL patterns found. This is a bug, giving up.")
         return
 
-    test_route_master(lineref, [r.id for r in rels], mode)
+    # Mapping
+    osmshapes = [osm_shape(rel) for rel in rels]
+    hslshapes = [hsl_shape(c)[1] for c in codes]
+    (osm2hsl, hsl2osm) = match_shapes(osmshapes, hslshapes)
+    id2hslindex = {}
+    for i in range(len(relids)):
+        id2hslindex[relids[i]] = osm2hsl[i]
+#        print(" %s -> %s" % \
+#          (relids[i], "None" if osm2hsl[i] is None else codes[osm2hsl[i]]))
+#    for i in range(len(codes)):
+#        print(" %s -> %s" % \
+#          (codes[i], "None" if hsl2osm[i] is None else relids[hsl2osm[i]]))
+    print("")
 
-    if test_osm_shapes_have_v1_roles(rels):
-        print("OSM route(s) tagged with public_transport:version=2,")
-        print("but have members with 'forward' or 'backward' roles.")
-        print("Skipping shape and platform tests.\n")
-    else:
-        osmshapes = [osm_shape(rel) for rel in rels]
-        hslshapes = [hsl_shape(c)[1] for c in codes]
-        # Mapping
-        print("Shape mapping:")
-        (osm2hsl, hsl2osm) = match_shapes(osmshapes, hslshapes)
-        for i in range(len(relids)):
-            print(" %s -> %s" % \
-              (relids[i], "None" if osm2hsl[i] is None else codes[osm2hsl[i]]))
-        for i in range(len(codes)):
-            print(" %s -> %s" % \
-              (codes[i], "None" if hsl2osm[i] is None else relids[hsl2osm[i]]))
-        print("")
+# Main route checking loop
+    for rel in rels:
+        print("'''Route [%s %s] %s'''\n" \
+          % (osm_relid2url(rel.id), rel.id, rel.tags.get("name", "")))
+        hsli = id2hslindex[rel.id]
+        print("Matching HSL pattern %s.\n" % (codes[hsli]))
+
+        if rel.tags.get("public_transport:version", "0") != "2":
+            print("Tag public_transport:version=2 not set in OSM route %s. Giving up." % (rel.id))
+            continue
+
+        # Test for tag network!="HSL"
+        # Test for tag colour=<correct for mode>
+        # Test for tag ref:findr existance/value
+        # Test for tag interval, infer it from timetable data
+
+        if any(mem.role == 'forward' or mem.role == 'backward'
+          for mem in rel.members):
+            print("OSM route(s) tagged with public_transport:version=2,")
+            print("but have members with 'forward' or 'backward' roles.")
+            print("Skipping shape, platform and stop tests.\n")
+            continue
+
+        print("Route overlap: ")
+        if hsli is not None:
+            ovl = test_shape_overlap(osm_shape(rel), hslshapes[hsli], \
+              tol=30)
+            print("Route %s overlap with HSL pattern %s is %2.1f %%.\n" \
+              % (rel.id, codes[hsli], ovl*100.0))
+        else:
+            print("Route %s overlap could not be calculated.\n" \
+              % (rel.id))
+
+        test_stop_positions(rel)
+
         # Platforms
         print("Platforms:\n")
-        osmplatforms = [osm_platforms(rel) for rel in rels]
-        hslplatforms = [hsl_platforms(c) for c in codes]
-        for i in range(len(osmplatforms)):
-            print("Route '%s'." % (rels[i].tags.get("name", "<no-name-tag>")))
-            print("Platforms for OSM id %d vs pattern %s." \
-                % (relids[i], codes[osm2hsl[i]]))
-            # FIXME: Should add something to the diff list for platforms
-            #        missing from OSM.
-            osmp = [p[2]+"\n" for p in osmplatforms[i]]
-            hslp = [p[2]+"\n" for p in hslplatforms[osm2hsl[i]]]
-            diff = list(difflib.unified_diff(osmp, hslp, "OSM", "HSL"))
-            if diff:
-                sys.stdout.writelines(" " + d for d in diff)
-            else:
-                print(" => Identical platform sequences.\n")
-            print("")
-        # Stop positions
-        test_stop_positions(rels)
-        for r in range(len(rels)):
-            if osm2hsl[r] is not None:
-                ovl = test_shape_overlap(osmshapes[r], hslshapes[osm2hsl[r]], \
-                  tol=30)
-                print("Route %s overlap with HSL pattern %s is %2.1f %%.\n" \
-                  % (relids[r], codes[r], ovl*100.0))
-            else:
-                print("Route %s overlap could not be calculated.\n" \
-                  % (relids[r]))
-    # Test for tag network!="HSL"
-    # Test for tag colour=<correct for mode>
-    # Test for tag ref:findr existance/value
-    # Test for tag interval, infer it from timetable data
+        osmplatform = osm_platforms(rel)
+        hslplatform = hsl_platforms(codes[hsli])
+        # FIXME: Should add something to the diff list for platforms
+        #        missing from OSM.
+        osmp = [p[2]+"\n" for p in osmplatform]
+        hslp = [p[2]+"\n" for p in hslplatform]
+        diff = list(difflib.unified_diff(osmp, hslp, "OSM", "HSL"))
+        if diff:
+            sys.stdout.writelines(" " + d for d in diff)
+        else:
+            print(" => Identical platform sequences.\n")
+        print("")
 
 
 def compare(mode="bus"):
+# TODO: Add link to Subway validator at http://osmz.ru/subways/finland.html
+# for mode="subway"
     osmdict = osm_all_linerefs(mode)
     hsldict = hsl_all_linerefs(mode)
     osmlines = set(osmdict)
