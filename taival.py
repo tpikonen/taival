@@ -640,6 +640,8 @@ def sub_fullreport(args):
 
 
 # TODO: Add sub_stops(args) for creating a report on stops
+# List of stop code prefixes from gtfs:
+# csvtool namedcol stop_code stops.txt| tail -n+2 | grep -o '^[^0-9]*' | sort -u
 # TODO: Test ref:findr tag on stops test_tag(rel.tags, "ref:findr")
 
 if __name__ == '__main__' and '__file__' in globals ():
