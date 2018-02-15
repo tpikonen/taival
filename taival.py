@@ -287,7 +287,7 @@ def test_osm_shapes_have_v1_roles(rels):
         for r in rels for mem in r.members)
 
 
-def test_stop_positions(rel):
+def test_stop_positions(rel, mode="bus"):
     print("'''Stop positions:'''\n")
     stops = [mem.resolve(resolve_missing=True) \
       for mem in rel.members if mem.role == "stop"]
@@ -298,25 +298,31 @@ def test_stop_positions(rel):
     print("%d stop_positions vs. %d platforms." \
       % (len(stops), len(platforms)))
     print("")
-    for p in platforms:
-        p_name = p.tags.get("name", "<platform-has-no-name>")
-        p_ref = p.tags.get("ref", "<platform-has-no-ref>")
-        refmatches = [s for s in stops \
-          if s.tags.get("ref", "") == p_ref]
-        namematches = [s for s in stops \
-          if s.tags.get("name", "") == p_name]
-        sout = " Platform %s %s:" % (p_ref, p_name)
-        linit = len(sout)
-        if len(refmatches) < 1:
-            sout += " No stop_position with matching ref!"
-        elif len(refmatches) > 1:
-            sout +=" More than one stop_position with matching ref!"
-        if len(namematches) < 1:
-            sout += " No stop_position with matching name!"
-        elif len(namematches) > 1:
-            sout += " More than one stop_position with matching name!"
-        if len(sout) > linit:
-            print(sout)
+#    # FIXME: Output something sensible
+#    for s in stops:
+#        test_tag(s.tags, "ref")
+#        test_tag(s.tags, "name")
+#        test_tag(s.tags, "public_transport", "stop_position")
+#        test_tag(s.tags, mode, "yes")
+#    for p in platforms:
+#        p_name = p.tags.get("name", "<platform-has-no-name>")
+#        p_ref = p.tags.get("ref", "<platform-has-no-ref>")
+#        refmatches = [s for s in stops \
+#          if s.tags.get("ref", "") == p_ref]
+#        namematches = [s for s in stops \
+#          if s.tags.get("name", "") == p_name]
+#        sout = " Platform %s %s:" % (p_ref, p_name)
+#        linit = len(sout)
+#        if len(refmatches) < 1:
+#            sout += " No stop_position with matching ref!"
+#        elif len(refmatches) > 1:
+#            sout +=" More than one stop_position with matching ref!"
+#        if len(namematches) < 1:
+#            sout += " No stop_position with matching name!"
+#        elif len(namematches) > 1:
+#            sout += " More than one stop_position with matching name!"
+#        if len(sout) > linit:
+#            print(sout)
     print("")
 
 
