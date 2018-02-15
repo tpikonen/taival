@@ -214,6 +214,28 @@ def osm2gpx(lineref, mode="bus"):
 
 # Comparison between OSM and HSL data
 
+def test_tag(ts, key, value=None, badtag=False):
+    """Test if a tag has a given value or just exists, if value=None."""
+    if not key in ts.keys():
+        if badtag:
+            return
+        print("Tag '''%s''' not set " % key, end='')
+        if value is not None:
+            print("(should be '%s').\n" % value)
+        else:
+            print(".\n")
+        return
+    tval = ts[key]
+    if badtag:
+        print("Probably '''mispelled''' tag '''%s''' with value '%s'.\n" \
+          % (key, tval))
+        return
+    if value is None:
+        return
+    if tval != value:
+        print("Tag '''%s''' has value '%s' (should be '%s').\n" \
+          % (key, tval, value))
+
 
 def test_route_master(lineref, route_ids, mode="bus"):
     """Test if a route_master relation for lineref exists and contains the
@@ -466,17 +488,29 @@ def compare_line(lineref, mode="bus"):
     for rel in rels:
         print("'''Route [%s %s] %s'''\n" \
           % (osm_relid2url(rel.id), rel.id, rel.tags.get("name", "")))
+
+        print("'''Tags:'''\n")
+        test_tag(rel.tags, "network", "HSL")
+        # TODO: infer interval from timetable data
+        test_tag(rel.tags, "interval")
+        # Source for colors: https://www.hsl.fi/tyyliopas/varit
+        modecolors = { "bus": "#007AC9",
+            "tram":     "#00985F",
+            "train":    "#8C4799",
+            "subway":   "#FF6319",
+            "ferry":    "#00B9E4",
+            "aerialway": None,
+            "monorail": None,
+            "trolleybus": None }
+        test_tag(rel.tags, "colour", modecolors[mode])
+        test_tag(rel.tags, "color", badtag=True)
+
         hsli = id2hslindex[rel.id]
         print("Matching HSL pattern %s.\n" % (codes[hsli]))
 
         if rel.tags.get("public_transport:version", "0") != "2":
             print("Tag public_transport:version=2 not set in OSM route %s. Giving up." % (rel.id))
             continue
-
-        # Test for tag network!="HSL"
-        # Test for tag colour=<correct for mode>
-        # Test for tag ref:findr existance/value
-        # Test for tag interval, infer it from timetable data
 
         if any(mem.role == 'forward' or mem.role == 'backward'
           for mem in rel.members):
@@ -578,6 +612,7 @@ def sub_fullreport(args):
 
 
 # TODO: Add sub_stops(args) for creating a report on stops
+# TODO: Test ref:findr tag on stops test_tag(rel.tags, "ref:findr")
 
 if __name__ == '__main__' and '__file__' in globals ():
     parser = argparse.ArgumentParser()
