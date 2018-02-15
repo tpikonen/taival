@@ -288,7 +288,7 @@ def test_osm_shapes_have_v1_roles(rels):
 
 
 def test_stop_positions(rel):
-    print("Stop positions: ")
+    print("'''Stop positions:'''\n")
     stops = [mem.resolve(resolve_missing=True) \
       for mem in rel.members if mem.role == "stop"]
     platforms = [mem.resolve(resolve_missing=True) \
@@ -367,7 +367,7 @@ def interp_shape(s, tol=10):
         sout.append(s[i+1])
     return sout
 
-
+# FIXME: Return also maximum deviation of the shape points or other stats.
 def test_shape_overlap(s1, s2, tol=10.0, return_list=False):
     """Return the fraction [0...1.0] by which shape s1 overlaps s2 with
     tolerance tol (meters)."""
@@ -423,8 +423,8 @@ def match_shapes(shapes1, shapes2):
         m1to2[i] = minind
     for i in range(len(m1to2)):
         m2to1[m1to2[i]] = i
-    if any(v is None for v in m1to2 + m2to1):
-        print("(mapping is not a bijection)")
+#    if any(v is None for v in m1to2 + m2to1):
+#        print("(mapping is not a bijection)")
     if swap:
         return (m2to1, m1to2)
     else:
@@ -506,7 +506,7 @@ def compare_line(lineref, mode="bus"):
         test_tag(rel.tags, "color", badtag=True)
 
         hsli = id2hslindex[rel.id]
-        print("Matching HSL pattern %s.\n" % (codes[hsli]))
+        #print("Matching HSL pattern %s.\n" % (codes[hsli]))
 
         if rel.tags.get("public_transport:version", "0") != "2":
             print("Tag public_transport:version=2 not set in OSM route %s. Giving up." % (rel.id))
@@ -519,12 +519,12 @@ def compare_line(lineref, mode="bus"):
             print("Skipping shape, platform and stop tests.\n")
             continue
 
-        print("Route overlap: ")
+        print("'''Shape:'''\n")
         if hsli is not None:
             ovl = test_shape_overlap(osm_shape(rel), hslshapes[hsli], \
               tol=30)
-            print("Route %s overlap with HSL pattern %s is %2.1f %%.\n" \
-              % (rel.id, codes[hsli], ovl*100.0))
+            print("Route [%s %s] overlap with HSL pattern [%s %s] is %2.1f %%.\n" \
+              % (osm_relid2url(rel.id), rel.id, hsl_pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
         else:
             print("Route %s overlap could not be calculated.\n" \
               % (rel.id))
@@ -532,7 +532,7 @@ def compare_line(lineref, mode="bus"):
         test_stop_positions(rel)
 
         # Platforms
-        print("Platforms:\n")
+        print("'''Platforms:'''\n")
         osmplatform = osm_platforms(rel)
         hslplatform = hsl_platforms(codes[hsli])
         # FIXME: Should add something to the diff list for platforms
