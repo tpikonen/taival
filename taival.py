@@ -286,16 +286,12 @@ def test_route_master(lineref, route_ids, mode="bus"):
           % (", ".join("[%s %s]" \
             % (osm_relid2url(r.id), r.id) for r in routes_not_in_refs)))
     tags = rr.relations[0].tags
-    if tags.get("public_transport:version", "0") != "2":
-        print("Tag public_transport:version=2 not set.\n")
-    if tags.get("network", "") != "HSL":
-        print("Tag network is not 'HSL' (is '%s').\n" % tags.get("network", ""))
-    if tags.get("ref", "") != lineref:
-        print("Tag ref does not match expected '%s' (is '%s').\n" \
-          % (lineref, tags.get("ref", "")))
-    if tags.get("route_master", "") != mode:
-        print("Tag route_master does not match mode '%s' (is: '%s').\n" \
-          % (mode, tags.get("route_master", "")))
+    test_tag(tags, "route_master", mode)
+    test_tag(tags, "ref", lineref)
+    test_tag(tags, "name")
+    test_tag(tags, "network", "HSL")
+    #test_tag(tags, "operator")
+
     print("")
 
 
