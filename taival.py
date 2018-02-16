@@ -156,7 +156,7 @@ def rel2nodes(rel):
       or (ways[0].nodes[0] == ways[1].nodes[-1]):
         nodes = ways[0].nodes[::-1] # reverse
     else:
-        print("Gap between first two ways")
+        #print("Gap between first two ways")
         begmin = min(ndist2(ways[0].nodes[0], ways[1].nodes[0]),
                      ndist2(ways[0].nodes[0], ways[1].nodes[-1]))
         endmin = min(ndist2(ways[0].nodes[-1], ways[1].nodes[0]),
@@ -173,7 +173,7 @@ def rel2nodes(rel):
         elif nodes[-1] == w.nodes[-1]:
             nodes.extend(w.nodes[::-1][1:])
         else:
-            print("Gap between ways")
+            #print("Gap between ways")
             if ndist2(nodes[-1], w.nodes[0]) < ndist2(nodes[-1], w.nodes[-1]):
                 nodes.extend(w.nodes)
             else:
