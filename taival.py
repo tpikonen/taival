@@ -629,7 +629,7 @@ def sub_gpx(args):
 def sub_line(args):
     line = args.line
     mode = args.mode
-    compare_line(line)
+    compare_line(line, mode)
 
 
 def sub_report(args):
@@ -660,7 +660,7 @@ if __name__ == '__main__' and '__file__' in globals ():
     parser_line = subparsers.add_parser('line', help='Create a report for a given line.')
     parser_line.add_argument('line', metavar='<lineid>',
         help='Line id to report on.')
-    parser_line.add_argument('--mode', '-m', metavar='<mode>', default="bus",
+    parser_line.add_argument('mode', nargs='?', metavar='<mode>', default="bus",
         help='Transport mode: train, subway, tram, bus (default) or ferry')
     parser_line.set_defaults(func=sub_line)
 
