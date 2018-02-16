@@ -22,6 +22,7 @@ def hsl_tags(lineref):
     """Return a dict with tag-like info for a route with given lineref."""
     query = '{routes(name:"%s") {shortName\nlongName\nmode\ntype\ndesc\ncolor\ntextColor\nbikesAllowed\nid\nurl\ngtfsId\n}}' % (lineref)
     r = requests.post(url=hslurl, data=query, headers=headers)
+    r.encoding = 'utf-8'
     data = json.loads(r.text)["data"]["routes"]
     for d in data:
         if d.get("shortName", "") == lineref:
@@ -35,6 +36,7 @@ def hsl_patterns(lineid, mode="bus"):
         % (lineid, mode_osm2hsl[mode])
     #print(query)
     r = requests.post(url=hslurl, data=query, headers=headers)
+    r.encoding = 'utf-8'
     #print(r.text)
     rts = json.loads(r.text)["data"]["routes"]
     patterns = [r["patterns"] for r in rts if r["shortName"] == lineid]
@@ -54,6 +56,7 @@ def hsl_patterns_for_date(lineid, datestr, mode="bus"):
         query = '{pattern(id:"%s"){tripsForDate(serviceDate:"%s"){id}}}' \
           % (c, datestr)
         r = requests.post(url=hslurl, data=query, headers=headers)
+        r.encoding = 'utf-8'
         if len(json.loads(r.text)["data"]["pattern"]["tripsForDate"]) > 0:
             valids.append(c)
     return valids
@@ -69,6 +72,7 @@ def hsl_patterns_after_date(lineid, datestr, mode="bus"):
     for c in codes:
         query = '{pattern(id:"%s"){trips{activeDates}}}' % (c)
         r = requests.post(url=hslurl, data=query, headers=headers)
+        r.encoding = 'utf-8'
         trips = json.loads(r.text)["data"]["pattern"]["trips"]
         for t in trips:
            if any(int(d) > dateint for d in t["activeDates"]):
@@ -82,6 +86,7 @@ def hsl_shape(code):
     query = '{pattern(id:"%s") {directionId\ngeometry {lat\nlon}}}' % (code)
     #print(query)
     r = requests.post(url=hslurl, data=query, headers=headers)
+    r.encoding = 'utf-8'
     #print(r.text)
     pat = json.loads(r.text)["data"]["pattern"]
     dirid = pat["directionId"] # int
@@ -95,6 +100,7 @@ def hsl_platforms(code):
     query = '{pattern(id:"%s") {stops {code\nname\nlat\nlon}}}' % (code)
     #print(query)
     r = requests.post(url=hslurl, data=query, headers=headers)
+    r.encoding = 'utf-8'
     #print(r.text)
     stops = json.loads(r.text)["data"]["pattern"]["stops"]
     return [[s["lat"], s["lon"], s["code"], s["name"]] for s in stops]
@@ -115,6 +121,7 @@ def hsl_all_linerefs(mode="bus"):
     query = '{routes(modes:"%s"){shortName\ntype\ngtfsId\n}}' \
         %(mode_osm2hsl[mode])
     r = requests.post(url=hslurl, data=query, headers=headers)
+    r.encoding = 'utf-8'
     rts = json.loads(r.text)["data"]["routes"]
     # Also filter out taxibuses (lähibussit) (type == 704)
     #refs = [r["shortName"] for r in rts if r["type"] != 704]
