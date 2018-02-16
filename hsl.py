@@ -15,6 +15,17 @@ mode_osm2hsl = {
     "ferry":    "FERRY"
 }
 
+# Source for colors: https://www.hsl.fi/tyyliopas/varit
+hsl_modecolors = { "bus": "#007AC9",
+    "tram":     "#00985F",
+    "train":    "#8C4799",
+    "subway":   "#FF6319",
+    "ferry":    "#00B9E4",
+    "aerialway": None,
+    "monorail": None,
+    "trolleybus": None
+}
+
 hslurl = "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql"
 headers = {'Content-type': 'application/graphql'}
 

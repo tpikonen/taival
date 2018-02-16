@@ -520,16 +520,7 @@ def compare_line(lineref, mode="bus"):
         test_tag(rel.tags, "network", "HSL")
         # TODO: infer interval from timetable data
         test_tag(rel.tags, "interval")
-        # Source for colors: https://www.hsl.fi/tyyliopas/varit
-        modecolors = { "bus": "#007AC9",
-            "tram":     "#00985F",
-            "train":    "#8C4799",
-            "subway":   "#FF6319",
-            "ferry":    "#00B9E4",
-            "aerialway": None,
-            "monorail": None,
-            "trolleybus": None }
-        test_tag(rel.tags, "colour", modecolors[mode])
+        test_tag(rel.tags, "colour", hsl_modecolors[mode])
         test_tag(rel.tags, "color", badtag=True)
 
         hsli = id2hslindex[rel.id]
