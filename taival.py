@@ -550,10 +550,11 @@ def compare_line(lineref, mode="bus"):
 
         print("'''Shape:'''\n")
         if hsli is not None:
+            tol = 30
             ovl = test_shape_overlap(osm_shape(rel), hslshapes[hsli], \
-              tol=30)
-            print("Route [%s %s] overlap with HSL pattern [%s %s] is '''%2.1f %%'''.\n" \
-              % (osm_relid2url(rel.id), rel.id, hsl_pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
+              tol=tol)
+            print("Route [%s %s] overlap (tolerance %d m) with HSL pattern [%s %s] is '''%2.1f %%'''.\n" \
+              % (osm_relid2url(rel.id), rel.id, tol, hsl_pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
         else:
             print("Route %s overlap could not be calculated.\n" \
               % (rel.id))
