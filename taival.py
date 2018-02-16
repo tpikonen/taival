@@ -441,7 +441,8 @@ def match_shapes(shapes1, shapes2):
         cbeg = s1[i][0]
         cend = s1[i][-1]
         for j in range(len(s2)):
-            d = min(ldist2(cbeg, s2[j][0]), ldist2(cend, s2[j][-1]))
+            #d = min(ldist2(cbeg, s2[j][0]), ldist2(cend, s2[j][-1]))
+            d = ldist2(cbeg, s2[j][0]) + ldist2(cend, s2[j][-1])
             if d < mind:
                 mind = d
                 minind = j
