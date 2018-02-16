@@ -492,9 +492,6 @@ def compare_line(lineref, mode="bus"):
                 datetime.date.today().strftime("%Y%m%d"), mode)
 #    print("Found HSL pattern codes: %s\n" %
 #        (", ".join("[%s %s]" % (hsl_pattern2url(c), c) for c in codes)))
-    if len(codes) > 2:
-        print("More than 2 HSL patterns found. This is a bug, giving up.")
-        return
 
     # Mapping
     osmshapes = [osm_shape(rel) for rel in rels]
@@ -503,11 +500,15 @@ def compare_line(lineref, mode="bus"):
     id2hslindex = {}
     for i in range(len(relids)):
         id2hslindex[relids[i]] = osm2hsl[i]
-#        print(" %s -> %s" % \
-#          (relids[i], "None" if osm2hsl[i] is None else codes[osm2hsl[i]]))
-#    for i in range(len(codes)):
-#        print(" %s -> %s" % \
-#          (codes[i], "None" if hsl2osm[i] is None else relids[hsl2osm[i]]))
+    if len(codes) != 2:
+        print("%d route pattern(s) in HSL data, matching may be wrong.\n" \
+          % (len(codes)))
+        for i in range(len(relids)):
+            print(" %s -> %s" % \
+              (relids[i], "None" if osm2hsl[i] is None else codes[osm2hsl[i]]))
+        for i in range(len(codes)):
+            print(" %s -> %s" % \
+              (codes[i], "None" if hsl2osm[i] is None else relids[hsl2osm[i]]))
     print("")
 
 # Main route checking loop
