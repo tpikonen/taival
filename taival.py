@@ -562,17 +562,20 @@ def compare_line(lineref, mode="bus"):
 
         # Platforms
         print("'''Platforms:'''\n")
-        osmplatform = osm_platforms(rel)
-        hslplatform = hsl_platforms(codes[hsli])
-        # FIXME: Should add something to the diff list for platforms
-        #        missing from OSM.
-        osmp = [p[2]+"\n" for p in osmplatform]
-        hslp = [p[2]+"\n" for p in hslplatform]
-        diff = list(difflib.unified_diff(osmp, hslp, "OSM", "HSL"))
-        if diff:
-            sys.stdout.writelines(" " + d for d in diff)
+        if hsli is not None:
+            osmplatform = osm_platforms(rel)
+            hslplatform = hsl_platforms(codes[hsli])
+            # FIXME: Should add something to the diff list for platforms
+            #        missing from OSM.
+            osmp = [p[2]+"\n" for p in osmplatform]
+            hslp = [p[2]+"\n" for p in hslplatform]
+            diff = list(difflib.unified_diff(osmp, hslp, "OSM", "HSL"))
+            if diff:
+                sys.stdout.writelines(" " + d for d in diff)
+            else:
+                print(" => Identical platform sequences.\n")
         else:
-            print(" => Identical platform sequences.\n")
+            print("Platforms could not be compared.")
         print("")
 
 
