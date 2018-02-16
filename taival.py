@@ -252,7 +252,7 @@ def test_hsl_routename(ts, lineref, longname):
     name2 = lineref + " " + "-".join(stops)
     tag = ts.get("name", "")
     if tag != name1 and tag != name2:
-        print("Tag '''name''' has value '%s' (should be either '%s' or '%s')." \
+        print("Tag '''name''' has value '%s' (should be either '%s' or '%s').\n" \
           % (tag, name1, name2))
 
 
@@ -457,6 +457,7 @@ def match_shapes(shapes1, shapes2):
         return (m1to2, m2to1)
 
 
+# FIXME: Use templates for output
 def compare_line(lineref, mode="bus"):
     """Report on differences between OSM and HSL data for a given line."""
     print("== %s ==" % lineref)
@@ -588,7 +589,9 @@ def compare(mode="bus"):
     hsldict = hsl_all_linerefs(mode)
     osmlines = set(osmdict)
     hsllines = set(hsldict)
-    print("= Summary for mode '%s' =" % mode)
+    # TODO: Replace HSL with region var everywhere.
+    region = "HSL"
+    print("= Summary of %s transit in %s region. =" % (mode, region))
     print("%d lines in OSM.\n" % len(osmlines))
     print("%d lines in HSL.\n" % len(hsllines))
     print("")
@@ -596,14 +599,14 @@ def compare(mode="bus"):
     osmextra = list(osmlines.difference(hsllines))
     osmextra.sort(key=sortf)
     print("%d lines in OSM but not in HSL:" % len(osmextra))
-    print(" %s." % ", ".join(["%s (%s)" % \
+    print(" %s" % ", ".join(["%s (%s)" % \
         (x, ", ".join(["[%s %d]" % (osmdict[x][z], z+1) \
             for z in range(len(osmdict[x]))])) for x in osmextra ] ))
     print("")
     hslextra = list(hsllines.difference(osmlines))
     hslextra.sort(key=sortf)
     print("%d lines in HSL but not in OSM:" % len(hslextra))
-    print(" %s." % ", ".join(["[%s %s]" % (hsldict[x], x) for x in hslextra]))
+    print(" %s" % ", ".join(["[%s %s]" % (hsldict[x], x) for x in hslextra]))
     print("")
     commons = list(hsllines.intersection(osmlines))
     commons.sort(key=sortf)
