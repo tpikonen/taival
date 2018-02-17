@@ -519,6 +519,8 @@ def compare_line(lineref, mode="bus"):
         test_hsl_routename(rel.tags, htags["shortName"],  htags["longName"])
         test_tag(rel.tags, "network", "HSL")
         # TODO: infer interval from timetable data
+        test_tag(rel.tags, "from")
+        test_tag(rel.tags, "to")
         test_tag(rel.tags, "interval")
         test_tag(rel.tags, "colour", hsl_modecolors[mode])
         test_tag(rel.tags, "color", badtag=True)
