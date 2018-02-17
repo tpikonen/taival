@@ -246,7 +246,7 @@ def test_hsl_routename(ts, lineref, longname):
     pat = "Ala-Malm|Ala-Souk|Ala-Tikk|Etelä-Kask|Etelä-Viin|Helsinki-Vant|Itä-Hakk|Kala-Matt|Kallio-Kuni|Koivu-Mank|Lill-Beng|Meri-Rast|Övre-Juss|Pohjois-Haag|Pohjois-Viin|S-Mark|Stor-Kvis|Stor-Rösi|Taka-Niip|Ukko-Pekk|Vanha-Mank|Vanha-Sten|Ylä-Souk|Yli-Finn|Yli-Juss"
     subf = lambda m: m.group().replace('-', '☺')
     stops = re.sub(pat, subf, longname).split('-')
-    stops = [s.replace('☺', '-') for s in stops]
+    stops = [s.replace('☺', '-').strip() for s in stops]
     name1 = lineref + " " + "-".join(stops)
     stops.reverse()
     name2 = lineref + " " + "-".join(stops)
