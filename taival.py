@@ -607,7 +607,7 @@ def compare(mode="bus"):
     commons = list(hsllines.intersection(osmlines))
     commons.sort(key=sortf)
     print("%d lines in both HSL and OSM." % len(commons))
-    print(" %s." % ", ".join(["%s (%s)" % \
+    print(" %s" % ", ".join(["%s (%s)" % \
         (x, ", ".join(["[%s %d]" % (osmdict[x][z], z+1) \
             for z in range(len(osmdict[x]))])) for x in commons] ))
     print("")
@@ -616,7 +616,7 @@ def compare(mode="bus"):
     commons2 = list(hsllines.intersection(osm2lines))
     commons2.sort(key=sortf)
     print("%d lines in both HSL and OSM with public_transport:version=2 tagging.\n" % len(commons2))
-    print(" %s." % ", ".join("[[#%s|%s]]" % (s, s) for s in commons2))
+    print(" %s" % ", ".join("[[#%s|%s]]" % (s, s) for s in commons2))
     print("")
     print("= Lines =")
     for line in commons2:
