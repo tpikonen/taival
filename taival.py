@@ -248,9 +248,9 @@ def test_hsl_routename(ts, lineref, longname):
     subf = lambda m: m.group().replace('-', '☺')
     stops = re.sub(pat, subf, longname).split('-')
     stops = [s.replace('☺', '-').strip() for s in stops]
-    name1 = lineref + " " + "-".join(stops)
+    name1 = lineref + " " + "–".join(stops) # Use en dash as a separator
     stops.reverse()
-    name2 = lineref + " " + "-".join(stops)
+    name2 = lineref + " " + "–".join(stops)
     tag = ts.get("name", "")
     if tag == "":
         print("Tag '''name''' not set (should be either '%s' or '%s').\n" \
