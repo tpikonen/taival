@@ -252,7 +252,10 @@ def test_hsl_routename(ts, lineref, longname):
     stops.reverse()
     name2 = lineref + " " + "-".join(stops)
     tag = ts.get("name", "")
-    if tag != name1 and tag != name2:
+    if tag == "":
+        print("Tag '''name''' not set (should be either '%s' or '%s').\n" \
+          % (name1, name2))
+    elif tag != name1 and tag != name2:
         print("Tag '''name''' has value '%s' (should be either '%s' or '%s').\n" \
           % (tag, name1, name2))
 
