@@ -82,10 +82,51 @@ def osm_ptv2_linerefs(mode="bus"):
 
 
 def osm_shape(rel):
-    """Get route shape from overpy relation."""
-    nodes = rel2nodes(rel)
+    """Get route shape from overpy relation. Return a ([[lat,lon]], gaps)
+    tuple, where gaps is True if the ways in route do not share endpoint
+    nodes. """
+    ways = [mem.resolve() for mem in rel.members
+        if isinstance(mem, overpy.RelationWay) and (mem.role is None)]
+    gaps = False
+    if not ways:
+        return ([], gaps)
+    elif len(ways) == 1:
+        latlon = [[float(n.lat), float(n.lon)] for n in ways[0].nodes]
+        return (latlon, gaps)
+    # Initialize nodes list with first way, correctly oriented
+    if (ways[0].nodes[-1] == ways[1].nodes[0]) \
+      or (ways[0].nodes[-1] == ways[1].nodes[-1]):
+        nodes = ways[0].nodes
+    elif (ways[0].nodes[0] == ways[1].nodes[0]) \
+      or (ways[0].nodes[0] == ways[1].nodes[-1]):
+        nodes = ways[0].nodes[::-1] # reverse
+    else:
+        #print("Gap between first two ways")
+        gaps = True
+        begmin = min(ndist2(ways[0].nodes[0], ways[1].nodes[0]),
+                     ndist2(ways[0].nodes[0], ways[1].nodes[-1]))
+        endmin = min(ndist2(ways[0].nodes[-1], ways[1].nodes[0]),
+                     ndist2(ways[0].nodes[-1], ways[1].nodes[-1]))
+        if endmin < begmin:
+            nodes = ways[0].nodes
+        else:
+            nodes = ways[0].nodes[::-1]
+    # Combine nodes from the rest of the ways to a single list,
+    # flip ways when needed
+    for w in ways[1:]:
+        if nodes[-1] == w.nodes[0]:
+            nodes.extend(w.nodes[1:])
+        elif nodes[-1] == w.nodes[-1]:
+            nodes.extend(w.nodes[::-1][1:])
+        else:
+            #print("Gap between ways")
+            gaps = True
+            if ndist2(nodes[-1], w.nodes[0]) < ndist2(nodes[-1], w.nodes[-1]):
+                nodes.extend(w.nodes)
+            else:
+                nodes.extend(w.nodes[::-1])
     latlon = [[float(n.lat), float(n.lon)] for n in nodes]
-    return latlon
+    return (latlon, gaps)
 
 def osm_member_coord(x):
     """Return (lat, lon) coordinates from a resolved relation member.
@@ -129,9 +170,8 @@ def osm_stops(rel):
 def route2gpx(rel, fname):
     """Write a gpx-file fname from an overpy relation containing
     an OSM public_transport:version=2 route."""
-    nodes = rel2nodes(rel)
+    latlon = osm_shape(rel)[0]
     waypts = osm_platforms(rel)
-    latlon = [[n.lat, n.lon] for n in nodes]
     write_gpx(latlon, fname, waypoints=waypts)
 
 
@@ -140,45 +180,6 @@ def ndist2(n1, n2):
     return (n1.lat - n2.lat)**2 + (n1.lon - n2.lon)**2
 
 
-def rel2nodes(rel):
-    """Write a gpx-file to fname from given overpy relation object."""
-    ways = [mem.resolve() for mem in rel.members
-        if isinstance(mem, overpy.RelationWay) and (mem.role is None)]
-    if not ways:
-        return []
-    elif len(ways) == 1:
-        return ways[0].nodes
-    # Initialize nodes list with first way, correctly oriented
-    if (ways[0].nodes[-1] == ways[1].nodes[0]) \
-      or (ways[0].nodes[-1] == ways[1].nodes[-1]):
-        nodes = ways[0].nodes
-    elif (ways[0].nodes[0] == ways[1].nodes[0]) \
-      or (ways[0].nodes[0] == ways[1].nodes[-1]):
-        nodes = ways[0].nodes[::-1] # reverse
-    else:
-        #print("Gap between first two ways")
-        begmin = min(ndist2(ways[0].nodes[0], ways[1].nodes[0]),
-                     ndist2(ways[0].nodes[0], ways[1].nodes[-1]))
-        endmin = min(ndist2(ways[0].nodes[-1], ways[1].nodes[0]),
-                     ndist2(ways[0].nodes[-1], ways[1].nodes[-1]))
-        if endmin < begmin:
-            nodes = ways[0].nodes
-        else:
-            nodes = ways[0].nodes[::-1]
-    # Combine nodes from the rest of the ways to a single list,
-    # flip ways when needed
-    for w in ways[1:]:
-        if nodes[-1] == w.nodes[0]:
-            nodes.extend(w.nodes[1:])
-        elif nodes[-1] == w.nodes[-1]:
-            nodes.extend(w.nodes[::-1][1:])
-        else:
-            #print("Gap between ways")
-            if ndist2(nodes[-1], w.nodes[0]) < ndist2(nodes[-1], w.nodes[-1]):
-                nodes.extend(w.nodes)
-            else:
-                nodes.extend(w.nodes[::-1])
-    return nodes
 
 
 def osm_rel(relno):
@@ -492,7 +493,8 @@ def compare_line(lineref, mode="bus"):
 #        (", ".join("[%s %s]" % (hsl_pattern2url(c), c) for c in codes)))
 
     # Mapping
-    osmshapes = [osm_shape(rel) for rel in rels]
+    # FIXME: Duplicate call to osm_shape() in route checking loop.
+    osmshapes = [osm_shape(rel)[0] for rel in rels]
     hslshapes = [hsl_shape(c)[1] for c in codes]
     (osm2hsl, hsl2osm) = match_shapes(osmshapes, hslshapes)
     id2hslindex = {}
@@ -542,8 +544,10 @@ def compare_line(lineref, mode="bus"):
         print("'''Shape:'''\n")
         if hsli is not None:
             tol = 30
-            ovl = test_shape_overlap(osm_shape(rel), hslshapes[hsli], \
-              tol=tol)
+            (shape, gaps) = osm_shape(rel)
+            if gaps:
+                print("Route has '''gaps'''!\n")
+            ovl = test_shape_overlap(shape, hslshapes[hsli], tol=tol)
             print("Route [%s %s] overlap (tolerance %d m) with HSL pattern [%s %s] is '''%2.1f %%'''.\n" \
               % (osm_relid2url(rel.id), rel.id, tol, hsl_pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
         else:
