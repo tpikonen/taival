@@ -520,15 +520,15 @@ def compare_line(lineref, mode="bus"):
           % (osm_relid2url(rel.id), rel.id, rel.tags.get("name", "")))
 
         print("'''Tags:'''\n")
-        # name-tag gets special treatment
+        # name-tag gets a special treatment
         test_hsl_routename(rel.tags, htags["shortName"],  htags["longName"])
         test_tag(rel.tags, "network", "HSL")
-        # TODO: infer interval from timetable data
         test_tag(rel.tags, "from")
         test_tag(rel.tags, "to")
-        test_tag(rel.tags, "interval")
         test_tag(rel.tags, "colour", hsl_modecolors[mode])
         test_tag(rel.tags, "color", badtag=True)
+        # TODO: infer interval from timetable data
+        #test_tag(rel.tags, "interval")
 
         hsli = id2hslindex[rel.id]
         #print("Matching HSL pattern %s.\n" % (codes[hsli]))
