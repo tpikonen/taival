@@ -1,8 +1,22 @@
 #!/usr/bin/env python3
 import sys, datetime, gpxpy.gpx, overpy, argparse, requests, json, difflib, re
+import digitransit
 from collections import defaultdict
 from math import radians, degrees, cos, sin, asin, sqrt
-from hsl import *
+
+hsl_modecolors = { "bus": "#007AC9",
+    "tram":     "#00985F",
+    "train":    "#8C4799",
+    "subway":   "#FF6319",
+    "ferry":    "#00B9E4",
+    "aerialway": None,
+    "monorail": None,
+    "trolleybus": None
+}
+hsl = digitransit.Digitransit("HSL", \
+        "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql", \
+        hsl_modecolors)
+
 
 def write_gpx(latlon, fname, waypoints=[]):
     gpx = gpxpy.gpx.GPX()
@@ -18,6 +32,17 @@ def write_gpx(latlon, fname, waypoints=[]):
     with open(fname, "w") as ff:
         ff.write(gpx.to_xml())
 
+def digitransit2gpx(dt, lineref, mode="bus"):
+    """Write gpx files for given lineref from digitransit API data."""
+    codes = dt.patterns(lineref, mode)
+    for c in codes:
+        (dirid, latlon) = dt.shape(c)
+        stops = dt.platforms(c)
+        fname = "%s_%s_%s_%d.gpx" % (lineref, dt.agency, c, dirid)
+        write_gpx(latlon, fname, waypoints=stops)
+        print(fname)
+    if not codes:
+        print("Line '%s' not found in %s." % lineref, dt.agency)
 
 # Haversine function nicked from: https://stackoverflow.com/questions/4913349/haversine-formula-in-python-bearing-and-distance-between-two-gps-points
 def haversine(p1, p2):
@@ -489,16 +514,16 @@ def compare_line(lineref, mode="bus"):
         print("Giving up.")
         return
 
-    htags = hsl_tags(lineref)
-    codes = hsl_patterns_after_date(lineref, \
+    htags = hsl.tags(lineref)
+    codes = hsl.patterns_after_date(lineref, \
                 datetime.date.today().strftime("%Y%m%d"), mode)
 #    print("Found HSL pattern codes: %s\n" %
-#        (", ".join("[%s %s]" % (hsl_pattern2url(c), c) for c in codes)))
+#        (", ".join("[%s %s]" % (hsl.pattern2url(c), c) for c in codes)))
 
     # Mapping
     # FIXME: Duplicate call to osm_shape() in route checking loop.
     osmshapes = [osm_shape(rel)[0] for rel in rels]
-    hslshapes = [hsl_shape(c)[1] for c in codes]
+    hslshapes = [hsl.shape(c)[1] for c in codes]
     (osm2hsl, hsl2osm) = match_shapes(osmshapes, hslshapes)
     id2hslindex = {}
     for i in range(len(relids)):
@@ -522,10 +547,12 @@ def compare_line(lineref, mode="bus"):
         print("'''Tags:'''\n")
         # name-tag gets a special treatment
         test_hsl_routename(rel.tags, htags["shortName"],  htags["longName"])
-        test_tag(rel.tags, "network", "HSL")
+        # FIXME: network != agency always
+        test_tag(rel.tags, "network", hsl.agency)
         test_tag(rel.tags, "from")
         test_tag(rel.tags, "to")
-        test_tag(rel.tags, "colour", hsl_modecolors[mode])
+        if hsl.modecolors[mode]:
+            test_tag(rel.tags, "colour", hsl.modecolors[mode])
         test_tag(rel.tags, "color", badtag=True)
         # TODO: infer interval from timetable data
         #test_tag(rel.tags, "interval")
@@ -552,7 +579,7 @@ def compare_line(lineref, mode="bus"):
                 print("Route has '''gaps'''!\n")
             ovl = test_shape_overlap(shape, hslshapes[hsli], tol=tol)
             print("Route [%s %s] overlap (tolerance %d m) with HSL pattern [%s %s] is '''%2.1f %%'''.\n" \
-              % (osm_relid2url(rel.id), rel.id, tol, hsl_pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
+              % (osm_relid2url(rel.id), rel.id, tol, hsl.pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
         else:
             print("Route %s overlap could not be calculated.\n" \
               % (rel.id))
@@ -563,7 +590,7 @@ def compare_line(lineref, mode="bus"):
         print("'''Platforms:'''\n")
         if hsli is not None:
             osmplatform = osm_platforms(rel)
-            hslplatform = hsl_platforms(codes[hsli])
+            hslplatform = hsl.platforms(codes[hsli])
             # FIXME: Should add something to the diff list for platforms
             #        missing from OSM.
             osmp = [p[2]+"\n" for p in osmplatform]
@@ -582,7 +609,7 @@ def compare(mode="bus"):
 # TODO: Add link to Subway validator at http://osmz.ru/subways/finland.html
 # for mode="subway"
     osmdict = osm_all_linerefs(mode)
-    hsldict = hsl_all_linerefs(mode)
+    hsldict = hsl.all_linerefs(mode)
     osmlines = set(osmdict)
     hsllines = set(hsldict)
     # TODO: Replace HSL with agency var everywhere.
@@ -629,7 +656,7 @@ def compare(mode="bus"):
 def sub_gpx(args):
     print("Processing line %s, mode '%s'" % (args.line, args.mode))
     osm2gpx(args.line, args.mode)
-    hsl2gpx(args.line, args.mode)
+    digitransit2gpx(hsl, args.line, args.mode)
 
 
 def sub_line(args):
