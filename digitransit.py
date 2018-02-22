@@ -4,7 +4,7 @@ import requests, json
 
 
 class Digitransit:
-    def __init__(self, agency, url, modecolors=None):
+    def __init__(self, agency, url, modecolors=None, peakhours=None):
         self.agency = agency
         self.url = url
         self.headers = {'Content-type': 'application/graphql'}
@@ -21,6 +21,12 @@ class Digitransit:
         }
         if modecolors is not None:
             self.modecolors = modecolors
+        for v in peakhours:
+            if not (v[0] < 24 and v[0] >= 0 \
+                and v[1] < 24 and v[1] >= 0 \
+                and v[0] < v[1]):
+                raise ValueError
+        self.peakhours = peakhours
         # Digitransit API modes: BUS, RAIL, TRAM, SUBWAY, FERRY
         self.mode_from_osm = {
             "train":    "RAIL",

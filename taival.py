@@ -13,9 +13,10 @@ hsl_modecolors = { "bus": "#007AC9",
     "monorail": None,
     "trolleybus": None
 }
+hsl_peakhours = [(7, 9), (15,18)]
 hsl = digitransit.Digitransit("HSL", \
         "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql", \
-        hsl_modecolors)
+        hsl_modecolors, hsl_peakhours)
 
 
 def write_gpx(latlon, fname, waypoints=[]):
