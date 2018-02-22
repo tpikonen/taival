@@ -156,3 +156,14 @@ class Digitransit:
         return refs
 
 
+    def arrivals_for_date(self, code, datestr):
+        """Return arrival times to the first stop of the given pattern at
+        a given date."""
+        query = '{pattern(id:"%s"){tripsForDate(serviceDate:"%s"){stoptimes{scheduledArrival}}}}' % (code, datestr)
+        r = requests.post(url=self.url, data=query, headers=self.headers)
+        r.raise_for_status()
+        r.encoding = 'utf-8'
+        alltimes = json.loads(r.text)["data"]["pattern"]["tripsForDate"]
+        times = [t["stoptimes"][0]["scheduledArrival"] for t in alltimes]
+        times.sort()
+        return times

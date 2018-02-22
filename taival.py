@@ -445,6 +445,66 @@ def test_shape_overlap(s1, s2, tol=10.0, return_list=False):
 # plot([s[0] for s in hs1], [s[1] for s in hs1], '*-')
 # scatter([s[0] for s in s1], [s[1] for s in s1], c=['g' if o == 1 else 'r' for o in ovl])
 
+
+def arrivals2intervals(arrivals, peakhours=None):
+    """Service intervals in minutes from daily arrivals to a stop given in
+    seconds since midnight. Returns a tuple of two intervals (normal, peak),
+    where 'peak' is not None only if peakhours is given."""
+    if peakhours:
+        peak = [(3600*h[0], 3600*h[1]) for h in peakhours]
+    else:
+        peak = None
+    inorms = []
+    ipeaks = []
+    for i in range(len(arrivals)-1):
+        tval = arrivals[i]
+        ival = arrivals[i+1] - arrivals[i]
+        if peak and any(tval >= h[0] and tval <= h[1] for h in peak):
+            ipeaks.append(ival)
+        else:
+            inorms.append(ival)
+    inorms.sort()
+    ipeaks.sort()
+    #print("inorms: %s" % (str(inorms)))
+    #print("ipeaks: %s" % (str(ipeaks)))
+    # Use median value in full minutes
+    int_norm = inorms[len(inorms)//2]//60 if inorms else None
+    int_peak = ipeaks[len(ipeaks)//2]//60 if ipeaks else None
+    return (int_norm, int_peak)
+
+
+def test_interval_tags(reltags, code):
+    """Determine interval tags for peak and normal hours for weekdays (monday),
+    saturday and sunday from arrival data. Compare to existing tags."""
+    # FIXME: How to handle days (e.g. sundays) with no arrivals?
+    # Get interval tags from API
+    today = datetime.date.today()
+    delta = (5 + 7 - today.weekday()) % 7 # Days to next saturday
+    tags = {}
+    daynames = ["saturday", "sunday", None] # weekdays (monday) is the default
+    for i in range(3):
+        day = (today + datetime.timedelta(days=delta+i)).strftime("%Y%m%d")
+        (norm, peak) = arrivals2intervals(hsl.arrivals_for_date(code, day), \
+          hsl.peakhours)
+        tagname = "interval" + (":" + daynames[i] if daynames[i] else "")
+        if norm:
+            tags[tagname] = norm
+            # Only add interval:peak tag if it's significantly smaller.
+            if peak and peak <= 0.8* norm:
+                tags[tagname + ":peak"] = peak
+    interval = tags.get("interval", 1)
+    # Remove weekend tags if they are not significantly different
+    if abs(tags.get("interval:saturday", 1) - interval)/interval < 0.2:
+        tags.pop("interval:saturday", 0)
+        tags.pop("interval:saturday:peak", 0)
+    if abs(tags.get("interval:sunday", 1) - interval)/interval < 0.2:
+        tags.pop("interval:sunday", 0)
+        tags.pop("interval:sunday:peak", 0)
+    # Compare to existing tags
+    for k in sorted(tags.keys()):
+        test_tag(reltags, k, tags[k])
+
+
 def match_shapes(shapes1, shapes2):
     """Determine a mapping from one set of shapes to another, based on
     geometry. Return permutation indices for both directions."""
@@ -544,6 +604,7 @@ def compare_line(lineref, mode="bus"):
     for rel in rels:
         print("'''Route [%s %s] %s'''\n" \
           % (osm_relid2url(rel.id), rel.id, rel.tags.get("name", "")))
+        hsli = id2hslindex[rel.id]
 
         print("'''Tags:'''\n")
         # name-tag gets a special treatment
@@ -555,10 +616,9 @@ def compare_line(lineref, mode="bus"):
         if hsl.modecolors[mode]:
             test_tag(rel.tags, "colour", hsl.modecolors[mode])
         test_tag(rel.tags, "color", badtag=True)
-        # TODO: infer interval from timetable data
-        #test_tag(rel.tags, "interval")
+        if hsli is not None:
+            test_interval_tags(rel.tags, codes[hsli])
 
-        hsli = id2hslindex[rel.id]
         #print("Matching HSL pattern %s.\n" % (codes[hsli]))
 
         if rel.tags.get("public_transport:version", "0") != "2":
