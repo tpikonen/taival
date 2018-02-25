@@ -154,6 +154,7 @@ def osm_shape(rel):
     latlon = [[float(n.lat), float(n.lon)] for n in nodes]
     return (latlon, gaps)
 
+
 def osm_member_coord(x):
     """Return (lat, lon) coordinates from a resolved relation member.
     Could be improved by calculating center of mass from ways etc."""
@@ -165,9 +166,10 @@ def osm_member_coord(x):
         m = x.members[0].resolve(resolve_missing=True)
         (lat, lon) = osm_member_coord(m)
     else:
-        lat = x.lat
-        lon = x.lon
+        lat = float(x.lat)
+        lon = float(x.lon)
     return (lat, lon)
+
 
 def osm_platforms(rel):
     retval = []
