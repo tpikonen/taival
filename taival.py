@@ -118,6 +118,20 @@ def osm_shape(rel):
         return ([], gaps)
     elif len(ways) == 1:
         latlon = [[float(n.lat), float(n.lon)] for n in ways[0].nodes]
+        # Determine correct orientation for a single way route
+        stops = [mem.resolve() for mem in rel.members if mem.role == "stop"]
+        if stops:
+            spos = osm_member_coord(stops[0])
+            if ldist2(spos, latlon[0]) > ldist2(spos, latlon[-1]):
+                latlon.reverse()
+            return (latlon, gaps)
+        plats = [mem.resolve() for mem in rel.members if mem.role == "platform"]
+        if plats:
+            ppos = osm_member_coord(plats[0])
+            if ldist2(ppos, latlon[0]) > ldist2(ppos, latlon[-1]):
+                latlon.reverse()
+            return (latlon, gaps)
+        # Give up and do not orient
         return (latlon, gaps)
     # Initialize nodes list with first way, correctly oriented
     if (ways[0].nodes[-1] == ways[1].nodes[0]) \
