@@ -4,7 +4,8 @@ import requests, json
 
 
 class Digitransit:
-    def __init__(self, agency, url, modecolors=None, peakhours=None):
+    def __init__(self, agency, url, modecolors=None, peakhours=None, \
+      nighthours=None):
         self.agency = agency
         self.url = url
         self.headers = {'Content-type': 'application/graphql'}
@@ -21,12 +22,8 @@ class Digitransit:
         }
         if modecolors is not None:
             self.modecolors = modecolors
-        for v in peakhours:
-            if not (v[0] < 24 and v[0] >= 0 \
-                and v[1] < 24 and v[1] >= 0 \
-                and v[0] < v[1]):
-                raise ValueError
-        self.peakhours = peakhours
+        self.peakhours = self.normalize_hours(peakhours)
+        self.nighthours = self.normalize_hours(nighthours)
         # Digitransit API modes: BUS, RAIL, TRAM, SUBWAY, FERRY
         self.mode_from_osm = {
             "train":    "RAIL",
@@ -40,6 +37,20 @@ class Digitransit:
         }
 
     # TODO: def apiquery(self, query):
+
+    @staticmethod
+    def normalize_hours(hours):
+        outhours = []
+        for v in hours:
+            if not (v[0] < 24 and v[0] >= 0 and v[1] <= 24 and v[1] >= 0):
+                raise ValueError
+            if v[0] > v[1]:
+                outhours.append((v[0], 24))
+                outhours.append((0, v[1]))
+            else:
+                outhours.append(v)
+        return outhours
+
 
     def tags(self, lineref):
         """Return a dict with tag-like info for a route with given lineref."""

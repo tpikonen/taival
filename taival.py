@@ -14,9 +14,12 @@ hsl_modecolors = { "bus": "#007AC9",
     "trolleybus": None
 }
 hsl_peakhours = [(7, 9), (15,18)]
+# HSL night services start at 23, but use midnight to avoid overlap with
+# normal services.
+hsl_nighthours = [(0, 5)]
 hsl = digitransit.Digitransit("HSL", \
         "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql", \
-        hsl_modecolors, hsl_peakhours)
+        hsl_modecolors, hsl_peakhours, hsl_nighthours)
 
 
 def write_gpx(latlon, fname, waypoints=[]):
@@ -462,37 +465,44 @@ def test_shape_overlap(s1, s2, tol=10.0, return_list=False):
 # scatter([s[0] for s in s1], [s[1] for s in s1], c=['g' if o == 1 else 'r' for o in ovl])
 
 
-def arrivals2intervals(arrivals, peakhours=None):
+def arrivals2intervals(arrivals, peakhours=None, nighthours=None):
     """Service intervals in minutes from daily arrivals to a stop given in
-    seconds since midnight. Returns a tuple of two intervals (normal, peak),
-    where 'peak' is not None only if peakhours is given."""
+    seconds since midnight. Returns a tuple of three sorted interval lists
+    (normal, peak, night). 'peak' or 'night' are None if peakhours or
+    nighthours are not given."""
     if peakhours:
         peak = [(3600*h[0], 3600*h[1]) for h in peakhours]
     else:
         peak = None
+    if nighthours:
+        night = [(3600*h[0], 3600*h[1]) for h in nighthours]
+    else:
+        night = None
     inorms = []
     ipeaks = []
+    inights = []
     for i in range(len(arrivals)-1):
-        tval = arrivals[i]
-        ival = arrivals[i+1] - arrivals[i]
+        ival = (arrivals[i+1] - arrivals[i]) // 60
+        # Correct for times > 24 * 60 * 60 s
+        tval = arrivals[i] if arrivals[i] < 24*3600 else arrivals[i] - 24*3600
         if peak and any(tval >= h[0] and tval <= h[1] for h in peak):
             ipeaks.append(ival)
+        elif night and any(tval >= h[0] and tval <= h[1] for h in night):
+            inights.append(ival)
         else:
             inorms.append(ival)
     inorms.sort()
     ipeaks.sort()
+    inights.sort()
     #print("inorms: %s" % (str(inorms)))
     #print("ipeaks: %s" % (str(ipeaks)))
-    # Use median value in full minutes
-    int_norm = inorms[len(inorms)//2]//60 if inorms else None
-    int_peak = ipeaks[len(ipeaks)//2]//60 if ipeaks else None
-    return (int_norm, int_peak)
+    #print("inights: %s" % (str(inights)))
+    return (inorms, ipeaks, inights)
 
 
 def test_interval_tags(reltags, code):
     """Determine interval tags for peak and normal hours for weekdays (monday),
     saturday and sunday from arrival data. Compare to existing tags."""
-    # FIXME: How to handle days (e.g. sundays) with no arrivals?
     # Get interval tags from API
     today = datetime.date.today()
     delta = (5 + 7 - today.weekday()) % 7 # Days to next saturday
@@ -500,22 +510,54 @@ def test_interval_tags(reltags, code):
     daynames = ["saturday", "sunday", None] # weekdays (monday) is the default
     for i in range(3):
         day = (today + datetime.timedelta(days=delta+i)).strftime("%Y%m%d")
-        (norm, peak) = arrivals2intervals(hsl.arrivals_for_date(code, day), \
-          hsl.peakhours)
+        (norm, peak, night) = arrivals2intervals(\
+            hsl.arrivals_for_date(code, day), hsl.peakhours, hsl.nighthours)
         tagname = "interval" + (":" + daynames[i] if daynames[i] else "")
-        if norm:
-            tags[tagname] = norm
-            # Only add interval:peak tag if it's significantly smaller.
-            if peak and peak <= 0.8* norm:
-                tags[tagname + ":peak"] = peak
-    interval = tags.get("interval", 1)
+        if (len(norm) + len(peak) + len(night)) == 0:
+            tags[tagname] = "no_service"
+        else:
+            # FIXME: Maybe combine norm and peak if peak is short enough?
+            # Only tag if there are more than 2 intervals, i.e.
+            # at least 3 arrivals in a period.
+            if len(norm) > 1:
+                med_norm = norm[len(norm)//2]
+                tags[tagname] = str(med_norm)
+                if len(peak) > 1:
+                    med_peak = peak[len(peak)//2]
+                    # Only add interval:peak tag if it's significantly smaller.
+                    if med_peak <= 0.8* med_norm:
+                        tags[tagname + ":peak"] = str(med_peak)
+            if len(night) > 1:
+                tags[tagname + ":night"] = str(night[len(night)//2])
+                if not norm:
+                    tags[tagname] = "no_service"
+    itmp = tags.get("interval", "1")
+    interval = int(itmp) if itmp.isdigit() else 1
+    itmp = tags.get("interval:saturday", "1")
+    isat = int(itmp) if itmp.isdigit() else 1
+    itmp = tags.get("interval:sunday", "1")
+    isun = int(itmp) if itmp.isdigit() else 1
+    itmp = tags.get("interval:night", "1")
+    inight = int(itmp) if itmp.isdigit() else 1
+    itmp = tags.get("interval:saturday:night", "1")
+    isatnight = int(itmp) if itmp.isdigit() else 1
+    itmp = tags.get("interval:sunday:night", "1")
+    isunnight = int(itmp) if itmp.isdigit() else 1
     # Remove weekend tags if they are not significantly different
-    if abs(tags.get("interval:saturday", 1) - interval)/interval < 0.2:
+    if abs(isat - interval)/interval < 0.2 \
+      and tags.get("interval:saturday", "") != "no_service":
         tags.pop("interval:saturday", 0)
         tags.pop("interval:saturday:peak", 0)
-    if abs(tags.get("interval:sunday", 1) - interval)/interval < 0.2:
+    if abs(isun - interval)/interval < 0.2 \
+      and tags.get("interval:sunday", "") != "no_service":
         tags.pop("interval:sunday", 0)
         tags.pop("interval:sunday:peak", 0)
+    if abs(isatnight - inight)/inight < 0.2 \
+      and tags.get("interval:saturday:night", "") != "no_service":
+        tags.pop("interval:saturday:night", 0)
+    if abs(isunnight - inight)/inight < 0.2 \
+      and tags.get("interval:sunday:night", "") != "no_service":
+        tags.pop("interval:sunday:night", 0)
     # Compare to existing tags
     for k in sorted(tags.keys()):
         test_tag(reltags, k, tags[k])
