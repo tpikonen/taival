@@ -308,8 +308,8 @@ def test_hsl_routename(ts, lineref, longname):
 def test_route_master(lineref, route_ids, mode="bus"):
     """Test if a route_master relation for lineref exists and contains the
     given route_ids."""
-    q = '[out:json][timeout:25];(%s);(rel(br)["type"="route_master"]);out body;' \
-      % (";".join(["rel(%d)" % x for x in route_ids]))
+    q = '[out:json][timeout:25];(%s);(rel(br)["type"="route_master"];);out body;' \
+      % ("".join(["rel(%d);" % x for x in route_ids]))
     rr = api.query(q)
     nr = len(rr.relations)
     print("'''Route master:'''")
