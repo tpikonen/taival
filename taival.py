@@ -328,12 +328,12 @@ def test_route_master(lineref, route_ids, mode="bus"):
     refs_not_in_routes = [r for r in memrefs if r not in route_ids]
     if refs_not_in_routes:
         print("route_master has extra members: %s\n" % (", ".join("[%s %s]" \
-          % (osm_relid2url(r.id), r.id) for r in refs_not_in_routes)))
+          % (osm_relid2url(r), r) for r in refs_not_in_routes)))
     routes_not_in_refs = [r for r in route_ids if r not in memrefs]
     if routes_not_in_refs:
         print("Found matching routes not in route_master: %s\n" \
           % (", ".join("[%s %s]" \
-            % (osm_relid2url(r.id), r.id) for r in routes_not_in_refs)))
+            % (osm_relid2url(r), r) for r in routes_not_in_refs)))
     tags = rr.relations[0].tags
     test_tag(tags, "route_master", mode)
     test_tag(tags, "ref", lineref)
