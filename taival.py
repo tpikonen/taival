@@ -78,6 +78,8 @@ def inv_haversine(d):
 # OSM data from Overpass API
 
 api = overpy.Overpass()
+api.retry_timeout=120
+api.max_retry_count=10
 area = """area[admin_level=7]["name"="Helsingin seutukunta"]["ref"="011"][boundary=administrative]->.hel;"""
 
 
