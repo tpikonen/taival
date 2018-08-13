@@ -90,7 +90,7 @@ def osm_relid2url(relid):
 def osm_all_linerefs(mode="bus"):
     """Return a lineref:[urllist] dict of all linerefs in Helsinki region.
     URLs points to the relations in OSM."""
-    q = '%s rel(area.hel)[route="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
+    q = '%s rel(area.hel)[type=route][route="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
     rr = api.query(q)
     refs = defaultdict(list)
     for r in rr.relations:
