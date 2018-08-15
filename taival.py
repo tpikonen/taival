@@ -36,6 +36,7 @@ def write_gpx(latlon, fname, waypoints=[]):
     with open(fname, "w") as ff:
         ff.write(gpx.to_xml())
 
+
 def digitransit2gpx(dt, lineref, mode="bus"):
     """Write gpx files for given lineref from digitransit API data."""
     codes = dt.patterns(lineref, mode)
@@ -47,6 +48,7 @@ def digitransit2gpx(dt, lineref, mode="bus"):
         print(fname)
     if not codes:
         print("Line '%s' not found in %s." % lineref, dt.agency)
+
 
 # Haversine function nicked from: https://stackoverflow.com/questions/4913349/haversine-formula-in-python-bearing-and-distance-between-two-gps-points
 def haversine(p1, p2):
@@ -214,6 +216,26 @@ def osm_stops(rel):
     return retval
 
 
+def osm_stops_by_refs(refs, mode="bus"):
+    """Return a list of OSM node ids which have one of the 'ref' tag values in
+    a given refs list."""
+    # FIXME: This does not really work with all the tagging conventions in OSM
+    mode2stoptag = {
+        "train" : None,
+        "subway" : None,
+        "tram" : '''"railway"="tram_stop"''',
+        "bus" : '''"highway"="bus_stop"''',
+        "ferry" : '''"amenity="ferry_terminal"'''
+    }
+    q = '%s node(area.hel)[%s][ref~"(%s)"];out tags;' \
+        % (area, mode2stoptag[mode], "|".join(str(r) for r in refs))
+    rr = api.query(q)
+    stopids = []
+    for ref in refs:
+        stopids.extend(n.id for n in rr.nodes if n.tags["ref"] == ref)
+    return stopids
+
+
 def route2gpx(rel, fname):
     """Write a gpx-file fname from an overpy relation containing
     an OSM public_transport:version=2 route."""
@@ -285,8 +307,7 @@ def test_tag(ts, key, value=None, badtag=False):
           % (key, tval, value))
 
 
-def test_hsl_routename(ts, lineref, longname):
-    """Do a special test for the route name-tag."""
+def hsl_longname2stops(longname):
     # First, replace hyphens in know stop names and split and replace back
     # to get a stop list from HSL longName.
     # Match list from gtfs stops.txt:
@@ -295,6 +316,12 @@ def test_hsl_routename(ts, lineref, longname):
     subf = lambda m: m.group().replace('-', '☺')
     stops = re.sub(pat, subf, longname).split('-')
     stops = [s.replace('☺', '-').strip() for s in stops]
+    return stops
+
+
+def test_hsl_routename(ts, lineref, longname):
+    """Do a special test for the route name-tag."""
+    stops = hsl_longname2stops(longname)
     name1 = lineref + " " + "–".join(stops) # Use en dash as a separator
     stops.reverse()
     name2 = lineref + " " + "–".join(stops)
@@ -782,6 +809,38 @@ def sub_gpx(args):
     digitransit2gpx(hsl, args.line, args.mode)
 
 
+def sub_osmxml(args):
+
+    def write_xml(fname, ids, htags, reverse=False):
+        with open(fname, "w") as ff:
+            for i in ids:
+                ff.write("    <member type='node' ref='%d' role='platform' />\n" % i)
+            stopnames = hsl_longname2stops(htags["longName"])
+            if reverse:
+                stopnames.reverse()
+            ff.write("    <tag k='name' v='%s' />\n" \
+                % (htags["shortName"] + " " + "–".join(stopnames)))
+            ff.write("    <tag k='ref' v='%s' />\n" % htags["shortName"])
+            ff.write("    <tag k='network' v='HSL' />\n")
+            ff.write("    <tag k='route' v='bus' />\n")
+            ff.write("    <tag k='type' v='route' />\n")
+            ff.write("    <tag k='public_transport:version' v='2' />\n")
+
+    print("Processing line %s, mode '%s'" % (args.line, args.mode))
+    codes = hsl.patterns(args.line, args.mode)
+    htags = hsl.tags(args.line)
+    for c in codes:
+        # reverse stops string if direction code is odd
+        reverse = (int(c.split(":")[2]) % 2) == 1
+        stops = [p[2] for p in hsl.platforms(c)]
+        fname = "%s_%s_%s.osm" % (args.line, hsl.agency, c)
+        ids = osm_stops_by_refs(stops, args.mode)
+        write_xml(fname, ids, htags, reverse)
+        print(fname)
+    if not codes:
+        print("Line '%s' not found in %s." % lineref, hsl.agency)
+
+
 def sub_line(args):
     line = args.line
     mode = args.mode
@@ -806,12 +865,21 @@ if __name__ == '__main__' and '__file__' in globals ():
     parser.add_argument('--version', '-v', action='version', version='0.0.1')
     parser.set_defaults(func=lambda _: print(parser.format_usage()))
     subparsers = parser.add_subparsers(help='sub-command -h for help')
+
     parser_gpx = subparsers.add_parser('gpx', help='Output gpx files for given line.')
     parser_gpx.add_argument('line', metavar='<lineid>',
         help='Line id to process.')
     parser_gpx.add_argument('mode', nargs='?', metavar='<mode>', default="bus",
         help='Transport mode: train, subway, tram, bus (default) or ferry')
     parser_gpx.set_defaults(func=sub_gpx)
+
+    parser_osmxml = subparsers.add_parser('osmxml', help='Output OSM XML snippets with stops and some tags for a given line.')
+    parser_osmxml.add_argument('line', metavar='<lineid>',
+        help='Line id to process.')
+    parser_osmxml.add_argument('mode', nargs='?', metavar='<mode>',
+        default="bus",
+        help='Transport mode: train, subway, tram, bus (default) or ferry')
+    parser_osmxml.set_defaults(func=sub_osmxml)
 
     parser_line = subparsers.add_parser('line', help='Create a report for a given line.')
     parser_line.add_argument('line', metavar='<lineid>',
@@ -822,7 +890,8 @@ if __name__ == '__main__' and '__file__' in globals ():
 
     parser_report = subparsers.add_parser('report',
         help='Report on all lines for a given mode.')
-    parser_report.add_argument('mode', nargs='?', metavar='<mode>', default="bus",
+    parser_report.add_argument('mode', nargs='?', metavar='<mode>',
+        default="bus",
         help='Transport mode: train, subway, tram, bus (default) or ferry')
     parser_report.set_defaults(func=sub_report)
 
