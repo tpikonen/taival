@@ -733,6 +733,7 @@ def compare(mode="bus"):
     hsldict = hsl.all_linerefs(mode)
     osmlines = set(osmdict)
     hsllines = set(hsldict)
+    hsl_taxibus = set(hsl.taxibus_linerefs(mode))
     # TODO: Replace HSL with agency var everywhere.
     agency = "HSL"
     agencyurl = "https://www.hsl.fi/"
@@ -742,7 +743,8 @@ def compare(mode="bus"):
     print("%d lines in HSL.\n" % len(hsllines))
     print("")
     sortf = lambda x: (len([c for c in x if c.isdigit()]), x)
-    osmextra = list(osmlines.difference(hsllines))
+    osmextra = osmlines.difference(hsllines)
+    osmextra = list(osmextra.difference(hsl_taxibus))
     osmextra.sort(key=sortf)
     print("%d lines in OSM but not in HSL:" % len(osmextra))
     print(" %s" % ", ".join(["%s (%s)" % \

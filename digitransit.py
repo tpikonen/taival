@@ -35,6 +35,7 @@ class Digitransit:
             "aerialway": None,
             "ferry":    "FERRY"
         }
+        self.taxibus_refs = None
 
     # TODO: def apiquery(self, query):
 
@@ -164,7 +165,17 @@ class Digitransit:
         #refs = [r["shortName"] for r in rts if r["type"] != 704]
         refs = {r["shortName"]:self.gtfsid2url(r["gtfsId"])
                 for r in rts if r["type"] != 704}
+        self.taxibus_refs = {r["shortName"]:self.gtfsid2url(r["gtfsId"])
+                for r in rts if r["type"] == 704}
         return refs
+
+
+    def taxibus_linerefs(self, mode="bus"):
+        if mode != "bus":
+            return {}
+        if self.taxibus_refs is None:
+            _ = self.all_linerefs() # Gets taxibus_refs as a side effect
+        return self.taxibus_refs
 
 
     def arrivals_for_date(self, code, datestr):
