@@ -115,6 +115,18 @@ def osm_ptv2_linerefs(mode="bus"):
     return refs
 
 
+def osm_old_linerefs(mode="bus"):
+    """Return a lineref:[urllist] dict of all was:route=<mode> routes in
+    Helsinki region. URLs points to the relations in OSM."""
+    q = '%s rel(area.hel)[type="was:route"]["was:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
+    rr = api.query(q)
+    refs = defaultdict(list)
+    for r in rr.relations:
+        if "ref" in r.tags.keys():
+            refs[r.tags["ref"]].append(osm_relid2url(r.id))
+    return refs
+
+
 def osm_shape(rel):
     """Get route shape from overpy relation. Return a ([[lat,lon]], gaps)
     tuple, where gaps is True if the ways in route do not share endpoint
@@ -798,6 +810,13 @@ def compare(mode="bus"):
     commons2.sort(key=sortf)
     print("%d lines in both HSL and OSM with public_transport:version=2 tagging.\n" % len(commons2))
     print(" %s" % ", ".join("[[#%s|%s]]" % (s, s) for s in commons2))
+    print("")
+    oldroutes = osm_old_linerefs(mode)
+    print("= Old lines (was:route=%s) =" % (mode))
+    print("%d routes with type 'was:route=%s'." % (len(oldroutes), mode))
+    print(" %s" % ", ".join(["%s (%s)" % \
+        (x, ", ".join(["[%s %d]" % (oldroutes[x][z], z+1) \
+            for z in range(len(oldroutes[x]))])) for x in oldroutes] ))
     print("")
     print("= Lines =")
     for line in commons2:
