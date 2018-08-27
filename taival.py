@@ -855,8 +855,8 @@ def sub_report(args):
     compare(mode=args.mode)
 
 
-def sub_fullreport(args):
-    pass
+#def sub_fullreport(args):
+#    pass
 
 
 # TODO: Add sub_stops(args) for creating a report on stops
@@ -899,9 +899,9 @@ if __name__ == '__main__' and '__file__' in globals ():
         help='Transport mode: train, subway, tram, bus (default) or ferry')
     parser_report.set_defaults(func=sub_report)
 
-    parser_fullreport = subparsers.add_parser('fullreport',
-        help='Create a report for all lines.')
-    parser_fullreport.set_defaults(func=sub_fullreport)
+#    parser_fullreport = subparsers.add_parser('fullreport',
+#        help='Create a report for all lines.')
+#    parser_fullreport.set_defaults(func=sub_fullreport)
 
     args = parser.parse_args()
     #sys.exit(1)
