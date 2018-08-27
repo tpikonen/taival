@@ -250,8 +250,6 @@ def ndist2(n1, n2):
     return (n1.lat - n2.lat)**2 + (n1.lon - n2.lon)**2
 
 
-
-
 def osm_rel(relno):
     rr = api.query("rel(id:%d);(._;>;>;);out body;" % (relno))
     return rr.relations[0]
@@ -266,7 +264,7 @@ def osm_rels_v2(lineref, mode="bus"):
 
 
 def osm_rels(lineref, mode="bus"):
-    """Get all bus lines corresponding to lineref in Helsinki area.
+    """Get all lines corresponding to lineref and mode in Helsinki area.
     """
     q = '%s rel(area.hel)[route="%s"][ref="%s"];(._;>;>;);out body;' % (area, mode, lineref)
     rr = api.query(q)
