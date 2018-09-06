@@ -830,11 +830,13 @@ def compare(mode="bus"):
                 for z in range(len(osmdict[x]))])) for x in lcommons ] ))
         print("")
     oldroutes = osm_old_linerefs(mode)
+    oldlines = list(oldroutes)
+    oldlines.sort(key=sortf)
     print("= Old lines (was:route=%s) =" % (mode))
     print("%d routes with type 'was:route=%s'." % (len(oldroutes), mode))
     print(" %s" % ", ".join(["%s (%s)" % \
         (x, ", ".join(["[%s %d]" % (oldroutes[x][z], z+1) \
-            for z in range(len(oldroutes[x]))])) for x in oldroutes] ))
+            for z in range(len(oldroutes[x]))])) for x in oldlines] ))
     print("")
     print("= Lines =")
     for line in commons2:
