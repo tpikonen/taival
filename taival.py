@@ -823,11 +823,20 @@ def compare(mode="bus"):
         print("")
         lcommons = list(hsl_locallines.intersection(osmlines))
         lcommons.sort(key=sortf)
-        print("%d bus routes in OSM with HSL local bus route number." \
+        print("%d normal bus routes in OSM with HSL local bus route number." \
             % (len(lcommons)))
         print(" %s" % ", ".join(["%s (%s)" % \
             (x, ", ".join(["[%s %d]" % (osmdict[x][z], z+1) \
                 for z in range(len(osmdict[x]))])) for x in lcommons ] ))
+        print("")
+        osm_minibusdict = osm_all_linerefs(mode="minibus")
+        osm_minibuslines = list(osm_minibusdict)
+        osm_minibuslines.sort(key=sortf)
+        print("%d route=minibus routes in OSM." % (len(osm_minibuslines)))
+        print(" %s" % ", ".join(["%s (%s)" % \
+            (x, ", ".join(["[%s %d]" % (osm_minibusdict[x][z], z+1) \
+                for z in range(len(osm_minibusdict[x]))])) \
+                for x in osm_minibuslines ] ))
         print("")
     oldroutes = osm_old_linerefs(mode)
     oldlines = list(oldroutes)
