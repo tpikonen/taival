@@ -772,9 +772,10 @@ def compare(mode="bus"):
 # for mode="subway"
     osmdict = osm_all_linerefs(mode)
     hsldict = hsl.all_linerefs(mode)
+    hsl_localbus = hsl.taxibus_linerefs(mode)
     osmlines = set(osmdict)
     hsllines = set(hsldict)
-    hsl_taxibus = set(hsl.taxibus_linerefs(mode))
+    hsl_locallines = set(hsl_localbus)
     # TODO: Replace HSL with agency var everywhere.
     agency = "HSL"
     agencyurl = "https://www.hsl.fi/"
@@ -785,7 +786,7 @@ def compare(mode="bus"):
     print("")
     sortf = lambda x: (len([c for c in x if c.isdigit()]), x)
     osmextra = osmlines.difference(hsllines)
-    osmextra = list(osmextra.difference(hsl_taxibus))
+    osmextra = list(osmextra.difference(hsl_locallines))
     osmextra.sort(key=sortf)
     print("%d lines in OSM but not in HSL:" % len(osmextra))
     print(" %s" % ", ".join(["%s (%s)" % \
@@ -811,6 +812,23 @@ def compare(mode="bus"):
     print("%d lines in both HSL and OSM with public_transport:version=2 tagging.\n" % len(commons2))
     print(" %s" % ", ".join("[[#%s|%s]]" % (s, s) for s in commons2))
     print("")
+    if mode == "bus":
+        lbuses = list(hsl_locallines)
+        lbuses.sort(key=sortf)
+        print("= Local bus lines =")
+        print("%d bus routes with GTFS type 704 (lähibussi) in HSL." \
+            % (len(lbuses)))
+        print(" %s" % ", ".join(["[%s %s]" % (hsl_localbus[x], x) \
+            for x in lbuses] ))
+        print("")
+        lcommons = list(hsl_locallines.intersection(osmlines))
+        lcommons.sort(key=sortf)
+        print("%d bus routes in OSM with HSL local bus route number." \
+            % (len(lcommons)))
+        print(" %s" % ", ".join(["%s (%s)" % \
+            (x, ", ".join(["[%s %d]" % (osmdict[x][z], z+1) \
+                for z in range(len(osmdict[x]))])) for x in lcommons ] ))
+        print("")
     oldroutes = osm_old_linerefs(mode)
     print("= Old lines (was:route=%s) =" % (mode))
     print("%d routes with type 'was:route=%s'." % (len(oldroutes), mode))
