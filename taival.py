@@ -115,10 +115,22 @@ def osm_ptv2_linerefs(mode="bus"):
     return refs
 
 
-def osm_old_linerefs(mode="bus"):
+def osm_was_routes(mode="bus"):
     """Return a lineref:[urllist] dict of all was:route=<mode> routes in
     Helsinki region. URLs points to the relations in OSM."""
     q = '%s rel(area.hel)[type="was:route"]["was:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
+    rr = api.query(q)
+    refs = defaultdict(list)
+    for r in rr.relations:
+        if "ref" in r.tags.keys():
+            refs[r.tags["ref"]].append(osm_relid2url(r.id))
+    return refs
+
+
+def osm_disused_routes(mode="bus"):
+    """Return a lineref:[urllist] dict of all disused:route=<mode> routes in
+    Helsinki region. URLs points to the relations in OSM."""
+    q = '%s rel(area.hel)[type="disused:route"]["disused:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
     rr = api.query(q)
     refs = defaultdict(list)
     for r in rr.relations:
@@ -838,14 +850,22 @@ def compare(mode="bus"):
                 for z in range(len(osm_minibusdict[x]))])) \
                 for x in osm_minibuslines ] ))
         print("")
-    oldroutes = osm_old_linerefs(mode)
-    oldlines = list(oldroutes)
-    oldlines.sort(key=sortf)
-    print("= Old lines (was:route=%s) =" % (mode))
-    print("%d routes with type 'was:route=%s'." % (len(oldroutes), mode))
+    print("= Old lines =")
+    wasroutes = osm_was_routes(mode)
+    waslines = list(wasroutes)
+    waslines.sort(key=sortf)
+    print("%d routes with type 'was:route=%s'." % (len(wasroutes), mode))
     print(" %s" % ", ".join(["%s (%s)" % \
-        (x, ", ".join(["[%s %d]" % (oldroutes[x][z], z+1) \
-            for z in range(len(oldroutes[x]))])) for x in oldlines] ))
+        (x, ", ".join(["[%s %d]" % (wasroutes[x][z], z+1) \
+            for z in range(len(wasroutes[x]))])) for x in waslines] ))
+    print("")
+    disroutes = osm_disused_routes(mode)
+    dislines = list(disroutes)
+    dislines.sort(key=sortf)
+    print("%d routes with type 'disused:route=%s'." % (len(disroutes), mode))
+    print(" %s" % ", ".join(["%s (%s)" % \
+        (x, ", ".join(["[%s %d]" % (disroutes[x][z], z+1) \
+            for z in range(len(disroutes[x]))])) for x in dislines] ))
     print("")
     print("= Lines =")
     for line in commons2:
