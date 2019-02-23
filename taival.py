@@ -881,7 +881,7 @@ def sub_gpx(args):
 
 def sub_osmxml(args):
 
-    def write_xml(fname, ids, htags, reverse=False):
+    def write_xml(fname, ids, htags, mode, reverse=False):
         with open(fname, "w") as ff:
             for i in ids:
                 ff.write("    <member type='node' ref='%d' role='platform' />\n" % i)
@@ -892,7 +892,7 @@ def sub_osmxml(args):
                 % (htags["shortName"] + " " + "–".join(stopnames)))
             ff.write("    <tag k='ref' v='%s' />\n" % htags["shortName"])
             ff.write("    <tag k='network' v='HSL' />\n")
-            ff.write("    <tag k='route' v='bus' />\n")
+            ff.write("    <tag k='route' v='%s' />\n" % mode)
             ff.write("    <tag k='type' v='route' />\n")
             ff.write("    <tag k='public_transport:version' v='2' />\n")
 
@@ -905,7 +905,7 @@ def sub_osmxml(args):
         stops = [p[2] for p in hsl.platforms(c)]
         fname = "%s_%s_%s.osm" % (args.line, hsl.agency, c)
         ids = osm_stops_by_refs(stops, args.mode)
-        write_xml(fname, ids, htags, reverse)
+        write_xml(fname, ids, htags, args.mode, reverse)
         print(fname)
     if not codes:
         print("Line '%s' not found in %s." % lineref, hsl.agency)
