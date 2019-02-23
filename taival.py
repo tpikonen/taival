@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys, datetime, gpxpy.gpx, overpy, argparse, requests, json, difflib, re
+import logging
 import digitransit
 from collections import defaultdict
 from math import radians, degrees, cos, sin, asin, sqrt
@@ -21,6 +22,12 @@ hsl = digitransit.Digitransit("HSL", \
         "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql", \
         hsl_modecolors, hsl_peakhours, hsl_nighthours)
 
+logging.basicConfig(level=logging.INFO,
+    format="[%(asctime)s.%(msecs)03d] %(levelname)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S")
+
+log = logging.getLogger(__name__)
+
 
 def write_gpx(latlon, fname, waypoints=[]):
     gpx = gpxpy.gpx.GPX()
@@ -39,9 +46,12 @@ def write_gpx(latlon, fname, waypoints=[]):
 
 def digitransit2gpx(dt, lineref, mode="bus"):
     """Write gpx files for given lineref from digitransit API data."""
+    log.debug("Calling dt.patters")
     codes = dt.patterns(lineref, mode)
     for c in codes:
+        log.debug("    Calling dt.shape")
         (dirid, latlon) = dt.shape(c)
+        log.debug("    Calling dt.platforms")
         stops = dt.platforms(c)
         fname = "%s_%s_%s_%d.gpx" % (lineref, dt.agency, c, dirid)
         write_gpx(latlon, fname, waypoints=stops)
@@ -264,7 +274,9 @@ def osm_stops_by_refs(refs, mode="bus"):
 def route2gpx(rel, fname):
     """Write a gpx-file fname from an overpy relation containing
     an OSM public_transport:version=2 route."""
+    log.debug("Calling osm_shape")
     latlon = osm_shape(rel)[0]
+    log.debug("Calling osm_platforms")
     waypts = osm_platforms(rel)
     write_gpx(latlon, fname, waypoints=waypts)
 
@@ -296,6 +308,7 @@ def osm_rels(lineref, mode="bus"):
 
 
 def osm2gpx(lineref, mode="bus"):
+    log.debug("Calling osm_rels_v2")
     rels = osm_rels_v2(lineref, mode)
     if len(rels) > 0:
         for i in range(len(rels)):
@@ -874,7 +887,7 @@ def compare(mode="bus"):
 
 
 def sub_gpx(args):
-    print("Processing line %s, mode '%s'" % (args.line, args.mode))
+    log.info("Processing line %s, mode '%s'" % (args.line, args.mode))
     osm2gpx(args.line, args.mode)
     digitransit2gpx(hsl, args.line, args.mode)
 
@@ -896,14 +909,19 @@ def sub_osmxml(args):
             ff.write("    <tag k='type' v='route' />\n")
             ff.write("    <tag k='public_transport:version' v='2' />\n")
 
-    print("Processing line %s, mode '%s'" % (args.line, args.mode))
+    log.info("Processing line %s, mode '%s'" % (args.line, args.mode))
+    log.debug("Calling hsl.patterns")
     codes = hsl.patterns(args.line, args.mode)
+    log.debug("Calling hsl.tags")
     htags = hsl.tags(args.line)
     for c in codes:
+        log.debug("Pattern code %s" % c)
         # reverse stops string if direction code is odd
         reverse = (int(c.split(":")[2]) % 2) == 1
+        log.debug("   Calling hsl.platforms")
         stops = [p[2] for p in hsl.platforms(c)]
         fname = "%s_%s_%s.osm" % (args.line, hsl.agency, c)
+        log.debug("   Calling osm_stops_by_refs")
         ids = osm_stops_by_refs(stops, args.mode)
         write_xml(fname, ids, htags, args.mode, reverse)
         print(fname)
