@@ -24,7 +24,7 @@ class Digitransit:
             self.modecolors = modecolors
         self.peakhours = self.normalize_hours(peakhours)
         self.nighthours = self.normalize_hours(nighthours)
-        # Digitransit API modes: BUS, RAIL, TRAM, SUBWAY, FERRY
+        # Digitransit API transportModes: BUS, RAIL, TRAM, SUBWAY, FERRY
         self.mode_from_osm = {
             "train":    "RAIL",
             "subway":   "SUBWAY",
@@ -68,7 +68,7 @@ class Digitransit:
 
     def patterns(self, lineid, mode="bus"):
         """Return a list of pattern codes corresponding to a given line ID."""
-        query = '{routes(name:"%s", modes:"%s") {\nshortName\npatterns {code}}}' \
+        query = '{routes(name:"%s", transportModes:[%s]) {\nshortName\npatterns {code}}}' \
             % (lineid, self.mode_from_osm[mode])
         r = requests.post(url=self.url, data=query, headers=self.headers)
         r.raise_for_status()
@@ -155,7 +155,7 @@ class Digitransit:
     def all_linerefs(self, mode="bus"):
         """Return a lineref:url dict of all linerefs for a given mode.
         URL points to a reittiopas page for the line."""
-        query = '{routes(modes:"%s"){shortName\ntype\ngtfsId\n}}' \
+        query = '{routes(transportModes:[%s]){shortName\ntype\ngtfsId\n}}' \
             %(self.mode_from_osm[mode])
         r = requests.post(url=self.url, data=query, headers=self.headers)
         r.raise_for_status()
