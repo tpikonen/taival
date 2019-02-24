@@ -673,6 +673,7 @@ def match_shapes(shapes1, shapes2):
 def compare_line(lineref, mode="bus"):
     """Report on differences between OSM and HSL data for a given line."""
     print("== %s ==" % lineref)
+    log.debug("Calling osm_rels")
     rels = osm_rels(lineref, mode)
     if(len(rels) < 1):
         print("No route relations found in OSM.")
@@ -686,10 +687,11 @@ def compare_line(lineref, mode="bus"):
                 or r.tags.get("network", "") == "Vantaa")]
     relids = [r.id for r in rels]
 
+    log.debug("Calling test_route_master")
     test_route_master(lineref, [r.id for r in rels], mode)
 
-#    print("Found OSM route ids: %s\n" % \
-#      (", ".join("[%s %d]" % (osm_relid2url(rid), rid) for rid in relids)))
+    log.debug("Found OSM route ids: %s\n" % \
+      (", ".join("[%s %d]" % (osm_relid2url(rid), rid) for rid in relids)))
     alsoids = [r for r in allrelids if r not in relids]
     if alsoids:
         print("Extra routes in OSM with the same ref: %s\n" % \
