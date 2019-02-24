@@ -118,6 +118,38 @@ class Digitransit:
         return valids
 
 
+    def patterns_longest_per_direction(self, lineid, mode="bus"):
+        """Return a list of pattern codes which have the most stops.
+        The list includes the longest pattern per direction, i.e. at least
+        two patterns. If two or more patterns have the same number of stops,
+        both are returned."""
+        query = '{routes(name:"%s", transportModes:[%s]) {\nshortName\npatterns {code\ndirectionId\nstops{id}}}}' \
+            % (lineid, self.mode_from_osm[mode])
+        r = requests.post(url=self.url, data=query, headers=self.headers)
+        r.raise_for_status()
+        r.encoding = 'utf-8'
+        rts = json.loads(r.text)["data"]["routes"]
+        pats = [r["patterns"] for r in rts if r["shortName"] == lineid]
+        pats = pats[0]
+
+        def longest(plist):
+            """Return a code list of the pattern(s) with longest stop list."""
+            out = []
+            maxlen = 0
+            for p in plist:
+                n = len(p["stops"])
+                if n > maxlen:
+                    out = [p["code"]]
+                    maxlen = n
+                elif n == maxlen:
+                    out.append(p["code"])
+            return out
+
+        code0 = longest([p for p in pats if p["directionId"] == 0])
+        code1 = longest([p for p in pats if p["directionId"] == 1])
+        return code0 + code1
+
+
     def shape(self, code):
         """
         Return geometry for given pattern code as tuple (directionId, latlon).
