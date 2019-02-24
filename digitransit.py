@@ -32,7 +32,7 @@ class Digitransit:
             "tram":     "TRAM",
             "bus":      "BUS",
             "trolleybus": None,
-            "aerialway": None,
+            "aerialway": "FUNICULAR",
             "ferry":    "FERRY"
         }
         self.taxibus_refs = None
