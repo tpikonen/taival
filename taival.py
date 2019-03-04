@@ -233,9 +233,9 @@ def osm_platforms(rel):
       for mem in rel.members if mem.role == "platform"]
     for x in platforms:
         (lat, lon) = osm_member_coord(x)
-        name = x.tags.get('ref', '<no ref>')
-        desc = x.tags.get('name', '<no name>')
-        retval.append([float(lat),float(lon),name,desc])
+        ref = x.tags.get('ref', '<no ref in OSM>')
+        name = x.tags.get('name', '<no name in OSM>')
+        retval.append([float(lat),float(lon),ref,name])
     return retval
 
 
