@@ -173,7 +173,7 @@ class Digitransit:
         r.raise_for_status()
         r.encoding = 'utf-8'
         stops = json.loads(r.text)["data"]["pattern"]["stops"]
-        return [[s["lat"], s["lon"], s["code"], s["name"]] for s in stops]
+        return [(s["lat"], s["lon"], s["code"], s["name"]) for s in stops]
 
 
     def gtfsid2url(self, gtfs):
