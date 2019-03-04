@@ -785,9 +785,11 @@ def compare_line(lineref, mode="bus"):
         print("'''Platforms:'''\n")
         if hsli is not None:
             osmplatform = osm_platforms(rel)
-            hslplatform = hsl.platforms(codes[hsli])
-            # FIXME: Should add something to the diff list for platforms
-            #        missing from OSM.
+            hslplatform = [ p if p[2] else (p[0],p[1],"<no ref in HSL>",p[3])
+                for p in hsl.platforms(codes[hsli]) ]
+            # FIXME: Add stop names to unified diffs after diffing, somehow
+            #osmp = [p[2]+" "+p[3]+"\n" for p in osmplatform]
+            #hslp = [str(p[2])+" "+str(p[3])+"\n" for p in hslplatform]
             osmp = [p[2]+"\n" for p in osmplatform]
             hslp = [p[2]+"\n" for p in hslplatform]
             diff = list(difflib.unified_diff(osmp, hslp, "OSM", "HSL"))
