@@ -670,7 +670,7 @@ def match_shapes(shapes1, shapes2):
 
 
 # FIXME: Use templates for output
-def compare_line(lineref, mode="bus"):
+def compare_line(lineref, mode="bus", interval_tags=False):
     """Report on differences between OSM and HSL data for a given line."""
     print("== %s ==" % lineref)
     log.debug("Calling osm_rels")
@@ -750,7 +750,7 @@ def compare_line(lineref, mode="bus"):
         if hsl.modecolors[mode]:
             test_tag(rel.tags, "colour", hsl.modecolors[mode])
         test_tag(rel.tags, "color", badtag=True)
-        if hsli is not None:
+        if hsli is not None and interval_tags:
             test_interval_tags(rel.tags, codes[hsli])
 
         #print("Matching HSL pattern %s.\n" % (codes[hsli]))
@@ -802,7 +802,7 @@ def compare_line(lineref, mode="bus"):
         print("")
 
 
-def compare(mode="bus"):
+def compare(mode="bus", interval_tags=False):
 # TODO: Add link to Subway validator at http://osmz.ru/subways/finland.html
 # for mode="subway"
     osmdict = osm_all_linerefs(mode)
@@ -892,7 +892,7 @@ def compare(mode="bus"):
     print("")
     print("= Lines =")
     for line in commons2:
-        compare_line(line, mode)
+        compare_line(line, mode, interval_tags)
         print("")
 
 
@@ -940,13 +940,11 @@ def sub_osmxml(args):
 
 
 def sub_line(args):
-    line = args.line
-    mode = args.mode
-    compare_line(line, mode)
+    compare_line(args.line, args.mode, args.interval_tags)
 
 
 def sub_report(args):
-    compare(mode=args.mode)
+    compare(mode=args.mode, interval_tags=args.interval_tags)
 
 
 #def sub_fullreport(args):
@@ -980,6 +978,8 @@ if __name__ == '__main__' and '__file__' in globals ():
     parser_osmxml.set_defaults(func=sub_osmxml)
 
     parser_line = subparsers.add_parser('line', help='Create a report for a given line.')
+    parser_line.add_argument('--interval-tags', '-i', action='store_true',
+        dest='interval_tags', help='Also report on "interval*" tags')
     parser_line.add_argument('line', metavar='<lineid>',
         help='Line id to report on.')
     parser_line.add_argument('mode', nargs='?', metavar='<mode>', default="bus",
@@ -988,6 +988,8 @@ if __name__ == '__main__' and '__file__' in globals ():
 
     parser_report = subparsers.add_parser('report',
         help='Report on all lines for a given mode.')
+    parser_report.add_argument('--interval-tags', '-i', action='store_true',
+        dest='interval_tags', help='Also report on "interval*" tags')
     parser_report.add_argument('mode', nargs='?', metavar='<mode>',
         default="bus",
         help='Transport mode: train, subway, tram, bus (default) or ferry')
