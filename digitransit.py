@@ -1,7 +1,8 @@
-import requests, json
+import requests, json, logging
 
 # Obtain data from digitransit.fi GraphQL API
 
+log = logging.getLogger(__name__)
 
 class Digitransit:
     def __init__(self, agency, url, modecolors=None, peakhours=None, \
