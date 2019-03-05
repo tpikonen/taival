@@ -67,26 +67,58 @@ class Digitransit:
         return []
 
 
-    def patterns(self, lineid, mode="bus"):
-        """Return a list of pattern codes corresponding to a given line ID."""
-        query = '{routes(name:"%s", transportModes:[%s]) {\nshortName\npatterns {code}}}' \
-            % (lineid, self.mode_from_osm[mode])
+    def patterns_full(self, lineid, mode="bus", extrafields=[]):
+        """Return a list of patterns with 'code' and 'directionId' fields
+        corresponding to a given line ID."""
+        query = '{routes(name:"%s", transportModes:[%s]) {\nshortName\npatterns {code%s}}}' \
+            % (lineid, self.mode_from_osm[mode],
+                ("\n" + "\n".join(extrafields)) if extrafields else "")
         r = requests.post(url=self.url, data=query, headers=self.headers)
         r.raise_for_status()
         r.encoding = 'utf-8'
         rts = json.loads(r.text)["data"]["routes"]
         pats = [r["patterns"] for r in rts if r["shortName"] == lineid]
-        if pats:
-            codes = [d["code"] for d in pats[0]]
-        else:
-            codes = []
-        return codes
+        out = pats[0] if pats and len(pats) > 0 else []
+        return out
+
+
+    def patterns(self, lineid, mode="bus"):
+        """Return a list of pattern codes corresponding to a given line ID."""
+        pats = self.patterns_full(lineid, mode)
+        return [d["code"] for d in pats]
+
+
+    @staticmethod
+    def _longest(plist):
+        """Return a list of the pattern code(s) with longest stop list."""
+        out = []
+        maxlen = 0
+        for p in plist:
+            n = len(p["stops"])
+            if n > maxlen:
+                out = [p]
+                maxlen = n
+            elif n == maxlen:
+                out.append(p)
+        return [p["code"] for p in out]
+
+
+    def patterns_longest_per_direction(self, lineid, mode="bus"):
+        """Return a list of pattern codes which have the most stops.
+        The list includes the longest pattern per direction, i.e. at least
+        two patterns. If two or more patterns have the same number of stops,
+        both are returned."""
+        pats = self.patterns_full(lineid, mode, ["directionId", "stops {id}"])
+
+        code0 = self._longest([p for p in pats if p["directionId"] == 0])
+        code1 = self._longest([p for p in pats if p["directionId"] == 1])
+        return code0 + code1
 
 
     def patterns_for_date(self, lineid, datestr, mode="bus"):
         """Get patterns which are valid (have trips) on a date given in
         YYYYMMDD format."""
-        codes = self.patterns(self, lineid, mode=mode)
+        codes = self.patterns(lineid, mode=mode)
         valids = []
         for c in codes:
             query = '{pattern(id:"%s"){tripsForDate(serviceDate:"%s"){id}}}' \
@@ -99,14 +131,15 @@ class Digitransit:
         return valids
 
 
-    def patterns_after_date(self, lineid, datestr, mode="bus"):
+    def patterns_after_date_full(self, lineid, datestr, mode="bus", extrafields=[]):
         """Get patterns which are valid (have trips) after a date given in
         YYYYMMDD format. Can be used to discard patterns which are not valid
         any more."""
-        codes = self.patterns(lineid, mode=mode)
+        pats = self.patterns_full(lineid, mode, extrafields)
         valids = []
         dateint = int(datestr)
-        for c in codes:
+        for p in pats:
+            c = p["code"]
             query = '{pattern(id:"%s"){trips{activeDates}}}' % (c)
             r = requests.post(url=self.url, data=query, headers=self.headers)
             r.encoding = 'utf-8'
@@ -114,40 +147,30 @@ class Digitransit:
             trips = json.loads(r.text)["data"]["pattern"]["trips"]
             for t in trips:
                if any(int(d) > dateint for d in t["activeDates"]):
-                    valids.append(c)
+                    valids.append(p)
                     break
         return valids
 
 
-    def patterns_longest_per_direction(self, lineid, mode="bus"):
-        """Return a list of pattern codes which have the most stops.
+    def patterns_after_date(self, lineid, datestr, mode="bus"):
+        """Get pattern codes which are valid (have trips) after a date given in
+        YYYYMMDD format. Can be used to discard patterns which are not valid
+        any more."""
+        pats = self.patters_after_date_full(lineid, datestr, mode)
+        return [p["code"] for p in pats]
+
+
+    def patterns_longest_after_date(self, lineid, datestr, mode="bus"):
+        """Return a list of pattern codes which have the most stops and which
+        are valid after a given date.
         The list includes the longest pattern per direction, i.e. at least
         two patterns. If two or more patterns have the same number of stops,
         both are returned."""
-        query = '{routes(name:"%s", transportModes:[%s]) {\nshortName\npatterns {code\ndirectionId\nstops{id}}}}' \
-            % (lineid, self.mode_from_osm[mode])
-        r = requests.post(url=self.url, data=query, headers=self.headers)
-        r.raise_for_status()
-        r.encoding = 'utf-8'
-        rts = json.loads(r.text)["data"]["routes"]
-        pats = [r["patterns"] for r in rts if r["shortName"] == lineid]
-        pats = pats[0]
+        pats = self.patterns_after_date_full(lineid, datestr, mode,
+          ["directionId", "stops {id}"])
 
-        def longest(plist):
-            """Return a code list of the pattern(s) with longest stop list."""
-            out = []
-            maxlen = 0
-            for p in plist:
-                n = len(p["stops"])
-                if n > maxlen:
-                    out = [p["code"]]
-                    maxlen = n
-                elif n == maxlen:
-                    out.append(p["code"])
-            return out
-
-        code0 = longest([p for p in pats if p["directionId"] == 0])
-        code1 = longest([p for p in pats if p["directionId"] == 1])
+        code0 = self._longest([p for p in pats if p["directionId"] == 0])
+        code1 = self._longest([p for p in pats if p["directionId"] == 1])
         return code0 + code1
 
 
