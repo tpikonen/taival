@@ -706,7 +706,9 @@ def compare_line(lineref, mode="bus", interval_tags=False):
     htags = hsl.tags(lineref)
 #    codes = hsl.codes_after_date(lineref, \
 #                datetime.date.today().strftime("%Y%m%d"), mode)
-    codes = hsl.codes_longest_per_direction(lineref, mode)
+#    codes = hsl.codes_longest_per_direction(lineref, mode)
+    codes = hsl.codes_longest_after_date(lineref, \
+                datetime.date.today().strftime("%Y%m%d"), mode)
     log.debug("Found HSL pattern codes: %s\n" %
         (", ".join("[%s %s]" % (hsl.pattern2url(c), c) for c in codes)))
 #    # Use just the ':01' route variant
