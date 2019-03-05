@@ -67,7 +67,7 @@ class Digitransit:
         return []
 
 
-    def patterns_full(self, lineid, mode="bus", extrafields=[]):
+    def patterns(self, lineid, mode="bus", extrafields=[]):
         """Return a list of patterns with 'code' and 'directionId' fields
         corresponding to a given line ID."""
         query = '{routes(name:"%s", transportModes:[%s]) {\nshortName\npatterns {code%s}}}' \
@@ -82,9 +82,9 @@ class Digitransit:
         return out
 
 
-    def patterns(self, lineid, mode="bus"):
+    def codes(self, lineid, mode="bus"):
         """Return a list of pattern codes corresponding to a given line ID."""
-        pats = self.patterns_full(lineid, mode)
+        pats = self.patterns(lineid, mode)
         return [d["code"] for d in pats]
 
 
@@ -103,19 +103,19 @@ class Digitransit:
         return [p["code"] for p in out]
 
 
-    def patterns_longest_per_direction(self, lineid, mode="bus"):
+    def codes_longest_per_direction(self, lineid, mode="bus"):
         """Return a list of pattern codes which have the most stops.
         The list includes the longest pattern per direction, i.e. at least
         two patterns. If two or more patterns have the same number of stops,
         both are returned."""
-        pats = self.patterns_full(lineid, mode, ["directionId", "stops {id}"])
+        pats = self.patterns(lineid, mode, ["directionId", "stops {id}"])
 
         code0 = self._longest([p for p in pats if p["directionId"] == 0])
         code1 = self._longest([p for p in pats if p["directionId"] == 1])
         return code0 + code1
 
 
-    def patterns_for_date(self, lineid, datestr, mode="bus"):
+    def codes_for_date(self, lineid, datestr, mode="bus"):
         """Get patterns which are valid (have trips) on a date given in
         YYYYMMDD format."""
         codes = self.patterns(lineid, mode=mode)
@@ -131,11 +131,11 @@ class Digitransit:
         return valids
 
 
-    def patterns_after_date_full(self, lineid, datestr, mode="bus", extrafields=[]):
+    def patterns_after_date(self, lineid, datestr, mode="bus", extrafields=[]):
         """Get patterns which are valid (have trips) after a date given in
         YYYYMMDD format. Can be used to discard patterns which are not valid
         any more."""
-        pats = self.patterns_full(lineid, mode, extrafields)
+        pats = self.patterns(lineid, mode, extrafields)
         valids = []
         dateint = int(datestr)
         for p in pats:
@@ -152,21 +152,21 @@ class Digitransit:
         return valids
 
 
-    def patterns_after_date(self, lineid, datestr, mode="bus"):
+    def codes_after_date(self, lineid, datestr, mode="bus"):
         """Get pattern codes which are valid (have trips) after a date given in
         YYYYMMDD format. Can be used to discard patterns which are not valid
         any more."""
-        pats = self.patters_after_date_full(lineid, datestr, mode)
+        pats = self.patterns_after_date(lineid, datestr, mode)
         return [p["code"] for p in pats]
 
 
-    def patterns_longest_after_date(self, lineid, datestr, mode="bus"):
+    def codes_longest_after_date(self, lineid, datestr, mode="bus"):
         """Return a list of pattern codes which have the most stops and which
         are valid after a given date.
         The list includes the longest pattern per direction, i.e. at least
         two patterns. If two or more patterns have the same number of stops,
         both are returned."""
-        pats = self.patterns_after_date_full(lineid, datestr, mode,
+        pats = self.patterns_after_date(lineid, datestr, mode,
           ["directionId", "stops {id}"])
 
         code0 = self._longest([p for p in pats if p["directionId"] == 0])
