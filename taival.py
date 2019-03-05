@@ -46,8 +46,8 @@ def write_gpx(latlon, fname, waypoints=[]):
 
 def digitransit2gpx(dt, lineref, mode="bus"):
     """Write gpx files for given lineref from digitransit API data."""
-    log.debug("Calling dt.patters")
-    codes = dt.patterns(lineref, mode)
+    log.debug("Calling dt.codes")
+    codes = dt.codes(lineref, mode)
     for c in codes:
         log.debug("    Calling dt.shape")
         (dirid, latlon) = dt.shape(c)
@@ -704,9 +704,9 @@ def compare_line(lineref, mode="bus", interval_tags=False):
         return
 
     htags = hsl.tags(lineref)
-#    codes = hsl.patterns_after_date(lineref, \
+#    codes = hsl.codes_after_date(lineref, \
 #                datetime.date.today().strftime("%Y%m%d"), mode)
-    codes = hsl.patterns_longest_per_direction(lineref, mode)
+    codes = hsl.codes_longest_per_direction(lineref, mode)
     log.debug("Found HSL pattern codes: %s\n" %
         (", ".join("[%s %s]" % (hsl.pattern2url(c), c) for c in codes)))
 #    # Use just the ':01' route variant
@@ -920,8 +920,8 @@ def sub_osmxml(args):
             ff.write("    <tag k='public_transport:version' v='2' />\n")
 
     log.info("Processing line %s, mode '%s'" % (args.line, args.mode))
-    log.debug("Calling hsl.patterns")
-    codes = hsl.patterns(args.line, args.mode)
+    log.debug("Calling hsl.codes")
+    codes = hsl.codes(args.line, args.mode)
     log.debug("Calling hsl.tags")
     htags = hsl.tags(args.line)
     for c in codes:
