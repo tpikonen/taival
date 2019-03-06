@@ -373,45 +373,6 @@ def test_hsl_routename(ts, lineref, longname):
           % (tag, name1, name2))
 
 
-def test_route_master(lineref, route_ids, mode="bus"):
-    """Test if a route_master relation for lineref exists and contains the
-    given route_ids."""
-    q = '[out:json][timeout:60];(%s);(rel(br)["type"="route_master"];);out body;' \
-      % ("".join(["rel(%d);" % x for x in route_ids]))
-    rr = api.query(q)
-    nr = len(rr.relations)
-    print("'''Route master:'''")
-    if nr < 1:
-        print("No route_master relation found.\n")
-        return
-    elif nr == 1:
-        rel = rr.relations[0]
-        print("Relation: [%s %s]\n" % (osm_relid2url(rel.id), rel.id))
-    elif nr > 1:
-        print("More than one route_master relations found: %s\n" \
-          % (", ".join("[%s %s]" \
-            % (osm_relid2url(r.id), r.id) for r in rr.relations)))
-        return
-    memrefs = [m.ref for m in rel.members]
-    refs_not_in_routes = [r for r in memrefs if r not in route_ids]
-    if refs_not_in_routes:
-        print("route_master has extra members: %s\n" % (", ".join("[%s %s]" \
-          % (osm_relid2url(r), r) for r in refs_not_in_routes)))
-    routes_not_in_refs = [r for r in route_ids if r not in memrefs]
-    if routes_not_in_refs:
-        print("Found matching routes not in route_master: %s\n" \
-          % (", ".join("[%s %s]" \
-            % (osm_relid2url(r), r) for r in routes_not_in_refs)))
-    tags = rr.relations[0].tags
-    test_tag(tags, "route_master", mode)
-    test_tag(tags, "ref", lineref)
-    test_tag(tags, "name")
-    test_tag(tags, "network", "HSL")
-    #test_tag(tags, "operator")
-
-    print("")
-
-
 def test_osm_shapes_have_v1_roles(rels):
     """Return True any of the relations in rels contain members with
     'forward' or 'backward' roles."""
@@ -669,30 +630,73 @@ def match_shapes(shapes1, shapes2):
         return (m1to2, m2to1)
 
 
+def collect_route_master(ld, route_ids):
+    """Get route master relation from Overpass"""
+    lineref = ld["lineref"]
+    mode = ld["mode"]
+    q = '[out:json][timeout:60];(%s);(rel(br)["type"="route_master"];);out body;' \
+      % ("".join(["rel(%d);" % x for x in route_ids]))
+    rr = api.query(q)
+    ld["rm_rels"] = rr.relations
+    return ld
+
+
+def print_route_master(ld):
+    """Test if a route_master relation for lineref exists and contains the
+    given route_ids."""
+    lineref = ld["lineref"]
+    mode = ld["mode"]
+    rm_rels = ld["rm_rels"]
+    route_ids = [r.id for r in ld["rels"]]
+
+    nr = len(rm_rels)
+    print("'''Route master:'''")
+    if nr < 1:
+        print("No route_master relation found.\n")
+        return
+    elif nr > 1:
+        print("More than one route_master relations found: %s\n" \
+          % (", ".join("[%s %s]" \
+            % (osm_relid2url(r.id), r.id) for r in rm_rels)))
+        return
+    elif nr == 1:
+        rel = rm_rels[0]
+        print("Relation: [%s %s]\n" % (osm_relid2url(rel.id), rel.id))
+    memrefs = [m.ref for m in rel.members]
+    refs_not_in_routes = [r for r in memrefs if r not in route_ids]
+    if refs_not_in_routes:
+        print("route_master has extra members: %s\n" % (", ".join("[%s %s]" \
+          % (osm_relid2url(r), r) for r in refs_not_in_routes)))
+    routes_not_in_refs = [r for r in route_ids if r not in memrefs]
+    if routes_not_in_refs:
+        print("Found matching routes not in route_master: %s\n" \
+          % (", ".join("[%s %s]" \
+            % (osm_relid2url(r), r) for r in routes_not_in_refs)))
+    tags = rel.tags
+    test_tag(tags, "route_master", mode)
+    test_tag(tags, "ref", lineref)
+    test_tag(tags, "name")
+    test_tag(tags, "network", "HSL")
+    #test_tag(tags, "operator")
+
+    print("")
+
+
 # FIXME: Use templates for output
-def compare_line(lineref, mode="bus", interval_tags=False):
-    """Report on differences between OSM and HSL data for a given line."""
+def print_linedict(ld):
+    """Print a info from a line dict from collect_line()"""
+    lineref = ld["lineref"]
+    mode = ld["mode"]
     print("== %s ==" % lineref)
-    log.debug("Calling osm_rels")
-    rels = osm_rels(lineref, mode)
+    rels = ld["rels"]
     if(len(rels) < 1):
         print("No route relations found in OSM.")
         return
-    allrelids = [r.id for r in rels]
-    rels = [r for r in rels \
-            if (r.tags.get("public_transport:version", "") == "2") and
-                (r.tags.get("network", "") == "HSL"
-                or r.tags.get("network", "") == "Helsinki"
-                or r.tags.get("network", "") == "Espoo"
-                or r.tags.get("network", "") == "Vantaa")]
     relids = [r.id for r in rels]
 
-    log.debug("Calling test_route_master")
-    test_route_master(lineref, [r.id for r in rels], mode)
+    print_route_master(ld)
 
-    log.debug("Found OSM route ids: %s\n" % \
-      (", ".join("[%s %d]" % (osm_relid2url(rid), rid) for rid in relids)))
-    alsoids = [r for r in allrelids if r not in relids]
+    alsoids = ld["alsoids"]
     if alsoids:
         print("Extra routes in OSM with the same ref: %s\n" % \
           (", ".join("[%s %d]" % (osm_relid2url(r), r) for r in alsoids)))
@@ -702,29 +706,9 @@ def compare_line(lineref, mode="bus", interval_tags=False):
             % (osm_relid2url(rid), rid) for rid in relids)))
         print("Giving up.")
         return
-
-    htags = hsl.tags(lineref)
-#    codes = hsl.codes_after_date(lineref, \
-#                datetime.date.today().strftime("%Y%m%d"), mode)
-#    codes = hsl.codes_longest_per_direction(lineref, mode)
-    codes = hsl.codes_longest_after_date(lineref, \
-                datetime.date.today().strftime("%Y%m%d"), mode)
-    log.debug("Found HSL pattern codes: %s\n" %
-        (", ".join("[%s %s]" % (hsl.pattern2url(c), c) for c in codes)))
-#    # Use just the ':01' route variant
-#    cfilt = [c for c in codes if (len(c) - c.rfind(":01")) == 3]
-#    if len(cfilt) >= len(rels):
-#        codes = cfilt
-#        log.debug("Using just first route variants: %s\n" % (str(codes)))
-
-    # Mapping
-    # FIXME: Duplicate call to osm_shape() in route checking loop.
-    osmshapes = [osm_shape(rel)[0] for rel in rels]
-    hslshapes = [hsl.shape(c)[1] for c in codes]
-    (osm2hsl, hsl2osm) = match_shapes(osmshapes, hslshapes)
-    id2hslindex = {}
-    for i in range(len(relids)):
-        id2hslindex[relids[i]] = osm2hsl[i]
+    codes = ld["codes"]
+    osm2hsl = ld["osm2hsl"]
+    hsl2osm = ld["hsl2osm"]
     if len(codes) != 2:
         print("%d route pattern(s) in HSL data, matching may be wrong.\n" \
           % (len(codes)))
@@ -736,7 +720,10 @@ def compare_line(lineref, mode="bus", interval_tags=False):
               (codes[i], "None" if hsl2osm[i] is None else relids[hsl2osm[i]]))
     print("")
 
-# Main route checking loop
+    id2hslindex = ld["id2hslindex"]
+    htags = ld["htags"]
+    interval_tags = ld["interval_tags"]
+    hslshapes = ld["hslshapes"]
     for rel in rels:
         print("'''Route [%s %s] %s'''\n" \
           % (osm_relid2url(rel.id), rel.id, rel.tags.get("name", "")))
@@ -754,8 +741,6 @@ def compare_line(lineref, mode="bus", interval_tags=False):
         test_tag(rel.tags, "color", badtag=True)
         if hsli is not None and interval_tags:
             test_interval_tags(rel.tags, codes[hsli])
-
-        #print("Matching HSL pattern %s.\n" % (codes[hsli]))
 
         if rel.tags.get("public_transport:version", "0") != "2":
             print("Tag public_transport:version=2 not set in OSM route %s. Giving up." % (rel.id))
@@ -783,12 +768,13 @@ def compare_line(lineref, mode="bus", interval_tags=False):
 
         test_stop_positions(rel)
 
+        hsli = id2hslindex[rel.id]
         # Platforms
         print("'''Platforms:'''\n")
+        hslplatforms = ld["hslplatforms"]
         if hsli is not None:
             osmplatform = osm_platforms(rel)
-            hslplatform = [ p if p[2] else (p[0],p[1],"<no ref in HSL>",p[3])
-                for p in hsl.platforms(codes[hsli]) ]
+            hslplatform = hslplatforms[hsli]
             # FIXME: Add stop names to unified diffs after diffing, somehow
             #osmp = [p[2]+" "+p[3]+"\n" for p in osmplatform]
             #hslp = [str(p[2])+" "+str(p[3])+"\n" for p in hslplatform]
@@ -802,6 +788,76 @@ def compare_line(lineref, mode="bus", interval_tags=False):
         else:
             print("Platforms could not be compared.")
         print("")
+
+
+def collect_line(lineref, mode="bus", interval_tags=False):
+    """Report on differences between OSM and HSL data for a given line."""
+    ld = {} # line dict
+    ld["lineref"] = lineref
+    ld["mode"] = mode
+    ld["interval_tags"] = interval_tags
+    log.debug("Calling osm_rels")
+    rels = osm_rels(lineref, mode)
+    if(len(rels) < 1):
+        log.debug("No route relations found in OSM.")
+        return ld
+    allrelids = [r.id for r in rels]
+    rels = [r for r in rels \
+            if (r.tags.get("public_transport:version", "") == "2") and
+                (r.tags.get("network", "") == "HSL"
+                or r.tags.get("network", "") == "Helsinki"
+                or r.tags.get("network", "") == "Espoo"
+                or r.tags.get("network", "") == "Vantaa")]
+    relids = [r.id for r in rels]
+    ld["rels"] = rels
+
+    # TODO: convert
+    log.debug("Calling collect_route_master")
+    collect_route_master(ld, relids)
+
+    log.debug("Found OSM route ids: %s\n" % \
+      (", ".join("[%s %d]" % (osm_relid2url(rid), rid) for rid in relids)))
+    alsoids = [r for r in allrelids if r not in relids]
+    ld["alsoids"] = alsoids
+
+    htags = hsl.tags(lineref)
+    ld["htags"] = htags
+#    codes = hsl.codes_after_date(lineref, \
+#                datetime.date.today().strftime("%Y%m%d"), mode)
+#    codes = hsl.codes_longest_per_direction(lineref, mode)
+    codes = hsl.codes_longest_after_date(lineref, \
+                datetime.date.today().strftime("%Y%m%d"), mode)
+    ld["codes"] = codes
+    log.debug("Found HSL pattern codes: %s\n" %
+        (", ".join("[%s %s]" % (hsl.pattern2url(c), c) for c in codes)))
+#    # Use just the ':01' route variant
+#    cfilt = [c for c in codes if (len(c) - c.rfind(":01")) == 3]
+#    if len(cfilt) >= len(rels):
+#        codes = cfilt
+#        log.debug("Using just first route variants: %s\n" % (str(codes)))
+
+    # Mapping
+    # FIXME: Duplicate call to osm_shape() in route checking loop.
+    osmshapes = [osm_shape(rel)[0] for rel in rels]
+    hslshapes = [hsl.shape(c)[1] for c in codes]
+    (osm2hsl, hsl2osm) = match_shapes(osmshapes, hslshapes)
+    id2hslindex = {}
+    for i in range(len(relids)):
+        id2hslindex[relids[i]] = osm2hsl[i]
+    ld["osmshapes"] = osmshapes
+    ld["hslshapes"] = hslshapes
+    ld["id2hslindex"] = id2hslindex
+    ld["osm2hsl"] = osm2hsl
+    ld["hsl2osm"] = hsl2osm
+    # Fill hslplatforms only for pattern codes which match OSM route
+    hslplatforms = [None]*len(codes)
+    for rel in rels:
+        hsli = id2hslindex[rel.id]
+        if hsli is not None:
+            hslplatforms[hsli] = [ p if p[2] else (p[0],p[1],"<no ref in HSL>",p[3])
+                for p in hsl.platforms(codes[hsli]) ]
+    ld["hslplatforms"] = hslplatforms
+    return ld
 
 
 def compare(mode="bus", interval_tags=False):
@@ -894,7 +950,8 @@ def compare(mode="bus", interval_tags=False):
     print("")
     print("= Lines =")
     for line in commons2:
-        compare_line(line, mode, interval_tags)
+        ld = collect_line(line, mode, interval_tags)
+        print_linedict(ld)
         print("")
 
 
@@ -942,7 +999,7 @@ def sub_osmxml(args):
 
 
 def sub_line(args):
-    compare_line(args.line, args.mode, args.interval_tags)
+    print_linedict(collect_line(args.line, args.mode, args.interval_tags))
 
 
 def sub_report(args):
