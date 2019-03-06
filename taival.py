@@ -57,7 +57,7 @@ def digitransit2gpx(dt, lineref, mode="bus"):
         write_gpx(latlon, fname, waypoints=stops)
         print(fname)
     if not codes:
-        print("Line '%s' not found in %s." % lineref, dt.agency)
+        log.error("Line '%s' not found in %s." % lineref, dt.agency)
 
 
 # Haversine function nicked from: https://stackoverflow.com/questions/4913349/haversine-formula-in-python-bearing-and-distance-between-two-gps-points
@@ -183,7 +183,7 @@ def osm_shape(rel):
       or (ways[0].nodes[0] == ways[1].nodes[-1]):
         nodes = ways[0].nodes[::-1] # reverse
     else:
-        #print("Gap between first two ways")
+        # Gap between first two ways
         gaps = True
         begmin = min(ndist2(ways[0].nodes[0], ways[1].nodes[0]),
                      ndist2(ways[0].nodes[0], ways[1].nodes[-1]))
@@ -201,7 +201,7 @@ def osm_shape(rel):
         elif nodes[-1] == w.nodes[-1]:
             nodes.extend(w.nodes[::-1][1:])
         else:
-            #print("Gap between ways")
+            # Gap between ways
             gaps = True
             if ndist2(nodes[-1], w.nodes[0]) < ndist2(nodes[-1], w.nodes[-1]):
                 nodes.extend(w.nodes)
@@ -316,7 +316,7 @@ def osm2gpx(lineref, mode="bus"):
             route2gpx(rels[i], fn)
             print(fn)
     else:
-        print("Line '%s' not found in OSM PTv2 relations." % lineref)
+        log.error("Line '%s' not found in OSM PTv2 relations." % lineref)
 
 # Comparison between OSM and HSL data
 
