@@ -4,6 +4,16 @@ import requests, json, logging
 
 log = logging.getLogger(__name__)
 
+
+def gtfsid2url(gtfs):
+    return "https://www.reittiopas.fi/linjat/" + str(gtfs)
+
+
+def pattern2url(code):
+    return "https://www.reittiopas.fi/linjat/" \
+        + ":".join(code.split(':')[:2]) +"/pysakit/" + str(code)
+
+
 class Digitransit:
     def __init__(self, agency, url, modecolors=None, peakhours=None, \
       nighthours=None):
@@ -199,15 +209,6 @@ class Digitransit:
         return [(s["lat"], s["lon"], s["code"], s["name"]) for s in stops]
 
 
-    def gtfsid2url(self, gtfs):
-        return "https://www.reittiopas.fi/linjat/" + str(gtfs)
-
-
-    def pattern2url(self, code):
-        return "https://www.reittiopas.fi/linjat/" \
-            + ":".join(code.split(':')[:2]) +"/pysakit/" + str(code)
-
-
     def all_linerefs(self, mode="bus"):
         """Return a lineref:url dict of all linerefs for a given mode.
         URL points to a reittiopas page for the line."""
@@ -219,9 +220,9 @@ class Digitransit:
         rts = json.loads(r.text)["data"]["routes"]
         # Also filter out taxibuses (lähibussit) (type == 704)
         #refs = [r["shortName"] for r in rts if r["type"] != 704]
-        refs = {r["shortName"]:self.gtfsid2url(r["gtfsId"])
+        refs = {r["shortName"]: gtfsid2url(r["gtfsId"])
                 for r in rts if r["type"] != 704}
-        self.taxibus_refs = {r["shortName"]:self.gtfsid2url(r["gtfsId"])
+        self.taxibus_refs = {r["shortName"]: gtfsid2url(r["gtfsId"])
                 for r in rts if r["type"] == 704}
         return refs
 
