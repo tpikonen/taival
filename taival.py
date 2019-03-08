@@ -360,6 +360,9 @@ def hsl_longname2stops(longname):
 
 def test_hsl_routename(ts, lineref, longname):
     """Do a special test for the route name-tag."""
+    # Reittiopas longName field sometimes has dangling hyphens, remove them.
+    longname = longname[1:] if longname[0] == '-' else longname
+    longname = longname[:-1] if longname[-1] == '-' else longname
     stops = hsl_longname2stops(longname)
     name1 = lineref + " " + "–".join(stops) # Use en dash as a separator
     stops.reverse()
