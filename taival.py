@@ -529,9 +529,10 @@ def arrivals2intervals(arrivals, peakhours=None, nighthours=None):
     return (inorms, ipeaks, inights)
 
 
-def test_interval_tags(reltags, code):
-    """Determine interval tags for peak and normal hours for weekdays (monday),
-    saturday and sunday from arrival data. Compare to existing tags."""
+def collect_interval_tags(code):
+    """Return interval tags for a pattern code determined from HSL data
+    for peak and normal hours for weekdays (monday), saturday and sunday.
+    Intervals are converted from arrival data."""
     # Get interval tags from API
     today = datetime.date.today()
     delta = (5 + 7 - today.weekday()) % 7 # Days to next saturday
@@ -587,9 +588,7 @@ def test_interval_tags(reltags, code):
     if abs(isunnight - inight)/inight < 0.2 \
       and tags.get("interval:sunday:night", "") != "no_service":
         tags.pop("interval:sunday:night", 0)
-    # Compare to existing tags
-    for k in sorted(tags.keys()):
-        test_tag(reltags, k, tags[k])
+    return tags
 
 
 def match_shapes(shapes1, shapes2):
@@ -740,7 +739,9 @@ def print_linedict(ld):
             test_tag(rel.tags, "colour", hsl.modecolors[mode])
         test_tag(rel.tags, "color", badtag=True)
         if hsli is not None and interval_tags:
-            test_interval_tags(rel.tags, codes[hsli])
+            itags = ld["hslitags"][hsli]
+            for k in sorted(itags.keys()):
+                test_tag(rel.tags, k, itags[k])
 
         if rel.tags.get("public_transport:version", "0") != "2":
             print("Tag public_transport:version=2 not set in OSM route %s. Giving up." % (rel.id))
@@ -853,14 +854,19 @@ def collect_line(lineref, mode="bus", interval_tags=False):
     ld["id2hslindex"] = id2hslindex
     ld["osm2hsl"] = osm2hsl
     ld["hsl2osm"] = hsl2osm
-    # Fill hslplatforms only for pattern codes which match OSM route
+    # Fill hslplatforms hslitags only for pattern codes which match OSM route
     hslplatforms = [None]*len(codes)
+    hslitags = [None]*len(codes)
     for rel in rels:
         hsli = id2hslindex[rel.id]
         if hsli is not None:
             hslplatforms[hsli] = [ p if p[2] else (p[0],p[1],"<no ref in HSL>",p[3])
                 for p in hsl.platforms(codes[hsli]) ]
+            if interval_tags:
+                hslitags[hsli] = collect_interval_tags(codes[hsli])
     ld["hslplatforms"] = hslplatforms
+    if interval_tags:
+        ld["hslitags"] = hslitags
     return ld
 
 
