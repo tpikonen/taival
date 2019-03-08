@@ -822,11 +822,13 @@ def collect_line(lineref, mode="bus", interval_tags=False):
     alsoids = [r for r in allrelids if r not in relids]
     ld["alsoids"] = alsoids
 
+    log.debug("Calling hsl.tags")
     htags = hsl.tags(lineref)
     ld["htags"] = htags
 #    codes = hsl.codes_after_date(lineref, \
 #                datetime.date.today().strftime("%Y%m%d"), mode)
 #    codes = hsl.codes_longest_per_direction(lineref, mode)
+    log.debug("Calling codes_longest_after_date")
     codes = hsl.codes_longest_after_date(lineref, \
                 datetime.date.today().strftime("%Y%m%d"), mode)
     ld["codes"] = codes
