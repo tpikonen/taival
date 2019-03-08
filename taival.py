@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import sys, datetime, gpxpy.gpx, overpy, argparse, requests, json, difflib, re
-import logging
+import logging, pickle
 import digitransit
 from collections import defaultdict
 from math import radians, degrees, cos, sin, asin, sqrt
@@ -1056,8 +1056,33 @@ def sub_line(args):
     print_linedict(collect_line(args.line, args.mode, args.interval_tags))
 
 
+def output(md, args):
+    """Write output from mode dict"""
+    if args.format == "mediawiki":
+        if args.output != '-':
+            log.error("File output not yet implemented")
+            return
+        else:
+            print_modedict(md)
+    elif args.format == "pickle":
+        if args.output == '-':
+            pickle.dump(md, sys.stdout)
+        else:
+            with open(args.output, 'wb') as f:
+                pickle.dump(md, f)
+    else:
+        log.error("Unknown output format '%s'" % args.output)
+
+
 def sub_report(args):
-    print_modedict(collect_mode(mode=args.mode, interval_tags=args.interval_tags))
+    md = collect_mode(mode=args.mode, interval_tags=args.interval_tags)
+    output(md, args)
+
+
+def sub_format(args):
+    with open(args.file, 'rb') as f:
+        md = pickle.load(f)
+    output(md, args)
 
 
 #def sub_fullreport(args):
@@ -1106,7 +1131,23 @@ if __name__ == '__main__' and '__file__' in globals ():
     parser_report.add_argument('mode', nargs='?', metavar='<mode>',
         default="bus",
         help='Transport mode: train, subway, tram, bus (default) or ferry')
+    parser_report.add_argument('--output', '-o', metavar='<output-file>',
+        dest='output', default='-', help='Direct output to file (default stdout)')
+    parser_report.add_argument('--format', '-f', metavar='<format>',
+        dest='format', default='mediawiki',
+        help='Output format: mediawiki (default), pickle')
     parser_report.set_defaults(func=sub_report)
+
+    parser_format = subparsers.add_parser('format',
+        help='Format and output previously collected data from repr format.')
+    parser_format.add_argument('file', nargs='?', metavar='<repr-file>',
+        help='Input file')
+    parser_format.add_argument('--output', '-o', metavar='<output-file>',
+        dest='output', default='-', help='Direct output to file (default stdout)')
+    parser_format.add_argument('--format', '-f', metavar='<format>',
+        dest='format', default='mediawiki',
+        help='Output format: mediawiki (default), pickle')
+    parser_format.set_defaults(func=sub_format)
 
 #    parser_fullreport = subparsers.add_parser('fullreport',
 #        help='Create a report for all lines.')
