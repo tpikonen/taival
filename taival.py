@@ -257,8 +257,6 @@ def collect_line(lineref, mode="bus", interval_tags=False):
     return ld
 
 
-# TODO: Add link to Subway validator at http://osmz.ru/subways/finland.html
-# for mode="subway"
 def collect_mode(mode="bus", interval_tags=False):
     """Collect data for a given mode from APIs, call collect_line for
     all discovered lines."""
