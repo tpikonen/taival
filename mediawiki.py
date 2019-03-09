@@ -1,7 +1,7 @@
 import difflib, sys
+import osm
 from util import *
 from digitransit import pattern2url
-from taival import osm_relid2url, osm_shape, osm_member_coord, osm_platforms
 
 def test_tag(ts, key, value=None, badtag=False):
     """Test if a tag has a given value or just exists, if value=None."""
@@ -50,7 +50,7 @@ def test_stop_positions(rel, mode="bus"):
       for mem in rel.members if mem.role == "stop"]
     platforms = [mem.resolve(resolve_missing=True) \
       for mem in rel.members if mem.role == "platform"]
-#    print("Route [%s %s] '%s' " % (osm_relid2url(rel.id), rel.id, \
+#    print("Route [%s %s] '%s' " % (osm.relid2url(rel.id), rel.id, \
 #      rel.tags.get("name", "<no-name-tag>")))
     print("%d stop_positions vs. %d platforms." \
       % (len(stops), len(platforms)))
@@ -88,7 +88,7 @@ def test_stop_locations():
     # FIXME: Turn the comparison around and complain about HSL platforms
     # missing stop positions?
     tol = 0.050 # km FIXME: needs to be bigger for mode=subway?
-    osmstops = [osm_stops(rel) for rel in rels]
+    osmstops = [osm.stops(rel) for rel in rels]
     for r in range(len(osmstops)):
         print("Route '%s'." % (rels[r].tags.get("name", "<no-name-tag>")))
         print("Stops: %d in OSM vs. %d in HSL.\n" \
@@ -120,21 +120,21 @@ def print_route_master(ld):
     elif nr > 1:
         print("More than one route_master relations found: %s\n" \
           % (", ".join("[%s %s]" \
-            % (osm_relid2url(r.id), r.id) for r in rm_rels)))
+            % (osm.relid2url(r.id), r.id) for r in rm_rels)))
         return
     elif nr == 1:
         rel = rm_rels[0]
-        print("Relation: [%s %s]\n" % (osm_relid2url(rel.id), rel.id))
+        print("Relation: [%s %s]\n" % (osm.relid2url(rel.id), rel.id))
     memrefs = [m.ref for m in rel.members]
     refs_not_in_routes = [r for r in memrefs if r not in route_ids]
     if refs_not_in_routes:
         print("route_master has extra members: %s\n" % (", ".join("[%s %s]" \
-          % (osm_relid2url(r), r) for r in refs_not_in_routes)))
+          % (osm.relid2url(r), r) for r in refs_not_in_routes)))
     routes_not_in_refs = [r for r in route_ids if r not in memrefs]
     if routes_not_in_refs:
         print("Found matching routes not in route_master: %s\n" \
           % (", ".join("[%s %s]" \
-            % (osm_relid2url(r), r) for r in routes_not_in_refs)))
+            % (osm.relid2url(r), r) for r in routes_not_in_refs)))
     tags = rel.tags
     test_tag(tags, "route_master", mode)
     test_tag(tags, "ref", lineref)
@@ -163,11 +163,11 @@ def print_linedict(ld, agency):
     alsoids = ld["alsoids"]
     if alsoids:
         print("Extra routes in OSM with the same ref: %s\n" % \
-          (", ".join("[%s %d]" % (osm_relid2url(r), r) for r in alsoids)))
+          (", ".join("[%s %d]" % (osm.relid2url(r), r) for r in alsoids)))
     if len(rels) > 2:
         print("More than 2 matching OSM routes found: %s.\n" % \
           (", ".join("[%s %d]" \
-            % (osm_relid2url(rid), rid) for rid in relids)))
+            % (osm.relid2url(rid), rid) for rid in relids)))
         print("Giving up.")
         return
     codes = ld["codes"]
@@ -190,7 +190,7 @@ def print_linedict(ld, agency):
     hslshapes = ld["hslshapes"]
     for rel in rels:
         print("'''Route [%s %s] %s'''\n" \
-          % (osm_relid2url(rel.id), rel.id, rel.tags.get("name", "")))
+          % (osm.relid2url(rel.id), rel.id, rel.tags.get("name", "")))
         hsli = id2hslindex[rel.id]
 
         print("'''Tags:'''\n")
@@ -222,12 +222,12 @@ def print_linedict(ld, agency):
         print("'''Shape:'''\n")
         if hsli is not None:
             tol = 30
-            (shape, gaps) = osm_shape(rel)
+            (shape, gaps) = osm.shape(rel)
             if gaps:
                 print("Route has '''gaps'''!\n")
             ovl = test_shape_overlap(shape, hslshapes[hsli], tol=tol)
             print("Route [%s %s] overlap (tolerance %d m) with HSL pattern [%s %s] is '''%2.1f %%'''.\n" \
-              % (osm_relid2url(rel.id), rel.id, tol, pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
+              % (osm.relid2url(rel.id), rel.id, tol, pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
         else:
             print("Route %s overlap could not be calculated.\n" \
               % (rel.id))
@@ -239,7 +239,7 @@ def print_linedict(ld, agency):
         print("'''Platforms:'''\n")
         hslplatforms = ld["hslplatforms"]
         if hsli is not None:
-            osmplatform = osm_platforms(rel)
+            osmplatform = osm.platforms(rel)
             hslplatform = hslplatforms[hsli]
             # FIXME: Add stop names to unified diffs after diffing, somehow
             #osmp = [p[2]+" "+p[3]+"\n" for p in osmplatform]

@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
-import sys, datetime, gpxpy.gpx, overpy, argparse, requests, json, re
-import logging, pickle
-import digitransit
-from collections import defaultdict
+import sys, datetime, gpxpy.gpx, argparse, logging, pickle
+import digitransit, osm
 from util import *
 from mediawiki import *
 
@@ -61,229 +59,19 @@ def digitransit2gpx(dt, lineref, mode="bus"):
         log.error("Line '%s' not found in %s." % lineref, dt.agency)
 
 
-# OSM data from Overpass API
-
-api = overpy.Overpass()
-api.retry_timeout=120
-api.max_retry_count=10
-# Approximate HSL area = Helsinki + Porvoo regions
-area = """(area[admin_level=7]["name"="Helsingin seutukunta"]["ref"="011"][boundary=administrative]; area[admin_level=7]["name"="Porvoon seutukunta"]["ref"="201"][boundary=administrative];)->.hel;"""
-
-
-def osm_relid2url(relid):
-    return "https://www.openstreetmap.org/relation/" + str(relid)
-
-
-def osm_all_linerefs(mode="bus"):
-    """Return a lineref:[urllist] dict of all linerefs in Helsinki region.
-    URLs points to the relations in OSM."""
-    q = '%s rel(area.hel)[type=route][route="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
-    rr = api.query(q)
-    refs = defaultdict(list)
-    for r in rr.relations:
-        if "ref" in r.tags.keys():
-            refs[r.tags["ref"]].append(osm_relid2url(r.id))
-    #refs = {r.tags["ref"]:osm_relid2url(r.id)
-    #        for r in rr.relations if "ref" in r.tags.keys()}
-    return refs
-
-
-def osm_ptv2_linerefs(mode="bus"):
-    """Return a lineref:url dict of linerefs with public_transport:version=2
-    tag in Helsinki region.
-    URL points to the relation in OSM."""
-    q = '%s rel(area.hel)[route="%s"][network~"HSL|Helsinki|Espoo|Vantaa"]["public_transport:version"="2"];out tags;' % (area, mode)
-    rr = api.query(q)
-    refs = {r.tags["ref"]:osm_relid2url(r.id)
-            for r in rr.relations if "ref" in r.tags.keys()}
-    return refs
-
-
-def osm_was_routes(mode="bus"):
-    """Return a lineref:[urllist] dict of all was:route=<mode> routes in
-    Helsinki region. URLs points to the relations in OSM."""
-    q = '%s rel(area.hel)[type="was:route"]["was:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
-    rr = api.query(q)
-    refs = defaultdict(list)
-    for r in rr.relations:
-        if "ref" in r.tags.keys():
-            refs[r.tags["ref"]].append(osm_relid2url(r.id))
-    return refs
-
-
-def osm_disused_routes(mode="bus"):
-    """Return a lineref:[urllist] dict of all disused:route=<mode> routes in
-    Helsinki region. URLs points to the relations in OSM."""
-    q = '%s rel(area.hel)[type="disused:route"]["disused:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
-    rr = api.query(q)
-    refs = defaultdict(list)
-    for r in rr.relations:
-        if "ref" in r.tags.keys():
-            refs[r.tags["ref"]].append(osm_relid2url(r.id))
-    return refs
-
-
-def osm_shape(rel):
-    """Get route shape from overpy relation. Return a ([[lat,lon]], gaps)
-    tuple, where gaps is True if the ways in route do not share endpoint
-    nodes. """
-    ways = [mem.resolve() for mem in rel.members
-        if isinstance(mem, overpy.RelationWay) and (mem.role is None)]
-    gaps = False
-    if not ways:
-        return ([], gaps)
-    elif len(ways) == 1:
-        latlon = [[float(n.lat), float(n.lon)] for n in ways[0].nodes]
-        # Determine correct orientation for a single way route
-        stops = [mem.resolve() for mem in rel.members if mem.role == "stop"]
-        if stops:
-            spos = osm_member_coord(stops[0])
-            if ldist2(spos, latlon[0]) > ldist2(spos, latlon[-1]):
-                latlon.reverse()
-            return (latlon, gaps)
-        plats = [mem.resolve() for mem in rel.members if mem.role == "platform"]
-        if plats:
-            ppos = osm_member_coord(plats[0])
-            if ldist2(ppos, latlon[0]) > ldist2(ppos, latlon[-1]):
-                latlon.reverse()
-            return (latlon, gaps)
-        # Give up and do not orient
-        return (latlon, gaps)
-    # Initialize nodes list with first way, correctly oriented
-    if (ways[0].nodes[-1] == ways[1].nodes[0]) \
-      or (ways[0].nodes[-1] == ways[1].nodes[-1]):
-        nodes = ways[0].nodes
-    elif (ways[0].nodes[0] == ways[1].nodes[0]) \
-      or (ways[0].nodes[0] == ways[1].nodes[-1]):
-        nodes = ways[0].nodes[::-1] # reverse
-    else:
-        # Gap between first two ways
-        gaps = True
-        begmin = min(ndist2(ways[0].nodes[0], ways[1].nodes[0]),
-                     ndist2(ways[0].nodes[0], ways[1].nodes[-1]))
-        endmin = min(ndist2(ways[0].nodes[-1], ways[1].nodes[0]),
-                     ndist2(ways[0].nodes[-1], ways[1].nodes[-1]))
-        if endmin < begmin:
-            nodes = ways[0].nodes
-        else:
-            nodes = ways[0].nodes[::-1]
-    # Combine nodes from the rest of the ways to a single list,
-    # flip ways when needed
-    for w in ways[1:]:
-        if nodes[-1] == w.nodes[0]:
-            nodes.extend(w.nodes[1:])
-        elif nodes[-1] == w.nodes[-1]:
-            nodes.extend(w.nodes[::-1][1:])
-        else:
-            # Gap between ways
-            gaps = True
-            if ndist2(nodes[-1], w.nodes[0]) < ndist2(nodes[-1], w.nodes[-1]):
-                nodes.extend(w.nodes)
-            else:
-                nodes.extend(w.nodes[::-1])
-    latlon = [[float(n.lat), float(n.lon)] for n in nodes]
-    return (latlon, gaps)
-
-
-def osm_member_coord(x):
-    """Return (lat, lon) coordinates from a resolved relation member.
-    Could be improved by calculating center of mass from ways etc."""
-    if type(x) == overpy.Way:
-        x.get_nodes(resolve_missing=True)
-        lat = x.nodes[0].lat
-        lon = x.nodes[0].lon
-    elif type(x) == overpy.Relation:
-        m = x.members[0].resolve(resolve_missing=True)
-        (lat, lon) = osm_member_coord(m)
-    else:
-        lat = float(x.lat)
-        lon = float(x.lon)
-    return (lat, lon)
-
-
-def osm_platforms(rel):
-    retval = []
-    platforms = [mem.resolve(resolve_missing=True) \
-      for mem in rel.members if mem.role == "platform"]
-    for x in platforms:
-        (lat, lon) = osm_member_coord(x)
-        ref = x.tags.get('ref', '<no ref in OSM>')
-        name = x.tags.get('name', '<no name in OSM>')
-        retval.append([float(lat),float(lon),ref,name])
-    return retval
-
-
-def osm_stops(rel):
-    retval = []
-    stops = [mem.resolve(resolve_missing=True) \
-      for mem in rel.members if mem.role == "stop"]
-    for x in stops:
-        (lat, lon) = osm_member_coord(x)
-        name = x.tags.get('ref', '<no ref>')
-        desc = x.tags.get('name', '<no name>')
-        retval.append([float(lat),float(lon),name,desc])
-    return retval
-
-
-def osm_stops_by_refs(refs, mode="bus"):
-    """Return a list of OSM node ids which have one of the 'ref' tag values in
-    a given refs list."""
-    # FIXME: This does not really work with all the tagging conventions in OSM
-    mode2stoptag = {
-        "train" : None,
-        "subway" : None,
-        "tram" : '''"railway"="tram_stop"''',
-        "bus" : '''"highway"="bus_stop"''',
-        "ferry" : '''"amenity="ferry_terminal"'''
-    }
-    q = '%s node(area.hel)[%s][ref~"(%s)"];out tags;' \
-        % (area, mode2stoptag[mode], "|".join(str(r) for r in refs))
-    rr = api.query(q)
-    stopids = []
-    for ref in refs:
-        stopids.extend(n.id for n in rr.nodes if n.tags["ref"] == ref)
-    return stopids
-
-
 def route2gpx(rel, fname):
     """Write a gpx-file fname from an overpy relation containing
     an OSM public_transport:version=2 route."""
-    log.debug("Calling osm_shape")
-    latlon = osm_shape(rel)[0]
-    log.debug("Calling osm_platforms")
-    waypts = osm_platforms(rel)
+    log.debug("Calling osm.shape")
+    latlon = osm.shape(rel)[0]
+    log.debug("Calling osm.platforms")
+    waypts = osm.platforms(rel)
     write_gpx(latlon, fname, waypoints=waypts)
 
 
-def ndist2(n1, n2):
-    """Return distance metric squared for two nodes n1 and n2."""
-    return (n1.lat - n2.lat)**2 + (n1.lon - n2.lon)**2
-
-
-def osm_rel(relno):
-    rr = api.query("rel(id:%d);(._;>;>;);out body;" % (relno))
-    return rr.relations[0]
-
-
-def osm_rels_v2(lineref, mode="bus"):
-    """Get public transport v2 lines corresponding to lineref in Helsinki area.
-    """
-    q = '%s rel(area.hel)[route="%s"][ref="%s"]["public_transport:version"="2"];(._;>;>;);out body;' % (area, mode, lineref)
-    rr = api.query(q)
-    return rr.relations
-
-
-def osm_rels(lineref, mode="bus"):
-    """Get all lines corresponding to lineref and mode in Helsinki area.
-    """
-    q = '%s rel(area.hel)[route="%s"][ref="%s"];(._;>;>;);out body;' % (area, mode, lineref)
-    rr = api.query(q)
-    return rr.relations
-
-
 def osm2gpx(lineref, mode="bus"):
-    log.debug("Calling osm_rels_v2")
-    rels = osm_rels_v2(lineref, mode)
+    log.debug("Calling osm.rels_v2")
+    rels = osm.rels_v2(lineref, mode)
     if len(rels) > 0:
         for i in range(len(rels)):
             fn = "%s_osm_%d.gpx" % (lineref, i)
@@ -393,25 +181,14 @@ def match_shapes(shapes1, shapes2):
         return (m1to2, m2to1)
 
 
-def collect_route_master(ld, route_ids):
-    """Get route master relation from Overpass"""
-    lineref = ld["lineref"]
-    mode = ld["mode"]
-    q = '[out:json][timeout:60];(%s);(rel(br)["type"="route_master"];);out body;' \
-      % ("".join(["rel(%d);" % x for x in route_ids]))
-    rr = api.query(q)
-    ld["rm_rels"] = rr.relations
-    return ld
-
-
 def collect_line(lineref, mode="bus", interval_tags=False):
     """Report on differences between OSM and HSL data for a given line."""
     ld = {} # line dict
     ld["lineref"] = lineref
     ld["mode"] = mode
     ld["interval_tags"] = interval_tags
-    log.debug("Calling osm_rels")
-    rels = osm_rels(lineref, mode)
+    log.debug("Calling osm.rels")
+    rels = osm.rels(lineref, mode)
     if(len(rels) < 1):
         log.debug("No route relations found in OSM.")
         return ld
@@ -425,12 +202,11 @@ def collect_line(lineref, mode="bus", interval_tags=False):
     relids = [r.id for r in rels]
     ld["rels"] = rels
 
-    # TODO: convert
-    log.debug("Calling collect_route_master")
-    collect_route_master(ld, relids)
+    log.debug("Calling osm.route_master")
+    ld["rm_rels"] = osm.route_master(relids)
 
     log.debug("Found OSM route ids: %s\n" % \
-      (", ".join("[%s %d]" % (osm_relid2url(rid), rid) for rid in relids)))
+      (", ".join("[%s %d]" % (osm.relid2url(rid), rid) for rid in relids)))
     alsoids = [r for r in allrelids if r not in relids]
     ld["alsoids"] = alsoids
 
@@ -453,8 +229,8 @@ def collect_line(lineref, mode="bus", interval_tags=False):
 #        log.debug("Using just first route variants: %s\n" % (str(codes)))
 
     # Mapping
-    # FIXME: Duplicate call to osm_shape() in route checking loop.
-    osmshapes = [osm_shape(rel)[0] for rel in rels]
+    # FIXME: Duplicate call to osm.shape() in route checking loop.
+    osmshapes = [osm.shape(rel)[0] for rel in rels]
     hslshapes = [hsl.shape(c)[1] for c in codes]
     (osm2hsl, hsl2osm) = match_shapes(osmshapes, hslshapes)
     id2hslindex = {}
@@ -496,12 +272,12 @@ def collect_mode(mode="bus", interval_tags=False):
     md["agencyurl"] = agencyurl
     md["modecolors"] = hsl_modecolors
 
-    osmdict = osm_all_linerefs(mode)
+    osmdict = osm.all_linerefs(mode)
     hsldict = hsl.all_linerefs(mode)
     hsl_localbus = hsl.taxibus_linerefs(mode)
-    osm2dict = osm_ptv2_linerefs(mode)
-    wasroutes = osm_was_routes(mode)
-    disroutes = osm_disused_routes(mode)
+    osm2dict = osm.ptv2_linerefs(mode)
+    wasroutes = osm.was_routes(mode)
+    disroutes = osm.disused_routes(mode)
     md["osmdict"] = osmdict
     md["hsldict"] = hsldict
     md["hsl_localbus"] = hsl_localbus
@@ -510,7 +286,7 @@ def collect_mode(mode="bus", interval_tags=False):
     md["disroutes"] = disroutes
 
     if mode == "bus":
-        osm_minibusdict = osm_all_linerefs(mode="minibus")
+        osm_minibusdict = osm.all_linerefs(mode="minibus")
         md["osm_minibusdict"] = osm_minibusdict
 
     osm2lines = set(osm2dict)
@@ -560,8 +336,8 @@ def sub_osmxml(args):
         log.debug("   Calling hsl.platforms")
         stops = [p[2] for p in hsl.platforms(c)]
         fname = "%s_%s_%s.osm" % (args.line, hsl.agency, c)
-        log.debug("   Calling osm_stops_by_refs")
-        ids = osm_stops_by_refs(stops, args.mode)
+        log.debug("   Calling osm.stops_by_refs")
+        ids = osm.stops_by_refs(stops, args.mode)
         write_xml(fname, ids, htags, args.mode, reverse)
         print(fname)
     if not codes:
