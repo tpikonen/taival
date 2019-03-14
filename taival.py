@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import sys, datetime, gpxpy.gpx, argparse, logging, pickle
 import digitransit, osm
+import mediawiki as mw
 from util import *
-from mediawiki import *
 
 hsl_modecolors = { "bus": "#007AC9",
     "tram":     "#00985F",
@@ -342,37 +342,46 @@ def sub_osmxml(args):
         print("Line '%s' not found in %s." % lineref, hsl.agency)
 
 
-def sub_line(args):
-    print_linedict(collect_line(args.line, args.mode, args.interval_tags))
-
-
-def output(md, args):
-    """Write output from mode dict"""
-    if args.format == "mediawiki":
-        if args.output != '-':
-            log.error("File output not yet implemented")
-            return
-        else:
-            print_modedict(md)
-    elif args.format == "pickle":
+def output_dict(d, args):
+    """Write output from dict"""
+    def get_output(args):
         if args.output == '-':
-            pickle.dump(md, sys.stdout)
+            out = sys.stdout
         else:
-            with open(args.output, 'wb') as f:
-                pickle.dump(md, f)
+            out = open(args.output, "w")
+        return out
+
+    out = None
+    if args.format == "mediawiki":
+        out = get_output(args)
+        mw.outfile = out
+        if "lineref" in d.keys():
+            mw.print_linedict(d)
+        else:
+            mw.print_modedict(d)
+    elif args.format == "pickle":
+        out = get_output(args)
+        pickle.dump(d, out)
     else:
         log.error("Unknown output format '%s'" % args.output)
+    if out and out != sys.stdout:
+        out.close()
+
+
+def sub_line(args):
+    ld = collect_line(args.line, args.mode, args.interval_tags)
+    output_dict(ld, args)
 
 
 def sub_report(args):
     md = collect_mode(mode=args.mode, interval_tags=args.interval_tags)
-    output(md, args)
+    output_dict(md, args)
 
 
 def sub_format(args):
     with open(args.file, 'rb') as f:
-        md = pickle.load(f)
-    output(md, args)
+        d = pickle.load(f)
+    output_dict(d, args)
 
 
 #def sub_fullreport(args):
@@ -412,6 +421,11 @@ if __name__ == '__main__' and '__file__' in globals ():
         help='Line id to report on.')
     parser_line.add_argument('mode', nargs='?', metavar='<mode>', default="bus",
         help='Transport mode: train, subway, tram, bus (default) or ferry')
+    parser_line.add_argument('--output', '-o', metavar='<output-file>',
+        dest='output', default='-', help='Direct output to file (default stdout)')
+    parser_line.add_argument('--format', '-f', metavar='<format>',
+        dest='format', default='mediawiki',
+        help='Output format: mediawiki (default), pickle')
     parser_line.set_defaults(func=sub_line)
 
     parser_report = subparsers.add_parser('report',
