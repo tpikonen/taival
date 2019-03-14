@@ -429,8 +429,8 @@ if __name__ == '__main__' and '__file__' in globals ():
     parser_report.set_defaults(func=sub_report)
 
     parser_format = subparsers.add_parser('format',
-        help='Format and output previously collected data from repr format.')
-    parser_format.add_argument('file', nargs='?', metavar='<repr-file>',
+        help='Format and output previously collected data from pickle format.')
+    parser_format.add_argument('file', nargs='?', metavar='<pickle-file>',
         help='Input file')
     parser_format.add_argument('--output', '-o', metavar='<output-file>',
         dest='output', default='-', help='Direct output to file (default stdout)')
