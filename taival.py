@@ -443,6 +443,12 @@ if __name__ == '__main__' and '__file__' in globals ():
 #        help='Create a report for all lines.')
 #    parser_fullreport.set_defaults(func=sub_fullreport)
 
+    parser_help = subparsers.add_parser('help',
+        help="Show help for a subcommand")
+    parser_help.add_argument('subcmd', metavar='<subcommand>',
+        help="Print help for this subcommand.")
+    parser_help.set_defaults(func=lambda args: subparsers.choices[args.subcmd].print_help())
+
     args = parser.parse_args()
     #sys.exit(1)
     args.func(args)
