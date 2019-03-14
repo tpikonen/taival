@@ -233,7 +233,7 @@ def print_linedict(ld, agency):
             if gaps:
                 wr("Route has '''gaps'''!\n")
             ovl = test_shape_overlap(shape, hslshapes[hsli], tol=tol)
-            wr("Route [%s %s] overlap (tolerance %d m) with HSL pattern [%s %s] is '''%2.1f %%'''.\n" \
+            wr("Route [%s %s] overlap (tolerance %d m) with HSL pattern [%s %s] is '''%1.0f %%'''.\n" \
               % (osm.relid2url(rel.id), rel.id, tol, pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
         else:
             wr("Route %s overlap could not be calculated.\n" \
