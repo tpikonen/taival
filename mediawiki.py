@@ -5,10 +5,10 @@ from digitransit import pattern2url
 
 outfile = None
 
-style_problem = 'style="background-color: #ffaaaa" '
-style_ok = 'style="background-color: #aaffaa" '
-style_maybe = 'style="background-color: #eeee00" '
-style_relstart = 'style="border-style: solid; border-width: 1px 1px 1px 3px" '
+style_problem = 'style="background-color: #ffaaaa"'
+style_ok = 'style="background-color: #aaffaa"'
+style_maybe = 'style="background-color: #eeee00"'
+style_relstart = 'style="border-style: solid; border-width: 1px 1px 1px 3px"'
 
 def wr(*args, **kwargs):
     kwargs["file"] = outfile
@@ -451,16 +451,16 @@ def print_table(md):
 ! HSL
 ! Tags
 ! Shape
-! Platforms
+! Platf.
 ! style="border-style: solid; border-width: 1px 1px 1px 3px" | OSM
 ! HSL
 ! Tags
 ! Shape
-! Platforms"""
+! Platf."""
     footer = "|}"
 
     mode = md["mode"]
-    wr("= PTv2 tagged HSL lines in OSM =\n")
+    wr("= PTv2 tagged {} lines in OSM =\n".format(md["agency"]))
     wr(header)
     linecounter = 0
     for line in md["lines"]:
@@ -496,8 +496,8 @@ def print_table(md):
             wr("| " + style_problem + " | [[#{} | no]]".format(line))
             continue
         elif len(codes) != 2:
-            ld["details"] += "%d route pattern(s) in HSL data, matching may be wrong.\n" \
-              % (len(codes))
+            ld["details"] += "%d route pattern(s) in %s data, matching may be wrong.\n" \
+              % (len(codes), md["agency"])
             for i in range(len(relids)):
                 ld["details"] += " %s -> %s\n" % \
                   (relids[i], "None" if osm2hsl[i] is None else codes[osm2hsl[i]])
@@ -562,8 +562,8 @@ def print_table(md):
                 ovl = test_shape_overlap(shape, ld["hslshapes"][hsli], tol=tol)
                 if gaps:
                     sdetlist.append("Route has '''gaps'''!")
-                    sdetlist.append("Route [%s %s] overlap (tolerance %d m) with HSL pattern [%s %s] is '''%1.0f %%'''." \
-                      % (osm.relid2url(rel.id), rel.id, tol, pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
+                    sdetlist.append("Route [%s %s] overlap (tolerance %d m) with %s pattern [%s %s] is '''%1.0f %%'''." \
+                      % (osm.relid2url(rel.id), rel.id, tol, md["agency"], pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
                 if gaps:
                     wr("| " + style_problem + " | [[#{} | gaps]]".format(line))
                 elif ovl <= 0.90:
@@ -579,28 +579,39 @@ def print_table(md):
             if any(sdetlist):
                 dirdetails += "'''Shape:'''\n\n" + "\n\n".join(sdetlist) + "\n\n"
 
-            # Platforms TODO
-            wr("| " + style_ok + " | OK")
-#            hsli = id2hslindex[rel.id]
-#            # Platforms
-#            wr("'''Platforms:'''\n")
-#            hslplatforms = ld["hslplatforms"]
-#            if hsli is not None:
-#                osmplatform = osm.platforms(rel)
-#                hslplatform = hslplatforms[hsli]
-#                # FIXME: Add stop names to unified diffs after diffing, somehow
-#                #osmp = [p[2]+" "+p[3]+"\n" for p in osmplatform]
-#                #hslp = [str(p[2])+" "+str(p[3])+"\n" for p in hslplatform]
-#                osmp = [p[2]+"\n" for p in osmplatform]
-#                hslp = [p[2]+"\n" for p in hslplatform]
-#                diff = list(difflib.unified_diff(osmp, hslp, "OSM", "HSL"))
-#                if diff:
-#                    outfile.writelines(" " + d for d in diff)
-#                else:
-#                    wr(" => Identical platform sequences.\n")
-#            else:
-#                wr("Platforms could not be compared.")
-#            wr("")
+            # Platforms
+            hsli = id2hslindex[rel.id]
+            # Platforms
+            hslplatforms = ld["hslplatforms"]
+            if hsli is not None:
+                osmplatform = osm.platforms(rel)
+                hslplatform = hslplatforms[hsli]
+                # FIXME: Add stop names to unified diffs after diffing, somehow
+                #osmp = [p[2]+" "+p[3]+"\n" for p in osmplatform]
+                #hslp = [str(p[2])+" "+str(p[3])+"\n" for p in hslplatform]
+                osmp = [p[2]+"\n" for p in osmplatform]
+                hslp = [p[2]+"\n" for p in hslplatform]
+                diff = list(difflib.unified_diff(osmp, hslp, "OSM", md["agency"]))
+                if diff:
+                    dirdetails += "'''Platforms:'''\n\n"
+                    dirdetails += "{}/{} platforms in OSM / {}.\n".format(len(osmp), len(hslp), md["agency"])
+                    dirdetails += " " + diff[0]
+                    dirdetails += " " + diff[1]
+                    ins = 0
+                    rem = 0
+                    for d in diff[2:]:
+                        dirdetails += " " + d
+                        if d[0] == '+':
+                            ins += 1
+                        elif d[0] == '-':
+                            rem += 1
+                    wr("| " + style_problem + "| [[#{} | +{} -{}]]"\
+                      .format(line, ins, rem))
+                else:
+                    wr("| " + style_ok + "| {}/{}".format(len(osmp), len(hslp)))
+            else:
+                dirdetails += "'''Platforms:'''\n\n"
+                dirdetails += "Platforms could not be compared."
             if dirdetails:
                 dirdetails = "'''Direction {}'''\n\n".format(dirindex) + dirdetails
                 ld["details"] += dirdetails
