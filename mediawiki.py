@@ -7,7 +7,7 @@ outfile = None
 
 style_problem = 'style="background-color: #ffaaaa" '
 style_ok = 'style="background-color: #aaffaa" '
-style_maybe = 'style="background-color: #ccccaa" '
+style_maybe = 'style="background-color: #eeee00" '
 style_relstart = 'style="border-style: solid; border-width: 1px 1px 1px 3px" '
 
 def wr(*args, **kwargs):
@@ -15,31 +15,41 @@ def wr(*args, **kwargs):
     print(*args, **kwargs)
 
 
+def wr_if(s, **kwargs):
+    """Write s if it's not empty."""
+    if s:
+        wr(s, **kwargs)
+
 def test_tag(ts, key, value=None, badtag=False):
-    """Test if a tag has a given value or just exists, if value=None."""
+    """Test if a tag has a given value or just exists, if value=None.
+    Return a string describing a problem, or empty string if no problems."""
     if not key in ts.keys():
+        out = "Tag '''%s''' not set" % key
         if badtag:
-            return
-        wr("Tag '''%s''' not set " % key, end='')
-        if value is not None:
-            wr("(should be '%s').\n" % value)
+            out = ""
+        elif value is not None:
+            out += " (should be '%s')." % value
         else:
-            wr(".\n")
-        return
-    tval = ts[key]
-    if badtag:
-        wr("Probably '''mispelled''' tag '''%s''' with value '%s'.\n" \
-          % (key, tval))
-        return
-    if value is None:
-        return
-    if tval != value:
-        wr("Tag '''%s''' has value '%s' (should be '%s').\n" \
-          % (key, tval, value))
+            out += "."
+        return out
+    else:
+        tval = ts[key]
+        if badtag:
+            out = "Probably '''mispelled''' tag '''%s''' with value '%s'." \
+              % (key, tval)
+        elif value is None:
+            out = ""
+        elif tval != value:
+            out = "Tag '''%s''' has value '%s' (should be '%s')." \
+              % (key, tval, value)
+        else:
+            out = ""
+        return out
 
 
 def test_hsl_routename(ts, lineref, longname):
-    """Do a special test for the route name-tag."""
+    """Do a special test for the route name-tag.
+    Return an empty string if ok, a string describing the problem if not."""
     # Reittiopas longName field sometimes has dangling hyphens, remove them.
     longname = longname[1:] if longname[0] == '-' else longname
     longname = longname[:-1] if longname[-1] == '-' else longname
@@ -48,12 +58,14 @@ def test_hsl_routename(ts, lineref, longname):
     stops.reverse()
     name2 = lineref + " " + "–".join(stops)
     tag = ts.get("name", "")
+    out = ""
     if tag == "":
-        wr("Tag '''name''' not set (should be either '%s' or '%s').\n" \
-          % (name1, name2))
+        out = "Tag '''name''' not set (should be either '%s' or '%s')." \
+          % (name1, name2)
     elif tag != name1 and tag != name2:
-        wr("Tag '''name''' has value '%s' (should be either '%s' or '%s').\n" \
-          % (tag, name1, name2))
+        out = "Tag '''name''' has value '%s' (should be either '%s' or '%s')." \
+          % (tag, name1, name2)
+    return out
 
 
 def test_stop_positions(rel, mode="bus"):
@@ -148,11 +160,10 @@ def print_route_master(ld):
           % (", ".join("[%s %s]" \
             % (osm.relid2url(r), r) for r in routes_not_in_refs)))
     tags = rel.tags
-    test_tag(tags, "route_master", mode)
-    test_tag(tags, "ref", lineref)
-    test_tag(tags, "name")
-    test_tag(tags, "network", "HSL")
-    #test_tag(tags, "operator")
+    wr_if(test_tag(tags, "route_master", mode), end='\n\n')
+    wr_if(test_tag(tags, "ref", lineref), end='\n\n')
+    wr_if(test_tag(tags, "name"), end='\n\n')
+    wr_if(test_tag(tags, "network", "HSL"), end='\n\n')
 
     wr("")
 
@@ -174,13 +185,13 @@ def print_linedict(ld, agency):
 
     alsoids = ld["alsoids"]
     if alsoids:
-        wr("Extra routes in OSM with the same ref: %s\n" % \
+        wr("Extra routes in OSM with the same ref: %s\n\n" % \
           (", ".join("[%s %d]" % (osm.relid2url(r), r) for r in alsoids)))
     if len(rels) > 2:
         wr("More than 2 matching OSM routes found: %s.\n" % \
           (", ".join("[%s %d]" \
             % (osm.relid2url(rid), rid) for rid in relids)))
-        wr("Giving up.")
+        wr("Giving up.\n")
         return
     codes = ld["codes"]
     osm2hsl = ld["osm2hsl"]
@@ -207,18 +218,18 @@ def print_linedict(ld, agency):
 
         wr("'''Tags:'''\n")
         # name-tag gets a special treatment
-        test_hsl_routename(rel.tags, htags["shortName"],  htags["longName"])
+        wr_if(test_hsl_routename(rel.tags, htags["shortName"],  htags["longName"]), end='\n\n')
         # FIXME: network != agency always
-        test_tag(rel.tags, "network", agency["name"])
-        test_tag(rel.tags, "from")
-        test_tag(rel.tags, "to")
+        wr_if(test_tag(rel.tags, "network", agency["name"]), end='\n\n')
+        wr_if(test_tag(rel.tags, "from"), end='\n\n')
+        wr_if(test_tag(rel.tags, "to"), end='\n\n')
         if modecolors[mode]:
-            test_tag(rel.tags, "colour", modecolors[mode])
-        test_tag(rel.tags, "color", badtag=True)
+            wr_if(test_tag(rel.tags, "colour", modecolors[mode]), end='\n\n')
+        wr_if(test_tag(rel.tags, "color", badtag=True), end='\n\n')
         if hsli is not None and interval_tags:
             itags = ld["hslitags"][hsli]
             for k in sorted(itags.keys()):
-                test_tag(rel.tags, k, itags[k])
+                wr_if(test_tag(rel.tags, k, itags[k]), end='\n\n')
 
         if rel.tags.get("public_transport:version", "0") != "2":
             wr("Tag public_transport:version=2 not set in OSM route %s. Giving up." % (rel.id))
@@ -382,41 +393,43 @@ def cell_route_master(ld):
     mode = ld["mode"]
     rm_rels = ld["rm_rels"]
     route_ids = [r.id for r in ld["rels"]]
-    cell = ""
-    details = ""
 
     nr = len(rm_rels)
     if nr < 1:
-        cell = "No"
-        return cell, details
+        return "No", ""
     elif nr > 1:
         cell = style_problem + "| more than 1"
-        details += "'''Route master'''\nMore than one route_master relations found: %s\n" \
+        details = "'''Route master'''\nMore than one route_master relations found: %s\n" \
           % (", ".join("[%s %s]" \
             % (osm.relid2url(r.id), r.id) for r in rm_rels))
         return cell, details
     elif nr == 1:
         rel = rm_rels[0]
         cell = "[%s %s]" % (osm.relid2url(rel.id), rel.id)
+    detlist= []
     memrefs = [m.ref for m in rel.members]
     refs_not_in_routes = [r for r in memrefs if r not in route_ids]
     if refs_not_in_routes:
-        details += "route_master has extra members: %s\n" % (", ".join("[%s %s]" \
-          % (osm.relid2url(r), r) for r in refs_not_in_routes))
+        detlist.append("route_master has extra members: %s" % (", ".join("[%s %s]" \
+          % (osm.relid2url(r), r) for r in refs_not_in_routes)))
     routes_not_in_refs = [r for r in route_ids if r not in memrefs]
     if routes_not_in_refs:
-        details += "Found matching routes not in route_master: %s\n" \
+        detlist.append("Found matching routes not in route_master: %s" \
           % (", ".join("[%s %s]" \
-            % (osm.relid2url(r), r) for r in routes_not_in_refs))
-    # FIXME: convert test_tag() to return a string
-#    tags = rel.tags
-#    test_tag(tags, "route_master", mode)
-#    test_tag(tags, "ref", lineref)
-#    test_tag(tags, "name")
-#    test_tag(tags, "network", "HSL")
-    if details: # prepend header
-        details = "'''Route master'''\n" + details
-        cell = style_problem + "| " + cell + "[[#{} | more]]".format(ld["lineref"])
+            % (osm.relid2url(r), r) for r in routes_not_in_refs)))
+    tags = rel.tags
+    detlist.append(test_tag(tags, "route_master", mode))
+    detlist.append(test_tag(tags, "ref", lineref))
+    detlist.append(test_tag(tags, "name"))
+    detlist.append(test_tag(tags, "network", "HSL"))
+    if any(detlist): # prepend header
+        details = "'''Route master:'''\n\n" \
+          + "\n\n".join(s for s in detlist if s) + "\n\n"
+        cell = style_problem + "| " + cell \
+          + "[[#{} | more]]".format(ld["lineref"])
+    else:
+        details = ""
+        cell = style_ok + "| " + cell
     return cell, details
 
 
@@ -427,9 +440,9 @@ def print_table(md):
 ! style="border-style: none" |
 ! style="border-style: none" |
 ! style="border-style: none" |
-! style="border-style: solid; border-width: 1px 1px 1px 3px" colspan=5 | Direction 1
-! style="border-style: solid; border-width: 1px 1px 1px 3px" colspan=5 | Direction 2
-|-
+! style="border-style: solid; border-width: 1px 1px 1px 3px" colspan=5 | Direction 0
+! style="border-style: solid; border-width: 1px 1px 1px 3px" colspan=5 | Direction 1"""
+    subheader = """|-
 ! Line
 ! Master
 ! Extra
@@ -446,9 +459,14 @@ def print_table(md):
 ! Platforms"""
     footer = "|}"
 
+    mode = md["mode"]
     wr("= PTv2 tagged HSL lines in OSM =\n")
     wr(header)
+    linecounter = 0
     for line in md["lines"]:
+        if linecounter % 20 == 0:
+            wr(subheader)
+        linecounter += 1
         ld = md["lines"][line]
         ld["details"] = ""
         # Line
@@ -456,11 +474,12 @@ def print_table(md):
         wr("| {}".format(line))
         # Master
         rm_cell, rm_details = cell_route_master(ld)
-        ld["details"] += rm_details
+        if rm_details:
+            ld["details"] += rm_details
         wr("| {}".format(rm_cell))
         # Extra
         if ld["alsoids"]:
-            ld["details"] += "Extra routes in OSM with the same ref: %s\n" % \
+            ld["details"] += "Extra routes in OSM with the same ref: %s\n\n" % \
               (", ".join("[%s %d]" % (osm.relid2url(r), r) for r in ld["alsoids"]))
             wr("| " + style_problem + " | [[#{} | yes]]".format(line))
         else:
@@ -480,16 +499,18 @@ def print_table(md):
             ld["details"] += "%d route pattern(s) in HSL data, matching may be wrong.\n" \
               % (len(codes))
             for i in range(len(relids)):
-                ld["details"] += " %s -> %s" % \
+                ld["details"] += " %s -> %s\n" % \
                   (relids[i], "None" if osm2hsl[i] is None else codes[osm2hsl[i]])
             for i in range(len(codes)):
-                ld["details"] += " %s -> %s" % \
+                ld["details"] += " %s -> %s\n" % \
                   (codes[i], "None" if hsl2osm[i] is None else relids[hsl2osm[i]])
             wr("| " + style_maybe + " | [[#{} | maybe]]".format(line))
         else:
-            wr("| " + style_ok + " | OK")
+            wr("| " + style_ok + " | Uniq.")
         # Directions / OSM relations
         id2hslindex = ld["id2hslindex"]
+        htags = ld["htags"]
+        dirindex = 0
         for rel in ld["rels"]:
             dirdetails = ""
             # OSM
@@ -497,41 +518,52 @@ def print_table(md):
             # HSL
             hsli = id2hslindex[rel.id]
             wr("| [%s %s]" % (pattern2url(codes[hsli]),  codes[hsli]))
-            # Tags TODO
-            wr("| " + style_ok + " | OK")
-#            # name-tag gets a special treatment
-#            test_hsl_routename(rel.tags, htags["shortName"],  htags["longName"])
-#            # FIXME: network != agency always
-#            test_tag(rel.tags, "network", agency["name"])
-#            test_tag(rel.tags, "from")
-#            test_tag(rel.tags, "to")
-#            if modecolors[mode]:
-#                test_tag(rel.tags, "colour", modecolors[mode])
-#            test_tag(rel.tags, "color", badtag=True)
-#            if hsli is not None and interval_tags:
-#                itags = ld["hslitags"][hsli]
-#                for k in sorted(itags.keys()):
-#                    test_tag(rel.tags, k, itags[k])
-#
-#            if rel.tags.get("public_transport:version", "0") != "2":
-#                wr("Tag public_transport:version=2 not set in OSM route %s. Giving up." % (rel.id))
-#                continue
-#
-#            if any(mem.role == 'forward' or mem.role == 'backward'
-#              for mem in rel.members):
-#                wr("OSM route(s) tagged with public_transport:version=2,")
-#                wr("but have members with 'forward' or 'backward' roles.")
-#                wr("Skipping shape, platform and stop tests.\n")
-#                continue
+            # Tags
+            tdetlist = []
+            # name-tag gets a special treatment
+            tdetlist.append(test_hsl_routename(rel.tags, htags["shortName"],  htags["longName"]))
+            # FIXME: network != agency always
+            tdetlist.append(test_tag(rel.tags, "network", md["agency"]))
+            tdetlist.append(test_tag(rel.tags, "from"))
+            tdetlist.append(test_tag(rel.tags, "to"))
+#            if md["modecolors"][mode]:
+#                tdetlist.append(test_tag(rel.tags, "colour", md["modecolors"][mode]))
+            tdetlist.append(test_tag(rel.tags, "color", badtag=True))
+            if hsli is not None and md["interval_tags"]:
+                itags = ld["hslitags"][hsli]
+                for k in sorted(itags.keys()):
+                    tdetlist.append(test_tag(rel.tags, k, itags[k]))
+
+            if rel.tags.get("public_transport:version", "0") != "2":
+                dirdetails += "'''Tags:\n\n" + "\n\n".join([s for s in tdetlist if s]) + "\n\n"
+                dirdetails += "Tag public_transport:version=2 not set in OSM route %s. Giving up.\n\n" % (rel.id)
+                wr("| " + style_problem + " | [[#{} | no PTv2]]".format(line))
+                continue
+            elif any(mem.role == 'forward' or mem.role == 'backward'
+              for mem in rel.members):
+                dirdetails += "'''Tags:\n\n" + "\n\n".join([s for s in tdetlist if s]) + "\n\n"
+                dirdetails += "OSM route(s) tagged with public_transport:version=2,"
+                dirdetails += "but have members with 'forward' or 'backward' roles."
+                dirdetails += "Skipping shape and platform tests.\n\n"
+                wr("| " + style_problem + " | [[#{} | PTv1]]".format(line))
+                wr("| " + style_problem + " | N/A")
+                wr("| " + style_problem + " | N/A")
+                continue
+            elif any(tdetlist):
+                dirdetails += "'''Tags:'''\n\n" + "\n\n".join([s for s in tdetlist if s]) + "\n\n"
+                wr("| " + style_problem + " | [[#{} | info]]".format(line))
+            else:
+                wr("| " + style_ok + " | OK")
             # Shape
+            sdetlist = []
             if hsli is not None:
                 tol = 30
                 (shape, gaps) = osm.shape(rel)
                 ovl = test_shape_overlap(shape, ld["hslshapes"][hsli], tol=tol)
                 if gaps:
-                    dirdetails += "Route has '''gaps'''!\n"
-                dirdetails += "Route [%s %s] overlap (tolerance %d m) with HSL pattern [%s %s] is '''%1.0f %%'''.\n" \
-                  % (osm.relid2url(rel.id), rel.id, tol, pattern2url(codes[hsli]),  codes[hsli], ovl*100.0)
+                    sdetlist.append("Route has '''gaps'''!")
+                    sdetlist.append("Route [%s %s] overlap (tolerance %d m) with HSL pattern [%s %s] is '''%1.0f %%'''." \
+                      % (osm.relid2url(rel.id), rel.id, tol, pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
                 if gaps:
                     wr("| " + style_problem + " | [[#{} | gaps]]".format(line))
                 elif ovl <= 0.90:
@@ -541,8 +573,11 @@ def print_table(md):
                 else:
                     wr("| " + style_ok + " | %1.0f%%" % (ovl*100.0))
             else:
-                dirdetails += "Route %s overlap could not be calculated.\n" \
-                  % (rel.id)
+                sdetlist.append("Route %s overlap could not be calculated.\n" \
+                  % (rel.id))
+                wr("| " + style_problem + " | [[#{} | error]]".format(line))
+            if any(sdetlist):
+                dirdetails += "'''Shape:'''\n\n" + "\n\n".join(sdetlist) + "\n\n"
 
             # Platforms TODO
             wr("| " + style_ok + " | OK")
@@ -567,7 +602,9 @@ def print_table(md):
 #                wr("Platforms could not be compared.")
 #            wr("")
             if dirdetails:
-                dirdetails = "'''Direction'''\n\n" + dirdetails
+                dirdetails = "'''Direction {}'''\n\n".format(dirindex) + dirdetails
+                ld["details"] += dirdetails
+            dirindex += 1
     wr(footer)
     wr("\n")
 
