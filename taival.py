@@ -358,7 +358,8 @@ def output_dict(d, args):
         if "lineref" in d.keys():
             mw.print_linedict(d)
         else:
-            mw.print_modedict(d)
+#            mw.print_modedict(d)
+            mw.report_tabular(d)
     elif args.format == "pickle":
         out = get_output(args)
         pickle.dump(d, out)
