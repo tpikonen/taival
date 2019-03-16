@@ -5,6 +5,11 @@ from digitransit import pattern2url
 
 outfile = None
 
+style_problem = 'style="background-color: #ffaaaa" '
+style_ok = 'style="background-color: #aaffaa" '
+style_maybe = 'style="background-color: #ccccaa" '
+style_relstart = 'style="border-style: solid; border-width: 1px 1px 1px 3px" '
+
 def wr(*args, **kwargs):
     kwargs["file"] = outfile
     print(*args, **kwargs)
@@ -368,4 +373,211 @@ def print_modedict(md):
     for l in lines:
         print_linedict(lines[l], agdict)
 
+
+def cell_route_master(ld):
+    """Return a (cell, details) tuple, where cell is contets of 'Master' cell
+    in line table, possible problems are reported in details string."""
+
+    lineref = ld["lineref"]
+    mode = ld["mode"]
+    rm_rels = ld["rm_rels"]
+    route_ids = [r.id for r in ld["rels"]]
+    cell = ""
+    details = ""
+
+    nr = len(rm_rels)
+    if nr < 1:
+        cell = "No"
+        return cell, details
+    elif nr > 1:
+        cell = style_problem + "| more than 1"
+        details += "'''Route master'''\nMore than one route_master relations found: %s\n" \
+          % (", ".join("[%s %s]" \
+            % (osm.relid2url(r.id), r.id) for r in rm_rels))
+        return cell, details
+    elif nr == 1:
+        rel = rm_rels[0]
+        cell = "[%s %s]" % (osm.relid2url(rel.id), rel.id)
+    memrefs = [m.ref for m in rel.members]
+    refs_not_in_routes = [r for r in memrefs if r not in route_ids]
+    if refs_not_in_routes:
+        details += "route_master has extra members: %s\n" % (", ".join("[%s %s]" \
+          % (osm.relid2url(r), r) for r in refs_not_in_routes))
+    routes_not_in_refs = [r for r in route_ids if r not in memrefs]
+    if routes_not_in_refs:
+        details += "Found matching routes not in route_master: %s\n" \
+          % (", ".join("[%s %s]" \
+            % (osm.relid2url(r), r) for r in routes_not_in_refs))
+    # FIXME: convert test_tag() to return a string
+#    tags = rel.tags
+#    test_tag(tags, "route_master", mode)
+#    test_tag(tags, "ref", lineref)
+#    test_tag(tags, "name")
+#    test_tag(tags, "network", "HSL")
+    if details: # prepend header
+        details = "'''Route master'''\n" + details
+        cell = style_problem + "| " + cell + "[[#{} | more]]".format(ld["lineref"])
+    return cell, details
+
+
+def print_table(md):
+    header = """{| class="wikitable"
+|-
+! style="border-style: none" |
+! style="border-style: none" |
+! style="border-style: none" |
+! style="border-style: none" |
+! style="border-style: solid; border-width: 1px 1px 1px 3px" colspan=5 | Direction 1
+! style="border-style: solid; border-width: 1px 1px 1px 3px" colspan=5 | Direction 2
+|-
+! Line
+! Master
+! Extra
+! Match
+! style="border-style: solid; border-width: 1px 1px 1px 3px" | OSM
+! HSL
+! Tags
+! Shape
+! Platforms
+! style="border-style: solid; border-width: 1px 1px 1px 3px" | OSM
+! HSL
+! Tags
+! Shape
+! Platforms"""
+    footer = "|}"
+
+    wr("= PTv2 tagged HSL lines in OSM =\n")
+    wr(header)
+    for line in md["lines"]:
+        ld = md["lines"][line]
+        ld["details"] = ""
+        # Line
+        wr("|-")
+        wr("| {}".format(line))
+        # Master
+        rm_cell, rm_details = cell_route_master(ld)
+        ld["details"] += rm_details
+        wr("| {}".format(rm_cell))
+        # Extra
+        if ld["alsoids"]:
+            ld["details"] += "Extra routes in OSM with the same ref: %s\n" % \
+              (", ".join("[%s %d]" % (osm.relid2url(r), r) for r in ld["alsoids"]))
+            wr("| " + style_problem + " | [[#{} | yes]]".format(line))
+        else:
+            wr("| " + style_ok + " | No")
+        # Match
+        relids = [r.id for r in ld["rels"]]
+        codes = ld["codes"]
+        osm2hsl = ld["osm2hsl"]
+        hsl2osm = ld["hsl2osm"]
+        if len(ld["rels"]) > 2:
+            ld["details"] += "More than 2 matching OSM routes found: %s.\n" % \
+              (", ".join("[%s %d]" % (osm.relid2url(rid), rid) for rid in relids))
+            ld["details"] += "Giving up.\n"
+            wr("| " + style_problem + " | [[#{} | no]]".format(line))
+            continue
+        elif len(codes) != 2:
+            ld["details"] += "%d route pattern(s) in HSL data, matching may be wrong.\n" \
+              % (len(codes))
+            for i in range(len(relids)):
+                ld["details"] += " %s -> %s" % \
+                  (relids[i], "None" if osm2hsl[i] is None else codes[osm2hsl[i]])
+            for i in range(len(codes)):
+                ld["details"] += " %s -> %s" % \
+                  (codes[i], "None" if hsl2osm[i] is None else relids[hsl2osm[i]])
+            wr("| " + style_maybe + " | [[#{} | maybe]]".format(line))
+        else:
+            wr("| " + style_ok + " | OK")
+        # Directions / OSM relations
+        id2hslindex = ld["id2hslindex"]
+        for rel in ld["rels"]:
+            dirdetails = ""
+            # OSM
+            wr("| " + style_relstart + "| [%s %s]" % (osm.relid2url(rel.id), rel.id))
+            # HSL
+            hsli = id2hslindex[rel.id]
+            wr("| [%s %s]" % (pattern2url(codes[hsli]),  codes[hsli]))
+            # Tags TODO
+            wr("| " + style_ok + " | OK")
+#            # name-tag gets a special treatment
+#            test_hsl_routename(rel.tags, htags["shortName"],  htags["longName"])
+#            # FIXME: network != agency always
+#            test_tag(rel.tags, "network", agency["name"])
+#            test_tag(rel.tags, "from")
+#            test_tag(rel.tags, "to")
+#            if modecolors[mode]:
+#                test_tag(rel.tags, "colour", modecolors[mode])
+#            test_tag(rel.tags, "color", badtag=True)
+#            if hsli is not None and interval_tags:
+#                itags = ld["hslitags"][hsli]
+#                for k in sorted(itags.keys()):
+#                    test_tag(rel.tags, k, itags[k])
+#
+#            if rel.tags.get("public_transport:version", "0") != "2":
+#                wr("Tag public_transport:version=2 not set in OSM route %s. Giving up." % (rel.id))
+#                continue
+#
+#            if any(mem.role == 'forward' or mem.role == 'backward'
+#              for mem in rel.members):
+#                wr("OSM route(s) tagged with public_transport:version=2,")
+#                wr("but have members with 'forward' or 'backward' roles.")
+#                wr("Skipping shape, platform and stop tests.\n")
+#                continue
+            # Shape
+            if hsli is not None:
+                tol = 30
+                (shape, gaps) = osm.shape(rel)
+                ovl = test_shape_overlap(shape, ld["hslshapes"][hsli], tol=tol)
+                if gaps:
+                    dirdetails += "Route has '''gaps'''!\n"
+                dirdetails += "Route [%s %s] overlap (tolerance %d m) with HSL pattern [%s %s] is '''%1.0f %%'''.\n" \
+                  % (osm.relid2url(rel.id), rel.id, tol, pattern2url(codes[hsli]),  codes[hsli], ovl*100.0)
+                if gaps:
+                    wr("| " + style_problem + " | [[#{} | gaps]]".format(line))
+                elif ovl <= 0.90:
+                    wr("| " + style_problem + " | %1.0f%%" % (ovl*100.0))
+                elif ovl <= 0.95:
+                    wr("| " + style_maybe + " | %1.0f%%" % (ovl*100.0))
+                else:
+                    wr("| " + style_ok + " | %1.0f%%" % (ovl*100.0))
+            else:
+                dirdetails += "Route %s overlap could not be calculated.\n" \
+                  % (rel.id)
+
+            # Platforms TODO
+            wr("| " + style_ok + " | OK")
+#            hsli = id2hslindex[rel.id]
+#            # Platforms
+#            wr("'''Platforms:'''\n")
+#            hslplatforms = ld["hslplatforms"]
+#            if hsli is not None:
+#                osmplatform = osm.platforms(rel)
+#                hslplatform = hslplatforms[hsli]
+#                # FIXME: Add stop names to unified diffs after diffing, somehow
+#                #osmp = [p[2]+" "+p[3]+"\n" for p in osmplatform]
+#                #hslp = [str(p[2])+" "+str(p[3])+"\n" for p in hslplatform]
+#                osmp = [p[2]+"\n" for p in osmplatform]
+#                hslp = [p[2]+"\n" for p in hslplatform]
+#                diff = list(difflib.unified_diff(osmp, hslp, "OSM", "HSL"))
+#                if diff:
+#                    outfile.writelines(" " + d for d in diff)
+#                else:
+#                    wr(" => Identical platform sequences.\n")
+#            else:
+#                wr("Platforms could not be compared.")
+#            wr("")
+            if dirdetails:
+                dirdetails = "'''Direction'''\n\n" + dirdetails
+    wr(footer)
+    wr("\n")
+
+    # details
+    if any(ld["details"] for ld in md["lines"].values()):
+        wr("== Details on differences ==\n")
+    else:
+        return
+    for ld in md["lines"].values():
+        if ld["details"]:
+            wr("=== {} ===".format(ld["lineref"]))
+            wr(ld["details"])
 
