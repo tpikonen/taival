@@ -663,3 +663,12 @@ def print_table(md):
             wr("=== {} ===".format(ld["lineref"]))
             wr(ld["details"])
 
+
+def report_tabular(md):
+    """Write a mediawiki report page with summary and line table."""
+    print_abstract(md)
+    print_summary(md)
+    if md["mode"] == "bus":
+        print_localbus(md)
+    print_oldlines(md)
+    print_table(md)
