@@ -460,7 +460,7 @@ def cell_route_master(ld):
     detlist.append(test_tag(tags, "network", "HSL"))
     if any(detlist): # prepend header
         style = style_problem
-        cell = cell + "[[#{} | more]]".format(ld["lineref"])
+        cell = cell + "[[#{} | diffs]]".format(ld["lineref"])
         details = "'''Route master:'''\n\n" \
           + "\n\n".join(s for s in detlist if s) + "\n\n"
     else:
@@ -590,7 +590,7 @@ def print_table(md):
                 continue
             elif any(tdetlist):
                 dirdetails += "'''Tags:'''\n\n" + "\n\n".join([s for s in tdetlist if s]) + "\n\n"
-                cells.append((style_problem, "[[#{} | more]]".format(line)))
+                cells.append((style_problem, "[[#{} | diffs]]".format(line)))
             else:
                 cells.append((style_ok, "OK"))
             # Shape
