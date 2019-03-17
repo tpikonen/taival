@@ -653,8 +653,8 @@ def print_table(md):
                 cells.append((style_problem, "[[#{} | error]]".format(line)))
             # Add per direction details
             if dirdetails:
-                ld["details"] += "'''Direction {}'''\n\n".format(dirindex) + dirdetails
-
+                ld["details"] += "'''Direction {}''', route [{} {}]\n\n"\
+                  .format(dirindex, osm.relid2url(rel.id), rel.id) + dirdetails
             dirindex += 1
             # end 'for rel in rels'
         if linecounter % 20 == 0:
