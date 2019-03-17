@@ -497,6 +497,11 @@ def print_table(md):
 
     mode = md["mode"]
     wr("= PTv2 tagged {} lines in OSM =\n".format(md["agency"]))
+    wr("This table compares {} routes with".format(mode))
+    wr("[[Key:public_transport:version | public_transport:version=2]] tag set.")
+    wr("The checker uses [[Proposed_features/Refined_Public_Transport | Refined public transport schema]]")
+    wr("as a reference.")
+    wr("")
     wr(header)
     linecounter = 0
     for line in md["lines"]:
