@@ -574,20 +574,16 @@ def print_table(md):
                     tdetlist.append(test_tag(rel.tags, k, itags[k]))
 
             if rel.tags.get("public_transport:version", "0") != "2":
+                dirdetails += "Tag public_transport:version=2 not set. Tests below are probably not correct.\n\n"
                 dirdetails += "'''Tags:\n\n" + "\n\n".join([s for s in tdetlist if s]) + "\n\n"
-                dirdetails += "Tag public_transport:version=2 not set in OSM route %s. Giving up.\n\n" % (rel.id)
                 cells.append((style_problem, "[[#{} | no PTv2]]".format(line)))
-                continue
             elif any(mem.role == 'forward' or mem.role == 'backward'
               for mem in rel.members):
+                dirdetails += "OSM route tagged with public_transport:version=2,"
+                dirdetails += "but has members with 'forward' or 'backward' roles."
+                dirdetails += "Tests below are probably not correct.\n\n"
                 dirdetails += "'''Tags:\n\n" + "\n\n".join([s for s in tdetlist if s]) + "\n\n"
-                dirdetails += "OSM route(s) tagged with public_transport:version=2,"
-                dirdetails += "but have members with 'forward' or 'backward' roles."
-                dirdetails += "Skipping shape and platform tests.\n\n"
                 cells.append((style_problem, "[[#{} | PTv1]]".format(line)))
-                cells.append((style_problem, "N/A"))
-                cells.append((style_problem, "N/A"))
-                continue
             elif any(tdetlist):
                 dirdetails += "'''Tags:'''\n\n" + "\n\n".join([s for s in tdetlist if s]) + "\n\n"
                 cells.append((style_problem, "[[#{} | diffs]]".format(line)))
