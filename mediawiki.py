@@ -5,10 +5,10 @@ from digitransit import pattern2url
 
 outfile = None
 
-style_problem = 'style="background-color: #ffaaaa"'
-style_ok = 'style="background-color: #aaffaa"'
-style_maybe = 'style="background-color: #eeee00"'
-style_relstart = 'style="border-style: solid; border-width: 1px 1px 1px 3px"'
+style_problem = "background-color: #ffaaaa"
+style_ok = "background-color: #aaffaa"
+style_maybe = "background-color: #eeee00"
+style_relstart = "border-style: solid; border-width: 1px 1px 1px 3px"
 
 def wr(*args, **kwargs):
     kwargs["file"] = outfile
@@ -420,8 +420,9 @@ def print_modedict(md):
 
 
 def cell_route_master(ld):
-    """Return a (cell, details) tuple, where cell is contets of 'Master' cell
-    in line table, possible problems are reported in details string."""
+    """Return a (style, cell, details) tuple, where style is the cell style
+    and cell is contents of the 'Master' cell in line table, possible
+    problems are reported in details string."""
 
     lineref = ld["lineref"]
     mode = ld["mode"]
@@ -430,13 +431,14 @@ def cell_route_master(ld):
 
     nr = len(rm_rels)
     if nr < 1:
-        return "No", ""
+        return "", "No", ""
     elif nr > 1:
-        cell = style_problem + "| more than 1"
+        style = style_problem
+        cell = "more than 1"
         details = "'''Route master'''\nMore than one route_master relations found: %s\n" \
           % (", ".join("[%s %s]" \
             % (osm.relid2url(r.id), r.id) for r in rm_rels))
-        return cell, details
+        return style, cell, details
     elif nr == 1:
         rel = rm_rels[0]
         cell = "[%s %s]" % (osm.relid2url(rel.id), rel.id)
@@ -457,14 +459,14 @@ def cell_route_master(ld):
     detlist.append(test_tag(tags, "name"))
     detlist.append(test_tag(tags, "network", "HSL"))
     if any(detlist): # prepend header
+        style = style_problem
+        cell = cell + "[[#{} | more]]".format(ld["lineref"])
         details = "'''Route master:'''\n\n" \
           + "\n\n".join(s for s in detlist if s) + "\n\n"
-        cell = style_problem + "| " + cell \
-          + "[[#{} | more]]".format(ld["lineref"])
     else:
+        style = style_ok
         details = ""
-        cell = style_ok + "| " + cell
-    return cell, details
+    return style, cell, details
 
 
 def print_table(md):
@@ -498,26 +500,23 @@ def print_table(md):
     wr(header)
     linecounter = 0
     for line in md["lines"]:
-        if linecounter % 20 == 0:
-            wr(subheader)
-        linecounter += 1
+        cells = []
         ld = md["lines"][line]
         ld["details"] = ""
-        # Line
-        wr("|-")
-        wr("| {}".format(line))
+        # Line, add a placeholder, edited later
+        cells.append(("", ""))
         # Master
-        rm_cell, rm_details = cell_route_master(ld)
+        rm_style, rm_cell, rm_details = cell_route_master(ld)
         if rm_details:
             ld["details"] += rm_details
-        wr("| {}".format(rm_cell))
+        cells.append((rm_style, rm_cell))
         # Extra
         if ld["alsoids"]:
             ld["details"] += "Extra routes in OSM with the same ref: %s\n\n" % \
               (", ".join("[%s %d]" % (osm.relid2url(r), r) for r in ld["alsoids"]))
-            wr("| " + style_problem + " | [[#{} | yes]]".format(line))
+            cells.append((style_problem, "[[#{} | yes]]".format(line)))
         else:
-            wr("| " + style_ok + " | No")
+            cells.append((style_ok, "No"))
         # Match
         relids = [r.id for r in ld["rels"]]
         codes = ld["codes"]
@@ -527,7 +526,7 @@ def print_table(md):
             ld["details"] += "More than 2 matching OSM routes found: %s.\n" % \
               (", ".join("[%s %d]" % (osm.relid2url(rid), rid) for rid in relids))
             ld["details"] += "Giving up.\n"
-            wr("| " + style_problem + " | [[#{} | no]]".format(line))
+            cells.append((style_problem, "[[#{} | no]]".format(line)))
             continue
         elif len(codes) != 2:
             ld["details"] += "%d route pattern(s) in %s data, matching may be wrong.\n" \
@@ -538,9 +537,9 @@ def print_table(md):
             for i in range(len(codes)):
                 ld["details"] += " %s -> %s\n" % \
                   (codes[i], "None" if hsl2osm[i] is None else relids[hsl2osm[i]])
-            wr("| " + style_maybe + " | [[#{} | maybe]]".format(line))
+            cells.append((style_maybe, "[[#{} | maybe]]".format(line)))
         else:
-            wr("| " + style_ok + " | Uniq.")
+            cells.append((style_ok, "Uniq."))
         # Directions / OSM relations
         id2hslindex = ld["id2hslindex"]
         htags = ld["htags"]
@@ -548,10 +547,10 @@ def print_table(md):
         for rel in ld["rels"]:
             dirdetails = ""
             # OSM
-            wr("| " + style_relstart + "| [%s %s]" % (osm.relid2url(rel.id), rel.id))
+            cells.append((style_relstart, "[%s %s]" % (osm.relid2url(rel.id), rel.id)))
             # HSL
             hsli = id2hslindex[rel.id]
-            wr("| [%s %s]" % (pattern2url(codes[hsli]),  codes[hsli]))
+            cells.append(("", "[%s %s]" % (pattern2url(codes[hsli]),  codes[hsli])))
             # Tags
             tdetlist = []
             # name-tag gets a special treatment
@@ -571,7 +570,7 @@ def print_table(md):
             if rel.tags.get("public_transport:version", "0") != "2":
                 dirdetails += "'''Tags:\n\n" + "\n\n".join([s for s in tdetlist if s]) + "\n\n"
                 dirdetails += "Tag public_transport:version=2 not set in OSM route %s. Giving up.\n\n" % (rel.id)
-                wr("| " + style_problem + " | [[#{} | no PTv2]]".format(line))
+                cells.append((style_problem, "[[#{} | no PTv2]]".format(line)))
                 continue
             elif any(mem.role == 'forward' or mem.role == 'backward'
               for mem in rel.members):
@@ -579,15 +578,15 @@ def print_table(md):
                 dirdetails += "OSM route(s) tagged with public_transport:version=2,"
                 dirdetails += "but have members with 'forward' or 'backward' roles."
                 dirdetails += "Skipping shape and platform tests.\n\n"
-                wr("| " + style_problem + " | [[#{} | PTv1]]".format(line))
-                wr("| " + style_problem + " | N/A")
-                wr("| " + style_problem + " | N/A")
+                cells.append((style_problem, "[[#{} | PTv1]]".format(line)))
+                cells.append((style_problem, "N/A"))
+                cells.append((style_problem, "N/A"))
                 continue
             elif any(tdetlist):
                 dirdetails += "'''Tags:'''\n\n" + "\n\n".join([s for s in tdetlist if s]) + "\n\n"
-                wr("| " + style_problem + " | [[#{} | info]]".format(line))
+                cells.append((style_problem, "[[#{} | more]]".format(line)))
             else:
-                wr("| " + style_ok + " | OK")
+                cells.append((style_ok, "OK"))
             # Shape
             sdetlist = []
             if hsli is not None:
@@ -598,24 +597,23 @@ def print_table(md):
                     sdetlist.append("Route has '''gaps'''!")
                     sdetlist.append("Route [%s %s] overlap (tolerance %d m) with %s pattern [%s %s] is '''%1.0f %%'''." \
                       % (osm.relid2url(rel.id), rel.id, tol, md["agency"], pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
-                if gaps:
-                    wr("| " + style_problem + " | [[#{} | gaps]]".format(line))
+                    cells.append((style_problem, "[[#{} | gaps]]".format(line)))
                 elif ovl <= 0.90:
-                    wr("| " + style_problem + " | %1.0f%%" % (ovl*100.0))
+                    sdetlist.append("Route [%s %s] overlap (tolerance %d m) with %s pattern [%s %s] is '''%1.0f %%'''." \
+                      % (osm.relid2url(rel.id), rel.id, tol, md["agency"], pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
+                    cells.append((style_problem, "%1.0f%%" % (ovl*100.0)))
                 elif ovl <= 0.95:
-                    wr("| " + style_maybe + " | %1.0f%%" % (ovl*100.0))
+                    cells.append((style_maybe, "%1.0f%%" % (ovl*100.0)))
                 else:
-                    wr("| " + style_ok + " | %1.0f%%" % (ovl*100.0))
+                    cells.append((style_ok, "%1.0f%%" % (ovl*100.0)))
             else:
                 sdetlist.append("Route %s overlap could not be calculated.\n" \
                   % (rel.id))
-                wr("| " + style_problem + " | [[#{} | error]]".format(line))
+                cells.append((style_problem, "[[#{} | error]]".format(line)))
             if any(sdetlist):
                 dirdetails += "'''Shape:'''\n\n" + "\n\n".join(sdetlist) + "\n\n"
-
             # Platforms
             hsli = id2hslindex[rel.id]
-            # Platforms
             hslplatforms = ld["hslplatforms"]
             if hsli is not None:
                 osmplatform = osm.platforms(rel)
@@ -639,17 +637,31 @@ def print_table(md):
                             ins += 1
                         elif d[0] == '-':
                             rem += 1
-                    wr("| " + style_problem + "| [[#{} | +{} -{}]]"\
-                      .format(line, ins, rem))
+                    cells.append((style_problem, "[[#{} | +{} -{}]]"\
+                      .format(line, ins, rem)))
                 else:
-                    wr("| " + style_ok + "| {}/{}".format(len(osmp), len(hslp)))
+                    cells.append((style_ok, "{}/{}".format(len(osmp), len(hslp))))
             else:
                 dirdetails += "'''Platforms:'''\n\n"
                 dirdetails += "Platforms could not be compared."
+                cells.append((style_problem, "[[#{} | error]]".format(line)))
+            # Add per direction details
             if dirdetails:
-                dirdetails = "'''Direction {}'''\n\n".format(dirindex) + dirdetails
-                ld["details"] += dirdetails
+                ld["details"] += "'''Direction {}'''\n\n".format(dirindex) + dirdetails
+
             dirindex += 1
+            # end 'for rel in rels'
+        if linecounter % 20 == 0:
+            wr(subheader)
+        linecounter += 1
+        wr("|-")
+        if any(c[0] == style_problem for c in cells):
+            cells[0] = (style_problem, "[[#{} | {}]]".format(line, line))
+        else:
+            cells[0] = (style_ok, str(line))
+        for style, content in cells:
+            wr('| style="{}" | {}'.format(style, content))
+
     wr(footer)
     wr("\n")
 
