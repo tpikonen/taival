@@ -504,6 +504,7 @@ def print_table(md):
     wr("")
     wr(header)
     linecounter = 0
+    lines_w_probs = 0
     for line in md["lines"]:
         cells = []
         ld = md["lines"][line]
@@ -662,13 +663,16 @@ def print_table(md):
         wr("|-")
         if any(c[0] == style_problem for c in cells):
             cells[0] = (style_problem, "[[#{} | {}]]".format(line, line))
+            lines_w_probs += 1
         else:
             cells[0] = (style_ok, str(line))
         for style, content in cells:
             wr('| style="{}" | {}'.format(style, content))
 
     wr(footer)
-    wr("\n")
+    wr("")
+    wr("{} lines total.\n".format(linecounter))
+    wr("{} lines with differences.".format(lines_w_probs))
 
     # details
     if any(ld["details"] for ld in md["lines"].values()):
