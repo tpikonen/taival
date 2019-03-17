@@ -676,12 +676,12 @@ def print_table(md):
 
     # details
     if any(ld["details"] for ld in md["lines"].values()):
-        wr("== Details on differences ==\n")
+        wr("= Details on differences =\n")
     else:
         return
     for ld in md["lines"].values():
         if ld["details"]:
-            wr("=== {} ===".format(ld["lineref"]))
+            wr("== {} ==".format(ld["lineref"]))
             wr(ld["details"])
 
 
