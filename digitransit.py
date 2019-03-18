@@ -33,8 +33,8 @@ class Digitransit:
         }
         if modecolors is not None:
             self.modecolors = modecolors
-        self.peakhours = self.normalize_hours(peakhours)
-        self.nighthours = self.normalize_hours(nighthours)
+        self.peakhours = self.normalize_hours(peakhours) if peakhours else None
+        self.nighthours = self.normalize_hours(nighthours) if nighthours else None
         # Digitransit API transportModes: BUS, RAIL, TRAM, SUBWAY, FERRY
         self.mode_from_osm = {
             "train":    "RAIL",
