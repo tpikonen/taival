@@ -1,4 +1,5 @@
 import requests, json, logging
+from collections import defaultdict
 
 # Obtain data from digitransit.fi GraphQL API
 
@@ -46,6 +47,7 @@ class Digitransit:
             "aerialway": "FUNICULAR",
             "ferry":    "FERRY"
         }
+        self.mode_to_osm = { v:k for (k,v) in self.mode_from_osm.items() if v }
         self.taxibus_refs = None
 
     # TODO: def apiquery(self, query):
@@ -246,3 +248,54 @@ class Digitransit:
         times = [t["stoptimes"][0]["scheduledArrival"] for t in alltimes]
         times.sort()
         return times
+
+
+    def stops(self):
+        """Return all stops in the network."""
+        query = """
+{
+  stops {
+    code
+    gtfsId
+    zoneId
+    name
+    parentStation {
+      code
+    }
+    platformCode
+    wheelchairBoarding
+    vehicleMode
+    cluster {
+      gtfsId
+      name
+    }
+    lat
+    lon
+  }
+}
+"""
+        r = requests.post(url=self.url, data=query, headers=self.headers)
+        r.raise_for_status()
+        r.encoding = 'utf-8'
+        data = json.loads(r.text)["data"]["stops"]
+        return self.sanitize_stops(data)
+
+
+    def sanitize_stops(self, data):
+        stops = {} # (ref -> tags) dict
+        clusters = defaultdict(list) # cluster gtfsId -> ref list
+        for d in data:
+            ref = d["code"]
+            if not ref:
+                continue
+            d["mode"] = self.mode_to_osm[d['vehicleMode']]
+            d.pop('vehicleMode', None)
+            d["latlon"] = (d["lat"], d["lon"])
+            d.pop('lat', None)
+            d.pop('lon', None)
+            stops[ref] = d
+            cref = d["cluster"]["gtfsId"]
+            clusters[cref].append(ref)
+        return (stops, clusters)
+
+
