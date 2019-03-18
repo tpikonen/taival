@@ -112,7 +112,7 @@ def test_stop_locations():
     # FIXME: Turn the comparison around and complain about HSL platforms
     # missing stop positions?
     tol = 0.050 # km FIXME: needs to be bigger for mode=subway?
-    osmstops = [osm.stops(rel) for rel in rels]
+    osmstops = [osm.route_stops(rel) for rel in rels]
     for r in range(len(osmstops)):
         wr("Route '%s'." % (rels[r].tags.get("name", "<no-name-tag>")))
         wr("Stops: %d in OSM vs. %d in HSL.\n" \
@@ -245,7 +245,7 @@ def print_linedict(ld, agency):
         wr("'''Shape:'''\n")
         if hsli is not None:
             tol = 30
-            (shape, gaps) = osm.shape(rel)
+            (shape, gaps) = osm.route_shape(rel)
             if gaps:
                 wr("Route has '''gaps'''!\n")
             ovl = test_shape_overlap(shape, hslshapes[hsli], tol=tol)
@@ -262,7 +262,7 @@ def print_linedict(ld, agency):
         wr("'''Platforms:'''\n")
         hslplatforms = ld["hslplatforms"]
         if hsli is not None:
-            osmplatform = osm.platforms(rel)
+            osmplatform = osm.route_platforms(rel)
             hslplatform = hslplatforms[hsli]
             # FIXME: Add stop names to unified diffs after diffing, somehow
             #osmp = [p[2]+" "+p[3]+"\n" for p in osmplatform]
@@ -593,7 +593,7 @@ def print_table(md):
             sdetlist = []
             if hsli is not None:
                 tol = 30
-                (shape, gaps) = osm.shape(rel)
+                (shape, gaps) = osm.route_shape(rel)
                 ovl = test_shape_overlap(shape, ld["hslshapes"][hsli], tol=tol)
                 if gaps:
                     sdetlist.append("Route has '''gaps'''!")
@@ -618,7 +618,7 @@ def print_table(md):
             hsli = id2hslindex[rel.id]
             hslplatforms = ld["hslplatforms"]
             if hsli is not None:
-                osmplatform = osm.platforms(rel)
+                osmplatform = osm.route_platforms(rel)
                 hslplatform = hslplatforms[hsli]
                 # FIXME: Add stop names to unified diffs after diffing, somehow
                 #osmp = [p[2]+" "+p[3]+"\n" for p in osmplatform]

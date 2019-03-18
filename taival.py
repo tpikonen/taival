@@ -63,9 +63,9 @@ def route2gpx(rel, fname):
     """Write a gpx-file fname from an overpy relation containing
     an OSM public_transport:version=2 route."""
     log.debug("Calling osm.shape")
-    latlon = osm.shape(rel)[0]
+    latlon = osm.route_shape(rel)[0]
     log.debug("Calling osm.platforms")
-    waypts = osm.platforms(rel)
+    waypts = osm.route_platforms(rel)
     write_gpx(latlon, fname, waypoints=waypts)
 
 
@@ -229,8 +229,8 @@ def collect_line(lineref, mode="bus", interval_tags=False):
 #        log.debug("Using just first route variants: %s\n" % (str(codes)))
 
     # Mapping
-    # FIXME: Duplicate call to osm.shape() in route checking loop.
-    osmshapes = [osm.shape(rel)[0] for rel in rels]
+    # FIXME: Duplicate call to osm.route_shape() in route checking loop.
+    osmshapes = [osm.route_shape(rel)[0] for rel in rels]
     hslshapes = [hsl.shape(c)[1] for c in codes]
     (osm2hsl, hsl2osm) = match_shapes(osmshapes, hslshapes)
     id2hslindex = {}

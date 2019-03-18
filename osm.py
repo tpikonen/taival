@@ -75,7 +75,7 @@ def ndist2(n1, n2):
     return (n1.lat - n2.lat)**2 + (n1.lon - n2.lon)**2
 
 
-def shape(rel):
+def route_shape(rel):
     """Get route shape from overpy relation. Return a ([[lat,lon]], gaps)
     tuple, where gaps is True if the ways in route do not share endpoint
     nodes. """
@@ -153,7 +153,7 @@ def member_coord(x):
     return (lat, lon)
 
 
-def platforms(rel):
+def route_platforms(rel):
     retval = []
     platforms = [mem.resolve(resolve_missing=True) \
       for mem in rel.members if mem.role == "platform"]
@@ -165,7 +165,7 @@ def platforms(rel):
     return retval
 
 
-def stops(rel):
+def route_stops(rel):
     retval = []
     stops = [mem.resolve(resolve_missing=True) \
       for mem in rel.members if mem.role == "stop"]
