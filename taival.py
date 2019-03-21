@@ -460,9 +460,14 @@ if __name__ == '__main__' and '__file__' in globals ():
 
     parser_help = subparsers.add_parser('help',
         help="Show help for a subcommand")
-    parser_help.add_argument('subcmd', metavar='<subcommand>',
-        help="Print help for this subcommand.")
-    parser_help.set_defaults(func=lambda args: subparsers.choices[args.subcmd].print_help())
+    parser_help.add_argument('subcmd', metavar='<subcommand>', nargs='?',
+        default='taival', help="Print help for this subcommand.")
+    def helpfun(arx):
+        if arx.subcmd == 'taival':
+            parser.print_help()
+        else:
+            subparsers.choices[args.subcmd].print_help()
+    parser_help.set_defaults(func=helpfun)
 
     args = parser.parse_args()
     #sys.exit(1)
