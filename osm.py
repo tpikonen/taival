@@ -142,8 +142,8 @@ def member_coord(x):
     Could be improved by calculating center of mass from ways etc."""
     if type(x) == overpy.Way:
         x.get_nodes(resolve_missing=True)
-        lat = x.nodes[0].lat
-        lon = x.nodes[0].lon
+        lat = float(x.nodes[0].lat)
+        lon = float(x.nodes[0].lon)
     elif type(x) == overpy.Relation:
         m = x.members[0].resolve(resolve_missing=True)
         (lat, lon) = member_coord(m)
