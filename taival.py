@@ -9,6 +9,8 @@ pvd = digitransit.Digitransit("HSL", \
         "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql", \
         hsl.modecolors, hsl.peakhours, hsl.nighthours)
 
+osm.area = hsl.overpass_area
+
 logging.basicConfig(level=logging.INFO,
     format="[%(asctime)s.%(msecs)03d] %(levelname)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S")

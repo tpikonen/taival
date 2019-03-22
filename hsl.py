@@ -68,6 +68,15 @@ city2ref = {
 } 
 
 
+def get_overpass_area(clist):
+    area = "("+ ' '.join(\
+      [ 'area[boundary=administrative][admin_level=8][name="{}"][ref={}];'\
+        .format(c, city2ref[c]) for c in clist ]) + ")->.hel;"
+    return area
+
+overpass_area = get_overpass_area(cities)
+
+
 def longname2stops(longname):
     # First, replace hyphens in know stop names and split and replace back
     # to get a stop list from HSL longName.
