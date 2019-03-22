@@ -34,21 +34,6 @@ def inv_haversine(d):
     return degrees(d/r)
 
 
-def hsl_longname2stops(longname):
-    # First, replace hyphens in know stop names and split and replace back
-    # to get a stop list from HSL longName.
-    # Match list from gtfs stops.txt:
-    # csvtool namedcol "stop_name" stops.txt | grep -o '.*-[[:upper:]]...' | sort -u | tr '\n' '|'
-    pat = "Ala-Malm|Ala-Souk|Ala-Tikk|Etelä-Kask|Etelä-Viin|Helsinki-Vant|Itä-Hakk|Kala-Matt|Kallio-Kuni|Koivu-Mank|Lill-Beng|Meri-Rast|Övre-Juss|Pohjois-Haag|Pohjois-Viin|S-Mark|Stor-Kvis|Stor-Rösi|Taka-Niip|Ukko-Pekk|Vanha-Mank|Vanha-Sten|Ylä-Souk|Yli-Finn|Yli-Juss"
-    # Other place names with hyphens
-    extrapat="|Pohjois-Nikinmä|Länsi-Pasila|Etelä-Leppäv"
-    pat = pat + extrapat
-    subf = lambda m: m.group().replace('-', '☺')
-    stops = re.sub(pat, subf, longname).split('-')
-    stops = [s.replace('☺', '-').strip() for s in stops]
-    return stops
-
-
 def test_osm_shapes_have_v1_roles(rels):
     """Return True any of the relations in rels contain members with
     'forward' or 'backward' roles."""

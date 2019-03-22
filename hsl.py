@@ -1,0 +1,84 @@
+import re
+from collections import defaultdict
+
+# See https://fi.wikipedia.org/wiki/Helsingin_seudun_liikenne#J%C3%A4senkunnat
+cities = [ "Helsinki", "Espoo", "Vantaa", "Kirkkonummi", "Kerava",
+    "Kauniainen", "Sipoo", "Tuusula", "Siuntio" ]
+
+modecolors = { "bus": "#007AC9",
+    "tram":     "#00985F",
+    "train":    "#8C4799",
+    "subway":   "#FF6319",
+    "ferry":    "#00B9E4",
+    "aerialway": None,
+    "monorail": None,
+    "trolleybus": None
+}
+
+peakhours = [(7, 9), (15,18)]
+# HSL night services start at 23, but use midnight to avoid overlap with
+# normal services.
+nighthours = [(0, 5)]
+
+prefix2city = {
+    "": "Helsinki",
+    "E": "Espoo",
+    "H": "Helsinki",
+    "Hy": "Hyvinkää",
+    "Jä": "Järvenpää",
+    "Ka": "Kauniainen",
+    "Ke": "Kerava",
+    "Ki": "Kirkkonummi",
+    "La": "Lahti",
+    "Mä": "Mäntsälä",
+    "Nu": "Nurmijärvi",
+    "Pn": "Pornainen",
+    "Po": "Porvoo",
+    "Ri": "Riihimäki",
+    "Si": "Sipoo",
+    "So": "Siuntio",
+    "Tu": "Tuusula",
+    "V": "Vantaa",
+}
+
+city2prefixes = defaultdict(list)
+for p,c in prefix2city.items():
+    city2prefixes[c].append(p)
+
+# See https://fi.wikipedia.org/wiki/Luettelo_Suomen_kuntanumeroista
+city2ref = {
+    "Espoo": "049",
+    "Helsinki": "091",
+    "Hyvinkää": "106",
+    "Järvenpää": "186",
+    "Kauniainen": "235",
+    "Kerava": "245",
+    "Kirkkonummi": "257",
+    "Kouvola": "286",
+    "Lahti": "398",
+    "Mäntsälä": "505",
+    "Nurmijärvi": "543",
+    "Pornainen": "611",
+    "Porvoo": "638",
+    "Riihimäki": "694",
+    "Sipoo": "753",
+    "Siuntio": "755",
+    "Tuusula": "858",
+    "Vantaa": "092",
+} 
+
+
+def longname2stops(longname):
+    # First, replace hyphens in know stop names and split and replace back
+    # to get a stop list from HSL longName.
+    # Match list from gtfs stops.txt:
+    # csvtool namedcol "stop_name" stops.txt | grep -o '.*-[[:upper:]]...' | sort -u | tr '\n' '|'
+    pat = "Ala-Malm|Ala-Souk|Ala-Tikk|Etelä-Kask|Etelä-Viin|Helsinki-Vant|Itä-Hakk|Kala-Matt|Kallio-Kuni|Koivu-Mank|Lill-Beng|Meri-Rast|Övre-Juss|Pohjois-Haag|Pohjois-Viin|S-Mark|Stor-Kvis|Stor-Rösi|Taka-Niip|Ukko-Pekk|Vanha-Mank|Vanha-Sten|Ylä-Souk|Yli-Finn|Yli-Juss"
+    # Other place names with hyphens
+    extrapat="|Pohjois-Nikinmä|Länsi-Pasila|Etelä-Leppäv"
+    pat = pat + extrapat
+    subf = lambda m: m.group().replace('-', '☺')
+    stops = re.sub(pat, subf, longname).split('-')
+    stops = [s.replace('☺', '-').strip() for s in stops]
+    return stops
+

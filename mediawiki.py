@@ -1,5 +1,5 @@
 import difflib, sys
-import osm
+import osm, hsl
 from util import *
 from digitransit import pattern2url
 
@@ -53,7 +53,7 @@ def test_hsl_routename(ts, lineref, longname):
     # Reittiopas longName field sometimes has dangling hyphens, remove them.
     longname = longname[1:] if longname[0] == '-' else longname
     longname = longname[:-1] if longname[-1] == '-' else longname
-    stops = hsl_longname2stops(longname)
+    stops = hsl.longname2stops(longname)
     name1 = lineref + " " + "–".join(stops) # Use en dash as a separator
     stops.reverse()
     name2 = lineref + " " + "–".join(stops)

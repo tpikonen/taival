@@ -1,25 +1,13 @@
 #!/usr/bin/env python3
 import sys, datetime, gpxpy.gpx, argparse, logging, pickle
-import digitransit, osm
+import digitransit, osm, hsl
 import mediawiki as mw
 from util import *
 
-hsl_modecolors = { "bus": "#007AC9",
-    "tram":     "#00985F",
-    "train":    "#8C4799",
-    "subway":   "#FF6319",
-    "ferry":    "#00B9E4",
-    "aerialway": None,
-    "monorail": None,
-    "trolleybus": None
-}
-hsl_peakhours = [(7, 9), (15,18)]
-# HSL night services start at 23, but use midnight to avoid overlap with
-# normal services.
-hsl_nighthours = [(0, 5)]
-hsl = digitransit.Digitransit("HSL", \
+
+pvd = digitransit.Digitransit("HSL", \
         "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql", \
-        hsl_modecolors, hsl_peakhours, hsl_nighthours)
+        hsl.modecolors, hsl.peakhours, hsl.nighthours)
 
 logging.basicConfig(level=logging.INFO,
     format="[%(asctime)s.%(msecs)03d] %(levelname)s: %(message)s",
@@ -93,7 +81,7 @@ def collect_interval_tags(code):
     for i in range(3):
         day = (today + datetime.timedelta(days=delta+i)).strftime("%Y%m%d")
         (norm, peak, night) = arrivals2intervals(\
-            hsl.arrivals_for_date(code, day), hsl.peakhours, hsl.nighthours)
+            pvd.arrivals_for_date(code, day), pvd.peakhours, pvd.nighthours)
         tagname = "interval" + (":" + daynames[i] if daynames[i] else "")
         if (len(norm) + len(peak) + len(night)) == 0:
             tags[tagname] = "no_service"
@@ -210,14 +198,14 @@ def collect_line(lineref, mode="bus", interval_tags=False):
     alsoids = [r for r in allrelids if r not in relids]
     ld["alsoids"] = alsoids
 
-    log.debug("Calling hsl.tags")
-    htags = hsl.tags(lineref)
+    log.debug("Calling pvd.tags")
+    htags = pvd.tags(lineref)
     ld["htags"] = htags
-#    codes = hsl.codes_after_date(lineref, \
+#    codes = pvd.codes_after_date(lineref, \
 #                datetime.date.today().strftime("%Y%m%d"), mode)
-#    codes = hsl.codes_longest_per_direction(lineref, mode)
+#    codes = pvd.codes_longest_per_direction(lineref, mode)
     log.debug("Calling codes_longest_after_date")
-    codes = hsl.codes_longest_after_date(lineref, \
+    codes = pvd.codes_longest_after_date(lineref, \
                 datetime.date.today().strftime("%Y%m%d"), mode)
     ld["codes"] = codes
     log.debug("Found HSL pattern codes: %s\n" %
@@ -231,7 +219,7 @@ def collect_line(lineref, mode="bus", interval_tags=False):
     # Mapping
     # FIXME: Duplicate call to osm.route_shape() in route checking loop.
     osmshapes = [osm.route_shape(rel)[0] for rel in rels]
-    hslshapes = [hsl.shape(c)[1] for c in codes]
+    hslshapes = [pvd.shape(c)[1] for c in codes]
     (osm2hsl, hsl2osm) = match_shapes(osmshapes, hslshapes)
     id2hslindex = {}
     for i in range(len(relids)):
@@ -248,7 +236,7 @@ def collect_line(lineref, mode="bus", interval_tags=False):
         hsli = id2hslindex[rel.id]
         if hsli is not None:
             hslplatforms[hsli] = [ p if p[2] else (p[0],p[1],"<no ref in HSL>",p[3])
-                for p in hsl.platforms(codes[hsli]) ]
+                for p in pvd.platforms(codes[hsli]) ]
             if interval_tags:
                 hslitags[hsli] = collect_interval_tags(codes[hsli])
     ld["hslplatforms"] = hslplatforms
@@ -268,11 +256,11 @@ def collect_mode(mode="bus", interval_tags=False):
     agencyurl = "https://www.hsl.fi/"
     md["agency"] = agency
     md["agencyurl"] = agencyurl
-    md["modecolors"] = hsl_modecolors
+    md["modecolors"] = hsl.modecolors
 
     osmdict = osm.all_linerefs(mode)
-    hsldict = hsl.all_linerefs(mode)
-    hsl_localbus = hsl.taxibus_linerefs(mode)
+    hsldict = pvd.all_linerefs(mode)
+    hsl_localbus = pvd.taxibus_linerefs(mode)
     osm2dict = osm.ptv2_linerefs(mode)
     wasroutes = osm.was_routes(mode)
     disroutes = osm.disused_routes(mode)
@@ -311,7 +299,7 @@ def sub_osmxml(args):
         with open(fname, "w") as ff:
             for i in ids:
                 ff.write("    <member type='node' ref='%d' role='platform' />\n" % i)
-            stopnames = hsl_longname2stops(htags["longName"])
+            stopnames = hsl.longname2stops(htags["longName"])
             if reverse:
                 stopnames.reverse()
             ff.write("    <tag k='name' v='%s' />\n" \
@@ -323,23 +311,23 @@ def sub_osmxml(args):
             ff.write("    <tag k='public_transport:version' v='2' />\n")
 
     log.info("Processing line %s, mode '%s'" % (args.line, args.mode))
-    log.debug("Calling hsl.codes")
-    codes = hsl.codes(args.line, args.mode)
-    log.debug("Calling hsl.tags")
-    htags = hsl.tags(args.line)
+    log.debug("Calling pvd.codes")
+    codes = pvd.codes(args.line, args.mode)
+    log.debug("Calling pvd.tags")
+    htags = pvd.tags(args.line)
     for c in codes:
         log.debug("Pattern code %s" % c)
         # reverse stops string if direction code is odd
         reverse = (int(c.split(":")[2]) % 2) == 1
-        log.debug("   Calling hsl.platforms")
-        stops = [p[2] for p in hsl.platforms(c)]
-        fname = "%s_%s_%s.osm" % (args.line, hsl.agency, c)
+        log.debug("   Calling pvd.platforms")
+        stops = [p[2] for p in pvd.platforms(c)]
+        fname = "%s_%s_%s.osm" % (args.line, pvd.agency, c)
         log.debug("   Calling osm.stops_by_refs")
         ids = osm.stops_by_refs(stops, args.mode)
         write_xml(fname, ids, htags, args.mode, reverse)
         print(fname)
     if not codes:
-        print("Line '%s' not found in %s." % lineref, hsl.agency)
+        print("Line '%s' not found in %s." % lineref, pvd.agency)
 
 
 def output_dict(d, args):
