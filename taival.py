@@ -289,6 +289,35 @@ def collect_mode(mode="bus", interval_tags=False):
     return md
 
 
+def collect_stops():
+    ost = {}
+
+    osm.area = hsl.get_overpass_area(["Helsinki"])
+    log.debug('Calling osm.stops("ferry")')
+    ost.update(osm.stops("ferry"))
+
+    log.debug('Calling osm.stops("tram")')
+    ost.update(osm.stops("tram"))
+
+    osm.area = hsl.get_overpass_area(["Helsinki", "Espoo"])
+    log.debug('Calling osm.stops("subway")')
+    ost.update(osm.stops("subway"))
+
+    osm.area = hsl.get_overpass_area(set(hsl.city2ref.keys()))
+    log.debug('Calling osm.stops("train")')
+    ost.update(osm.stops("train"))
+
+    osm.area = hsl.overpass_area
+    log.debug('Calling osm.stops("bus")')
+    ost.update(osm.stops("bus"))
+
+    (pst, pcl) = pvd.stops()
+
+    sd = { "ost": ost, "pst": pst, "pcl": pcl }
+
+    return sd
+
+
 def sub_gpx(args):
     log.info("Processing line %s, mode '%s'" % (args.line, args.mode))
     osm2gpx(args.line, args.mode)
@@ -347,8 +376,11 @@ def output_dict(d, args):
         mw.outfile = out
         if "lineref" in d.keys():
             mw.print_linedict(d)
+        elif "ost" in d.keys():
+            # FIXME: should format have a 'city' arg?
+            city = args.city if "city" in vars(args).keys() else "Helsinki"
+            mw.report_stoptable_cluster(d, city)
         else:
-#            mw.print_modedict(d)
             mw.report_tabular(d)
     elif args.format == "pickle":
         out = get_output(args)
@@ -375,8 +407,15 @@ def sub_format(args):
     output_dict(d, args)
 
 
-#def sub_fullreport(args):
-#    pass
+def sub_stops(args):
+    # FIXME: limit collection according to args.city
+    sd = collect_stops()
+    output_dict(sd, args)
+
+
+# TODO
+def sub_stations(args):
+    pass
 
 
 # TODO: Add sub_stops(args) for creating a report on stops
@@ -432,6 +471,19 @@ if __name__ == '__main__' and '__file__' in globals ():
         dest='format', default='mediawiki',
         help='Output format: mediawiki (default), pickle')
     parser_report.set_defaults(func=sub_report)
+
+    parser_stops = subparsers.add_parser('stops',
+        help='Report on stops')
+    parser_stops.add_argument('--output', '-o', metavar='<output-file>',
+        dest='output', default='-', help='Direct output to file (default stdout)')
+    parser_stops.add_argument('--format', '-f', metavar='<format>',
+        dest='format', default='mediawiki',
+        help='Output format: mediawiki (default), pickle')
+    parser_stops.add_argument('city', nargs='?', metavar='<city>',
+        default="Helsinki",
+        help='City to report on: {} (default Helsinki)'\
+          .format(", ".join(hsl.city2prefixes.keys())))
+    parser_stops.set_defaults(func=sub_stops)
 
     parser_format = subparsers.add_parser('format',
         help='Format and output previously collected data from pickle format.')
