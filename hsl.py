@@ -68,6 +68,16 @@ city2ref = {
 } 
 
 
+zoneid2name = {
+    "01": "A",
+    "02": "B",
+    "04": "C",
+    "06": "D", # Kirkkonummi, Siuntio
+    "09": "D", # Tuusula, Kerava, Sipoo
+    "99": "no",
+}
+
+
 def get_overpass_area(clist):
     area = "("+ ' '.join(\
       [ 'area[boundary=administrative][admin_level=8][name="{}"][ref={}];'\
@@ -91,3 +101,13 @@ def longname2stops(longname):
     stops = [s.replace('☺', '-').strip() for s in stops]
     return stops
 
+
+def get_stopname(ps):
+    """Return stop name composed from 'name' and 'platformCode' fields."""
+    pname = ps.get("name", None)
+    pplat = ps.get("platformCode", None)
+    if pplat and pplat[0].isnumeric():
+        pn = "{}, laituri {}".format(pname, pplat)
+    else:
+        pn = pname
+    return pn
