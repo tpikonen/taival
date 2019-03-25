@@ -9,6 +9,13 @@ style_problem = "background-color: #ffaaaa"
 style_ok = "background-color: #aaffaa"
 style_maybe = "background-color: #eeee00"
 style_relstart = "border-style: solid; border-width: 1px 1px 1px 3px"
+style_details = "background-color: #ffffff"
+
+xtype2osm = {\
+    'n': "node",
+    'w': "way",
+    'r': "relation",
+}
 
 def wr(*args, **kwargs):
     kwargs["file"] = outfile
@@ -691,3 +698,197 @@ def report_tabular(md):
         print_localbus(md)
     print_oldlines(md)
     print_table(md)
+
+
+def check_type(os):
+    type2style = {
+        "node": style_ok,
+        "way": style_maybe,
+        "relation": style_problem,
+    }
+    osmtype = xtype2osm[os["x:type"]]
+    text = "[https://www.openstreetmap.org/{}/{} {}]".format(osmtype, os["x:id"], osmtype)
+    return type2style[osmtype], text
+
+
+def check_dist(os, ps):
+    """Return a (style, text) tuple for distance between OSM and provider stops."""
+    op = os.get("x:latlon", None)
+    pp = ps.get("latlon", None)
+    if op and pp:
+        dist = haversine(op, pp)
+        if dist > 0.999:
+            return style_problem, "{0:.1f} km".format(dist)
+        elif dist > 0.050:
+            return style_problem, "{0:.0f} m".format(dist*1000)
+        else:
+            return style_ok, "{0:.0f} m".format(dist*1000)
+    else:
+        return style_problem, "Error"
+
+def check_name(os, ps):
+    """Return (style, text, details) cell tuple comparing name value."""
+    on = os.get("name", None)
+    pn = hsl.get_stopname(ps)
+    if on:
+        if on == pn:
+            return (style_ok, "OK", "")
+        else:
+            details = "'''name''' set to '{}', should be '{}'."\
+              .format(on, pn)
+            return (style_problem, "diffs", details)
+    else:
+        details = "'''name''' not set in OSM, should be '{}'."\
+          .format(pn if pn else "<No name in HSL>")
+        return (style_problem, "no", details)
+
+
+def check_zone(os, ps):
+    """Return (style, text) cell tuple comparing zone:HSL value."""
+    oz = os.get("zone:HSL", None)
+    pzid = ps.get("zoneId", None)
+    pz = hsl.zoneid2name[pzid] if pzid else "?"
+    if oz:
+        if oz == pz:
+            return (style_ok, oz)
+        else:
+            return (style_problem, "{}/{}".format(oz, pz))
+    else:
+        if pz == 'no':
+            return (style_ok, "no")
+        else:
+            return (style_problem, pz)
+
+
+def check_wheelchair(os, ps):
+    """Return (cell style, text) string tuple comparing wheelchair
+    accessibility for a stop."""
+    ow = os.get("wheelchair", None)
+    pw = ps.get("wheelchairBoarding", None)
+    if not ow:
+        if not pw:
+            return (style_problem, "?/err1")
+        elif pw == "NO_INFORMATION":
+            return (style_ok, "?/?")
+        elif pw == "POSSIBLE":
+            return (style_problem, "?/yes")
+        elif pw == "NOT_POSSIBLE":
+            return (style_problem, "?/no")
+        else:
+            return (style_problem, "?/err2")
+    elif ow == 'yes' or ow == 'limited' or ow == 'designated':
+        if not pw:
+            return (style_problem, "yes/err1")
+        elif pw == "NO_INFORMATION":
+            return (style_maybe, "yes/?")
+        elif pw == "POSSIBLE":
+            return (style_ok, "yes/yes")
+        elif pw == "NOT_POSSIBLE":
+            return (style_problem, "yes/no")
+        else:
+            return (style_problem, "yes/err2")
+    elif ow == 'no':
+        if not pw:
+            return (style_problem, "no/err1")
+        elif pw == "NO_INFORMATION":
+            return (style_maybe, "no/?")
+        elif pw == "POSSIBLE":
+            return (style_problem, "no/yes")
+        elif pw == "NOT_POSSIBLE":
+            return (style_ok, "no/no")
+        else:
+            return (style_problem, "no/err2")
+    else:
+        return (style_problem, "err")
+
+
+def print_stoptable_cluster(sd, refs=None):
+    cols = 8
+    header = '{| class="wikitable"\n|-\n! colspan=%d | Cluster' % (cols)
+    subheader = """|-
+! ref
+! HSL code
+! mode
+! type
+! delta
+! name
+! zone:HSL
+! wheelch."""
+    footer = "|}"
+
+    ost = sd["ost"]
+    pst = sd["pst"] # data from provider
+    pcl = sd["pcl"]
+
+    if refs:
+        kk = refs
+    else:
+        kk = list(ost.keys())
+    kk = [ k for k in kk if pst.get(k, None) ]
+    kk.sort()
+    wc = ost.copy() # working copy
+    linecounter = 0
+    wr(header)
+    wr(subheader)
+    for k in kk:
+        if linecounter > 20:
+            wr(subheader)
+            linecounter = 0
+        s = wc.get(k, None)
+        if not s:
+            continue
+        c = pst[k]["cluster"]
+        clist = list(set(pcl[c["gtfsId"]]))
+        clist.sort()
+        linecounter += len(clist) + 1
+        wr("|-")
+        wr("|colspan={} | {}".format(cols, c["name"]))
+        for ref in clist:
+            detlist = []
+            wr("|-")
+            os = wc.pop(ref, None)
+            ps = pst[ref]
+            wr("| {}".format(ref))
+            wr("| [https://reittiopas.hsl.fi/pysakit/{} {}]"\
+              .format(ps["gtfsId"], ps["gtfsId"]))
+            # FIXME: Make ost dict to be ref -> taglist, complain if it has more than 1 item
+            if os:
+                wr("| {}".format(ps["mode"])) # FIXME: check mode tags from OSM
+                wr('| style="{}" | {}'.format(*check_type(os)))
+                wr('| style="{}" | {}'.format(*check_dist(os, ps)))
+                (st, txt, details) = check_name(os, ps)
+                if details:
+                    detlist.append(details)
+                wr('| style="{}" | {}'.format(st, txt))
+                wr('| style="{}" | {}'.format(*check_zone(os, ps)))
+                wr('| style="{}" | {}'.format(*check_wheelchair(os, ps)))
+                if detlist:
+                    wr('|-')
+                    wr('| colspan={} style="{}" | {}'.format(cols, style_details, "\n".join(detlist)))
+            else:
+                (lat, lon) = ps["latlon"]
+                wr('| colspan={} style="{}" | missing from [https://www.openstreetmap.org/#map=19/{}/{} OSM]'.format(cols-3, style_problem, lat, lon))
+                wr('|-')
+                taglist = []
+                taglist.append("'''name'''='{}'".format(hsl.get_stopname(ps)))
+                pzid = ps.get("zoneId", None)
+                if pzid and pzid != 99:
+                    taglist.append("'''zone:HSL'''='{}'".format(hsl.zoneid2name[pzid]))
+                pw = ps.get("wheelchairBoarding", None)
+                if pw and pw == 'POSSIBLE':
+                    taglist.append("'''wheelchair'''='yes'")
+                elif pw and pw == 'NOT_POSSIBLE':
+                    taglist.append("'''wheelchair'''='no'")
+                tagdesc = "Tags from HSL: " + ", ".join(taglist) + "."
+                wr('| colspan={} style="{}" | {}'.format(cols, style_details, tagdesc))
+
+    wr(footer)
+    wr("")
+
+
+def report_stoptable_cluster(sd, city):
+    prefixes = hsl.city2prefixes[city]
+    pattern = re.compile("^(" + "|".join(prefixes) + ")[0-9]{4,4}$")
+    pst = sd["pst"]
+    refs = [ k for k in pst.keys() if pattern.match(k) ]
+    print_stoptable_cluster(sd, refs)
