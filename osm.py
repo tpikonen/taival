@@ -198,6 +198,82 @@ def stops_by_refs(refs, mode="bus"):
     return stopids
 
 
+def stops(mode="bus"):
+    """Return all stops for a given mode in the area. The mode can also be
+    a list of mode strings, in which case stops for all the modes listed
+    are returned.
+
+    A dict with ref as a key and tags dictionaries as values is returned.
+    The following additional keys are included in the tag dictionaries:
+    x:id    id of the object
+    x:type  type if the object as a string of length 1 ('n', 'w', or 'r')
+    x:latlon (latitude, longitude) tuple of the object, as calculated
+            by osm.member_coord()
+"""
+
+    mode2querytags = {
+        "train": [
+            '["railway"="station"]["ref"]',
+            '["railway"="halt"]["ref"]',
+            '["railway"="platform"]["ref"]',
+            '["railway"="platform_edge"]["ref"]' ],
+        "subway": [
+            '["railway"="station"]["station"="subway"]["ref"]',
+            '["railway"="halt"]["subway"="yes"]["ref"]',
+            '["railway"="platform"]["subway"="yes"]["ref"]',
+            '["railway"="platform_edge"]["subway"="yes"]["ref"]' ],
+        "monorail": [
+            '["railway"="station"]["station"="monorail"]["ref"]',
+            '["railway"="halt"]["monorail"="yes"]["ref"]',
+            '["railway"="platform"]["monorail"="yes"][["ref"]',
+            '["railway"="platform_edge"]["monorail"="yes"]["ref"]' ],
+        "tram": [
+            '["railway"="tram_stop"]["ref"]' ],
+        "bus": [
+            '["amenity"="bus_station"]["ref"]',
+            '["highway"="bus_stop"]["ref"]' ],
+        "trolleybus":[
+            '["amenity"="bus_station"]["trolleybus"="yes"]["ref"]',
+            '["highway"="bus_stop"]["trolleybus"="yes"]["ref"]' ],
+        "ferry": [
+            '["amenity"="ferry_terminal"]["ref"]' ],
+        "aerialway": [
+            '["aerialway"="station"]["ref"]' ],
+    }
+
+    qtempl = "node(area.hel){};\nway(area.hel){};\nrel(area.hel){};"
+    if isinstance(mode, list):
+        qlist = [ e for m in mode for e in mode2querytags[m] ]
+    else:
+        qlist = mode2querytags[mode]
+    q = "[out:json][timeout:120];\n" + area + "\n(\n" \
+      + "\n".join([ qtempl.format(t, t, t) for t in qlist ]) + "\n);out body;"
+    print(q)
+    rr = api.query(q)
+    return sanitize_rr(rr)
+
+
+def sanitize_rr(rr):
+    def sanitize_add(sd, elist, etype):
+        for e in elist:
+            ref = e.tags["ref"]
+            sd[ref] = { \
+                "x:id": e.id,
+                "x:type": etype,
+                "x:latlon": member_coord(e),
+            }
+            sd [ref].update(e.tags)
+        return sd
+    stops = {}
+    # NB: Because sanitize_add() calls member_coords(), which gets more
+    # (untagged) nodes (and maybe ways), the order of calls below
+    # must be like this.
+    sanitize_add(stops, rr.nodes, "n")
+    sanitize_add(stops, rr.ways, "w")
+    sanitize_add(stops, rr.relations, "r")
+    return stops
+
+
 def rel(relno):
     rr = api.query("rel(id:%d);(._;>;>;);out body;" % (relno))
     return rr.relations[0]
