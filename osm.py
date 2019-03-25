@@ -290,10 +290,9 @@ def rels_v2(lineref, mode="bus"):
 
 
 def rels(lineref, mode="bus"):
-    """Get all lines corresponding to lineref and mode in Helsinki area.
+    """Get all lines corresponding to lineref and mode in area.
     """
     q = '%s rel(area.hel)[route="%s"][ref="%s"];(._;>;>;);out body;' % (area, mode, lineref)
     rr = api.query(q)
     return rr.relations
-
 
