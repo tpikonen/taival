@@ -338,7 +338,7 @@ def output_dict(d, args):
         if args.output == '-':
             out = sys.stdout
         else:
-            out = open(args.output, "w")
+            out = open(args.output, "wb")
         return out
 
     out = None
