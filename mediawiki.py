@@ -743,6 +743,16 @@ def check_name(os, ps):
         return (style_problem, "no", details)
 
 
+def check_findr(os):
+    """Return (style, text) tuple for presence of ref:findr tag in OSM."""
+    # FIXME: does not compare the actual value against Digiroad data
+    findr = os.get("ref:findr", None)
+    if findr:
+        return (style_ok, str(findr))
+    else:
+        return (style_problem, "no")
+
+
 def check_zone(os, ps):
     """Return (style, text) cell tuple comparing zone:HSL value."""
     oz = os.get("zone:HSL", None)
@@ -803,7 +813,7 @@ def check_wheelchair(os, ps):
 
 
 def print_stoptable_cluster(sd, refs=None):
-    cols = 8
+    cols = 9
     header = '{| class="wikitable"\n|-\n! colspan=%d | Cluster' % (cols)
     subheader = """|-
 ! ref
@@ -812,6 +822,7 @@ def print_stoptable_cluster(sd, refs=None):
 ! type
 ! delta
 ! name
+! ref:findr
 ! zone:HSL
 ! wheelch."""
     footer = "|}"
@@ -860,6 +871,7 @@ def print_stoptable_cluster(sd, refs=None):
                 if details:
                     detlist.append(details)
                 wr('| style="{}" | {}'.format(st, txt))
+                wr('| style="{}" | {}'.format(*check_findr(os)))
                 wr('| style="{}" | {}'.format(*check_zone(os, ps)))
                 wr('| style="{}" | {}'.format(*check_wheelchair(os, ps)))
                 if detlist:
@@ -879,8 +891,9 @@ def print_stoptable_cluster(sd, refs=None):
                     taglist.append("'''wheelchair'''='yes'")
                 elif pw and pw == 'NOT_POSSIBLE':
                     taglist.append("'''wheelchair'''='no'")
-                tagdesc = "Tags from HSL: " + ", ".join(taglist) + "."
-                wr('| colspan={} style="{}" | {}'.format(cols, style_details, tagdesc))
+                desc = "Mode is {}. ".format(ps["mode"])
+                desc += "Tags from HSL: " + ", ".join(taglist) + "."
+                wr('| colspan={} style="{}" | {}'.format(cols, style_details, desc))
 
     wr(footer)
     wr("")
