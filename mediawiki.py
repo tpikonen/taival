@@ -700,6 +700,28 @@ def report_tabular(md):
     print_table(md)
 
 
+def check_mode(os, ps):
+    """Return a (style, text, details) tuple on mode related OSM tags."""
+    modelist = osm.tags2mode(os)
+    pmode = ps["mode"]
+    if not modelist:
+        details = "No mode found, HSL has mode '{}'."\
+          .format(pmode)
+        return (style_problem, "none", details)
+    elif len(modelist) > 1:
+        details = "OSM Tags match multiple modes: {}, HSL has mode '{}'."\
+          .format(", ".join(modelist), pmode)
+        return (style_problem, "many", details)
+    else:
+        omode = modelist[0]
+        if omode == pmode:
+            return (style_ok, omode, "")
+        else:
+            details = "Mode from OSM tags is '{}', HSL has mode '{}'."\
+              .format(omode, pmode)
+            return (style_problem, "diffs", details)
+
+
 def check_type(os):
     type2style = {
         "node": style_ok,
@@ -864,7 +886,10 @@ def print_stoptable_cluster(sd, refs=None):
               .format(ps["gtfsId"], ps["gtfsId"]))
             # FIXME: Make ost dict to be ref -> taglist, complain if it has more than 1 item
             if os:
-                wr("| {}".format(ps["mode"])) # FIXME: check mode tags from OSM
+                (st, txt, details) = check_mode(os, ps)
+                if details:
+                    detlist.append(details)
+                wr('| style="{}" | {}'.format(st, txt))
                 wr('| style="{}" | {}'.format(*check_type(os)))
                 wr('| style="{}" | {}'.format(*check_dist(os, ps)))
                 (st, txt, details) = check_name(os, ps)
