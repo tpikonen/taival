@@ -1,6 +1,28 @@
 import re
 from math import radians, degrees, cos, sin, asin, sqrt
 
+def ddl_merge(m1, m2):
+    """Merge two defaultdict(list) values."""
+    for k, v in m2.items():
+        if isinstance(v, list):
+            m1[k].extend(v)
+        else:
+            m1[k].append(v)
+
+
+def ddl_uniq_key_merge(m1, m2, ukey):
+    """Merge two defaultdict(list) instances with dict elements,
+    if the key ukey is already present in some of the dicts in the value list,
+    ignore the value"""
+    for k, v in m2.items():
+        if isinstance(v, list):
+            for e1 in v:
+                if not e1[ukey] in [ e2[ukey] for e2 in m1[k] ]:
+                    m1[k].append(e1)
+        else:
+            if not v[ukey] in [ e[ukey] for e in m1[k] ]:
+                m1[k].append(v)
+
 
 def linesortkey(x):
     """Key function for list.sort() for correct line name sorting."""
