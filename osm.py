@@ -9,6 +9,67 @@ api.max_retry_count=10
 #area = """(area[admin_level=7]["name"="Helsingin seutukunta"]["ref"="011"][boundary=administrative]; area[admin_level=7]["name"="Porvoon seutukunta"]["ref"="201"][boundary=administrative];)->.hel;"""
 area = None
 
+stoptags = {
+    "train": [
+        { "railway": "station" },
+        { "railway": "halt" },
+        { "railway": "platform" },
+        { "railway": "platform_edge" } ],
+    "subway": [
+        { "railway": "station",         "station": "subway" },
+        { "railway": "halt",            "subway": "yes" },
+        { "railway": "platform",        "subway": "yes" },
+        { "railway": "platform_edge",   "subway": "yes" } ],
+    "monorail": [
+        { "railway": "station",         "station": "monorail" },
+        { "railway": "halt",            "monorail": "yes" },
+        { "railway": "platform",        "monorail": "yes" },
+        { "railway": "platform_edge",   "monorail": "yes" } ],
+    "tram": [
+        { "railway": "tram_stop" } ],
+    "bus": [
+        { "amenity": "bus_station" },
+        { "highway": "bus_stop" } ],
+    "trolleybus": [
+        { "amenity": "bus_station", "trolleybus": "yes" },
+        { "highway": "bus_stop", "trolleybus": "yes" } ],
+    "ferry": [
+        { "amenity": "ferry_terminal" } ],
+    "aerialway": [
+        { "aerialway": "station" } ],
+}
+
+
+def tags2mode(otags):
+    """Return a list of mode strings which correspond to OSM tags."""
+    outl = []
+    for mode, mtaglist in stoptags.items():
+        match = False
+        for mtags in mtaglist:
+            so_far_ok = True
+            for k, v in mtags.items():
+                if (not k in otags.keys()) or otags[k] != v:
+                    so_far_ok = False
+                    break
+            if so_far_ok:
+                match = True
+                break
+        if match:
+            outl.append(mode)
+    # train always matches also subway and monorail tags
+    if "train" in outl and ("subway" in outl or "monorail" in outl):
+        outl.remove("train")
+    return outl
+
+
+def mode2ovptags(mode):
+    """Return a list of Overpass tag filters."""
+    tlist = stoptags[mode]
+    out = []
+    for tags in tlist:
+        out.append(''.join([ '["{}"="{}"]'.format(k, v) for k, v in tags.items() ]))
+    return out
+
 
 def relid2url(relid):
     return "https://www.openstreetmap.org/relation/" + str(relid)
@@ -212,42 +273,11 @@ def stops(mode="bus"):
     x:latlon (latitude, longitude) tuple of the object, as calculated
             by osm.member_coord()
 """
-
-    mode2querytags = {
-        "train": [
-            '["railway"="station"]["ref"]',
-            '["railway"="halt"]["ref"]',
-            '["railway"="platform"]["ref"]',
-            '["railway"="platform_edge"]["ref"]' ],
-        "subway": [
-            '["railway"="station"]["station"="subway"]["ref"]',
-            '["railway"="halt"]["subway"="yes"]["ref"]',
-            '["railway"="platform"]["subway"="yes"]["ref"]',
-            '["railway"="platform_edge"]["subway"="yes"]["ref"]' ],
-        "monorail": [
-            '["railway"="station"]["station"="monorail"]["ref"]',
-            '["railway"="halt"]["monorail"="yes"]["ref"]',
-            '["railway"="platform"]["monorail"="yes"][["ref"]',
-            '["railway"="platform_edge"]["monorail"="yes"]["ref"]' ],
-        "tram": [
-            '["railway"="tram_stop"]["ref"]' ],
-        "bus": [
-            '["amenity"="bus_station"]["ref"]',
-            '["highway"="bus_stop"]["ref"]' ],
-        "trolleybus":[
-            '["amenity"="bus_station"]["trolleybus"="yes"]["ref"]',
-            '["highway"="bus_stop"]["trolleybus"="yes"]["ref"]' ],
-        "ferry": [
-            '["amenity"="ferry_terminal"]["ref"]' ],
-        "aerialway": [
-            '["aerialway"="station"]["ref"]' ],
-    }
-
     qtempl = "node(area.hel){};\nway(area.hel){};\nrel(area.hel){};"
     if isinstance(mode, list):
-        qlist = [ e for m in mode for e in mode2querytags[m] ]
+        qlist = [ e for m in mode for e in mode2ovptags(m) ]
     else:
-        qlist = mode2querytags[mode]
+        qlist = mode2ovptags(mode)
     q = "[out:json][timeout:120];\n" + area + "\n(\n" \
       + "\n".join([ qtempl.format(t, t, t) for t in qlist ]) + "\n);out body;"
     print(q)
