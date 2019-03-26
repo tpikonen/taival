@@ -709,7 +709,7 @@ def check_mode(os, ps):
           .format(pmode)
         return (style_problem, "none", details)
     elif len(modelist) > 1:
-        details = "OSM Tags match multiple modes: {}, HSL has mode '{}'."\
+        details = "OSM tags match multiple modes: {}. HSL has mode '{}'."\
           .format(", ".join(modelist), pmode)
         return (style_problem, "many", details)
     else:
@@ -871,7 +871,7 @@ def print_stoptable_cluster(sd, refs=None):
 ! name
 ! ref:findr
 ! zone:HSL
-! wheelch."""
+! wheelchair"""
     footer = "|}"
 
     ost = sd["ost"]
@@ -889,7 +889,7 @@ def print_stoptable_cluster(sd, refs=None):
     wr(header)
     wr(subheader)
     for k in kk:
-        if linecounter > 20:
+        if linecounter > 15:
             wr(subheader)
             linecounter = 0
         s = wc.get(k, None)
@@ -898,10 +898,11 @@ def print_stoptable_cluster(sd, refs=None):
         c = pst[k]["cluster"]
         clist = list(set(pcl[c["gtfsId"]]))
         clist.sort()
-        linecounter += len(clist) + 1
+        linecounter += 1
         wr("|-")
         wr("|colspan={} | {}".format(cols, c["name"]))
         for ref in clist:
+            linecounter += 1
             detlist = []
             wr("|-")
             os = wc.pop(ref, None)
@@ -928,11 +929,12 @@ def print_stoptable_cluster(sd, refs=None):
                 wr('| style="{}" | {}'.format(*check_zone(os, ps)))
                 wr('| style="{}" | {}'.format(*check_wheelchair(os, ps)))
                 if detlist:
+                    linecounter += len(detlist)
                     wr('|-')
                     wr('| colspan={} style="{}" | {}'.format(cols, style_details, "\n".join(detlist)))
             else:
                 (lat, lon) = ps["latlon"]
-                wr('| colspan={} style="{}" | missing from [https://www.openstreetmap.org/#map=19/{}/{} OSM]'.format(cols-3, style_problem, lat, lon))
+                wr('| colspan={} style="{}" | missing from [https://www.openstreetmap.org/#map=19/{}/{} OSM]'.format(cols-2, style_problem, lat, lon))
                 wr('|-')
                 taglist = []
                 taglist.append("'''name'''='{}'".format(hsl.get_stopname(ps)))
