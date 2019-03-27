@@ -1,5 +1,5 @@
 import difflib, sys
-import osm, hsl
+import osm, hsl, digiroad
 from util import *
 from digitransit import pattern2url
 
@@ -765,14 +765,39 @@ def check_name(os, ps):
         return (style_problem, "no", details)
 
 
-def check_findr(os):
-    """Return (style, text) tuple for presence of ref:findr tag in OSM."""
-    # FIXME: does not compare the actual value against Digiroad data
+def check_findr(os, ps):
+    """Return (style, text, details) tuple for ref:findr tag in OSM.
+    Compares value to Digiroad data."""
+    # FIXME: Should also compare by position, useless as it is now
     findr = os.get("ref:findr", None)
+    dlist = digiroad.stops_by_name.get(ps["name"], [])
+    drid = None
+    mindist = 1e6;
+    olatlon = os["x:latlon"]
+    for d in dlist:
+        dist = haversine(olatlon, (float(d['stop_lat']), float(d['stop_lon'])))
+        if dist < mindist:
+            mindist = dist
+            drid = d["stop_id"]
     if findr:
-        return (style_ok, str(findr))
+        if drid:
+            if findr == drid:
+                return (style_ok, str(findr), "")
+            else:
+                details = "'''ref:findr''' is '{}', should be '{}'."\
+                  .format(findr, drid)
+                return (style_problem, "diff", details)
+        else:
+            details = "'''ref:findr''' is set, but not found from Digiroad."
+            return (style_maybe, "{}/-".format(findr), details)
     else:
-        return (style_problem, "no")
+        if drid:
+            return (style_problem, str(drid), "")
+        else:
+#            details = "Digiroad ID for stop name '{}' missing."\
+#              .format(ps["name"])
+            details = ""
+            return (style_problem, "N/A", details)
 
 
 def check_zone(os, ps):
@@ -896,7 +921,10 @@ def print_stoptable_cluster(sd, refs=None):
                 if details:
                     detlist.append(details)
                 wr('| style="{}" | {}'.format(st, txt))
-                wr('| style="{}" | {}'.format(*check_findr(os)))
+                (st, txt, details) = check_findr(os, ps)
+                if details:
+                    detlist.append(details)
+                wr('| style="{}" | {}'.format(st, txt))
                 wr('| style="{}" | {}'.format(*check_zone(os, ps)))
                 wr('| style="{}" | {}'.format(*check_wheelchair(os, ps)))
                 if detlist:
