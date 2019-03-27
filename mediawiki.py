@@ -707,11 +707,11 @@ def check_mode(os, ps):
     if not modelist:
         details = "No mode found, HSL has mode '{}'."\
           .format(pmode)
-        return (style_problem, "none", details)
+        return (style_problem, pmode, details)
     elif len(modelist) > 1:
         details = "OSM tags match multiple modes: {}. HSL has mode '{}'."\
           .format(", ".join(modelist), pmode)
-        return (style_problem, "many", details)
+        return (style_problem, pmode, details)
     else:
         omode = modelist[0]
         if omode == pmode:
@@ -719,7 +719,7 @@ def check_mode(os, ps):
         else:
             details = "Mode from OSM tags is '{}', HSL has mode '{}'."\
               .format(omode, pmode)
-            return (style_problem, "diffs", details)
+            return (style_problem, pmode, details)
 
 
 def check_type(os):
