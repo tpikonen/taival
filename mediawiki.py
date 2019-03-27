@@ -905,13 +905,13 @@ def print_stoptable_cluster(sd, refs=None):
             linecounter += 1
             detlist = []
             wr("|-")
-            os = wc.pop(ref, None)
+            oslist = wc.pop(ref, [])
             ps = pst[ref]
             wr("| {}".format(ref))
             wr("| [https://reittiopas.hsl.fi/pysakit/{} {}]"\
               .format(ps["gtfsId"], ps["gtfsId"]))
-            # FIXME: Make ost dict to be ref -> taglist, complain if it has more than 1 item
-            if os:
+            if len(oslist) == 1:
+                os = oslist[0]
                 (st, txt, details) = check_mode(os, ps)
                 if details:
                     detlist.append(details)
@@ -932,6 +932,26 @@ def print_stoptable_cluster(sd, refs=None):
                     linecounter += len(detlist)
                     wr('|-')
                     wr('| colspan={} style="{}" | {}'.format(cols, style_details, "\n".join(detlist)))
+            elif len(oslist) > 1:
+                (lat, lon) = ps["latlon"]
+                wr('| colspan={} style="{}" | More than one stop with the same ref in OSM'.format(cols-2, style_problem))
+                wr('|-')
+                taglist = []
+                taglist.append("'''name'''='{}'".format(hsl.get_stopname(ps)))
+                pzid = ps.get("zoneId", None)
+                if pzid and pzid != 99:
+                    taglist.append("'''zone:HSL'''='{}'".format(hsl.zoneid2name[pzid]))
+                pw = ps.get("wheelchairBoarding", None)
+                if pw and pw == 'POSSIBLE':
+                    taglist.append("'''wheelchair'''='yes'")
+                elif pw and pw == 'NOT_POSSIBLE':
+                    taglist.append("'''wheelchair'''='no'")
+                desc = "Mode is {}. ".format(ps["mode"])
+                desc += "Tags from HSL: " + ", ".join(taglist) + "."
+                desc += "\nMatching stops in OSM: {}.".format(", ".join(\
+                  [ "[https://www.openstreetmap.org/{}/{} {}]"\
+                  .format(xtype2osm[e["x:type"]], e["x:id"], e["x:id"]) for e in oslist ]))
+                wr('| colspan={} style="{}" | {}'.format(cols, style_details, desc))
             else:
                 (lat, lon) = ps["latlon"]
                 wr('| colspan={} style="{}" | missing from [https://www.openstreetmap.org/#map=19/{}/{} OSM]'.format(cols-2, style_problem, lat, lon))

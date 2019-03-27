@@ -3,6 +3,7 @@ import sys, datetime, gpxpy.gpx, argparse, logging, pickle
 import digitransit, osm, hsl
 import mediawiki as mw
 from util import *
+from collections import defaultdict
 
 
 pvd = digitransit.Digitransit("HSL", \
@@ -290,30 +291,32 @@ def collect_mode(mode="bus", interval_tags=False):
 
 
 def collect_stops():
-    ost = {}
+    ost = defaultdict(list)
+    rst = {}
+
+    def collect_stops_mode(mode):
+        log.debug('Calling osm.stops("{}")'.format(mode))
+        refstops, rest = osm.stops(mode)
+        ddl_uniq_key_merge(ost, refstops, "x:id")
+        rst.update(rest)
 
     osm.area = hsl.get_overpass_area(["Helsinki"])
-    log.debug('Calling osm.stops("ferry")')
-    ost.update(osm.stops("ferry"))
-
-    log.debug('Calling osm.stops("tram")')
-    ost.update(osm.stops("tram"))
+    collect_stops_mode("ferry")
+    collect_stops_mode("tram")
 
     osm.area = hsl.get_overpass_area(["Helsinki", "Espoo"])
-    log.debug('Calling osm.stops("subway")')
-    ost.update(osm.stops("subway"))
+    collect_stops_mode("subway")
 
     osm.area = hsl.get_overpass_area(set(hsl.city2ref.keys()))
-    log.debug('Calling osm.stops("train")')
-    ost.update(osm.stops("train"))
+    collect_stops_mode("train")
 
     osm.area = hsl.overpass_area
-    log.debug('Calling osm.stops("bus")')
-    ost.update(osm.stops("bus"))
+    collect_stops_mode("bus")
 
+    log.debug('Calling pvd.stops()')
     (pst, pcl) = pvd.stops()
 
-    sd = { "ost": ost, "pst": pst, "pcl": pcl }
+    sd = { "ost": ost, "rst": rst, "pst": pst, "pcl": pcl }
 
     return sd
 

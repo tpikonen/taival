@@ -286,24 +286,30 @@ def stops(mode="bus"):
 
 
 def sanitize_rr(rr):
-    def sanitize_add(sd, elist, etype):
+    def sanitize_add(sd, rd, elist, etype):
         for e in elist:
-            ref = e.tags["ref"]
-            sd[ref] = { \
+            dd =  { \
                 "x:id": e.id,
                 "x:type": etype,
                 "x:latlon": member_coord(e),
             }
-            sd [ref].update(e.tags)
-        return sd
-    stops = {}
+            dd.update(e.tags)
+            ref = e.tags.get("ref", None)
+            if ref:
+                # sd is defaultdict(list)
+                sd[ref].append(dd)
+            else:
+                # rd is dict
+                rd[e.id] = dd
+    refstops = defaultdict(list)
+    rest = {}
     # NB: Because sanitize_add() calls member_coords(), which gets more
     # (untagged) nodes (and maybe ways), the order of calls below
     # must be like this.
-    sanitize_add(stops, rr.nodes, "n")
-    sanitize_add(stops, rr.ways, "w")
-    sanitize_add(stops, rr.relations, "r")
-    return stops
+    sanitize_add(refstops, rest, rr.nodes, "n")
+    sanitize_add(refstops, rest, rr.ways, "w")
+    sanitize_add(refstops, rest, rr.relations, "r")
+    return refstops, rest
 
 
 def rel(relno):
