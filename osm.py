@@ -15,6 +15,11 @@ stoptags = {
         { "railway": "halt" },
         { "railway": "platform" },
         { "railway": "platform_edge" } ],
+    "light_rail": [
+        { "railway": "station",         "station": "light_rail" },
+        { "railway": "halt",            "light_rail": "yes" },
+        { "railway": "platform",        "light_rail": "yes" },
+        { "railway": "platform_edge",   "light_rail": "yes" } ],
     "subway": [
         { "railway": "station",         "station": "subway" },
         { "railway": "halt",            "subway": "yes" },
