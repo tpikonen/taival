@@ -752,17 +752,18 @@ def check_name(os, ps):
     """Return (style, text, details) cell tuple comparing name value."""
     on = os.get("name", None)
     pn = hsl.get_stopname(ps)
+    cn = pn if pn else "<no name in HSL>"
+    cn = cn if len(cn) < 20 else cn[:15] + u"\u2026" + cn[-3:]
     if on:
         if on == pn:
-            return (style_ok, "OK", "")
+            return (style_ok, cn, "")
         else:
             details = "'''name''' set to '{}', should be '{}'."\
               .format(on, pn)
-            return (style_problem, "diffs", details)
+            return (style_problem, cn, details)
     else:
-        details = "'''name''' not set in OSM, should be '{}'."\
-          .format(pn if pn else "<No name in HSL>")
-        return (style_problem, "no", details)
+        details = "'''name''' not set in OSM, should be '{}'.".format(pn)
+        return (style_problem, cn, details)
 
 
 def check_findr(os, ps):
@@ -860,15 +861,14 @@ def check_wheelchair(os, ps):
 
 
 def print_stoptable_cluster(sd, refs=None):
-    cols = 9
+    cols = 8
     header = '{| class="wikitable"\n|-\n! colspan=%d | Cluster' % (cols)
     subheader = """|-
 ! ref
-! HSL code
+! name
 ! mode
 ! type
 ! delta
-! name
 ! ref:findr
 ! zone:HSL
 ! wheelchair"""
@@ -907,21 +907,20 @@ def print_stoptable_cluster(sd, refs=None):
             wr("|-")
             oslist = wc.pop(ref, [])
             ps = pst[ref]
-            wr("| {}".format(ref))
             wr("| [https://reittiopas.hsl.fi/pysakit/{} {}]"\
-              .format(ps["gtfsId"], ps["gtfsId"]))
+              .format(ps["gtfsId"], ref))
             if len(oslist) == 1:
                 os = oslist[0]
+                (st, txt, details) = check_name(os, ps)
+                if details:
+                    detlist.append(details)
+                wr('| style="{}" | {}'.format(st, txt))
                 (st, txt, details) = check_mode(os, ps)
                 if details:
                     detlist.append(details)
                 wr('| style="{}" | {}'.format(st, txt))
                 wr('| style="{}" | {}'.format(*check_type(os)))
                 wr('| style="{}" | {}'.format(*check_dist(os, ps)))
-                (st, txt, details) = check_name(os, ps)
-                if details:
-                    detlist.append(details)
-                wr('| style="{}" | {}'.format(st, txt))
                 (st, txt, details) = check_findr(os, ps)
                 if details:
                     detlist.append(details)
@@ -934,7 +933,7 @@ def print_stoptable_cluster(sd, refs=None):
                     wr('| colspan={} style="{}" | {}'.format(cols, style_details, "\n".join(detlist)))
             elif len(oslist) > 1:
                 (lat, lon) = ps["latlon"]
-                wr('| colspan={} style="{}" | More than one stop with the same ref in OSM'.format(cols-2, style_problem))
+                wr('| colspan={} style="{}" | More than one stop with the same ref in OSM'.format(cols-1, style_problem))
                 wr('|-')
                 taglist = []
                 taglist.append("'''name'''='{}'".format(hsl.get_stopname(ps)))
@@ -954,7 +953,7 @@ def print_stoptable_cluster(sd, refs=None):
                 wr('| colspan={} style="{}" | {}'.format(cols, style_details, desc))
             else:
                 (lat, lon) = ps["latlon"]
-                wr('| colspan={} style="{}" | missing from [https://www.openstreetmap.org/#map=19/{}/{} OSM]'.format(cols-2, style_problem, lat, lon))
+                wr('| colspan={} style="{}" | missing from [https://www.openstreetmap.org/#map=19/{}/{} OSM]'.format(cols-1, style_problem, lat, lon))
                 wr('|-')
                 taglist = []
                 taglist.append("'''name'''='{}'".format(hsl.get_stopname(ps)))
