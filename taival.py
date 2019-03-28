@@ -426,20 +426,48 @@ def sub_format(args):
 
 
 def sub_stops(args):
-    # FIXME: limit collection according to args.city
-    sd = collect_stops()
-    output_dict(sd, args)
+    city = None
+    mode = None
+    if args.filt1 in hsl.city2prefixes.keys():
+        city = args.filt1
+    elif args.filt1 in osm.stoptags.keys():
+        mode = args.filt1
+
+    if args.filt2 in hsl.city2prefixes.keys():
+        if city:
+            log.error("More than one city filters not supported")
+            return
+        else:
+            city = args.filt2
+    elif args.filt2 in osm.stoptags.keys():
+        if mode:
+            log.error("More than one mode filters not supported")
+            return
+        else:
+            mode = args.filt2
+
+    if not args.input:
+        args.input = "{}_stops.pickle".format(pvd.agency)
+    log.debug("Stops input: '{}', mode: {}, city {}".format(args.input, mode, city))
+    with open(args.input, 'rb') as f:
+        d = pickle.load(f)
+    if "ost" in d.keys() and "pst" in d.keys():
+        if args.output == '-':
+            out = sys.stdout
+        else:
+            out = open(args.output, "wb")
+        mw.outfile = out
+        mw.report_stops(d, mode=mode, city=city)
+        if out and out != sys.stdout:
+            out.close()
+    else:
+        log.error("Incompatible pickle file")
 
 
 # TODO
 def sub_stations(args):
     pass
 
-
-# TODO: Add sub_stops(args) for creating a report on stops
-# List of stop code prefixes from gtfs:
-# csvtool namedcol stop_code stops.txt| tail -n+2 | grep -o '^[^0-9]*' | sort -u
-# TODO: Test ref:findr tag on stops test_tag(rel.tags, "ref:findr")
 
 if __name__ == '__main__' and '__file__' in globals ():
     parser = argparse.ArgumentParser()
@@ -502,15 +530,19 @@ if __name__ == '__main__' and '__file__' in globals ():
     parser_report.set_defaults(func=sub_report)
 
     parser_stops = subparsers.add_parser('stops',
-        help='Report on stops')
+        help='Output a mediawiki report on stops, possibly limited by mode and/or city')
+    parser_stops.add_argument('--input', '-i', metavar='<input-file>',
+        dest='input', default=None, help="Read data from a pickle file (default '<provider>_stops.pickle')")
     parser_stops.add_argument('--output', '-o', metavar='<output-file>',
         dest='output', default='-', help='Direct output to file (default stdout)')
-    parser_stops.add_argument('--format', '-f', metavar='<format>',
-        dest='format', default='mediawiki',
-        help='Output format: mediawiki (default), pickle')
-    parser_stops.add_argument('city', nargs='?', metavar='<city>',
-        default="Helsinki",
-        help='City to report on: {} (default Helsinki)'\
+#    parser_stops.add_argument('--format', '-f', metavar='<format>',
+#        dest='format', default='mediawiki',
+#        help='Output format: mediawiki (default), pickle')
+    parser_stops.add_argument('filt1', nargs='?', metavar='<mode>',
+        help='Only report on stops with given mode: {}'\
+          .format(", ".join(osm.stoptags.keys())))
+    parser_stops.add_argument('filt2', nargs='?', metavar='<city>',
+        help='Only report on stops in given city: {}'\
           .format(", ".join(hsl.city2prefixes.keys())))
     parser_stops.set_defaults(func=sub_stops)
 
