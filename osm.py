@@ -1,6 +1,8 @@
-import overpy
+import overpy, logging
 from collections import defaultdict
 from util import ldist2
+
+log = logging.getLogger(__name__)
 
 api = overpy.Overpass()
 api.retry_timeout=120
@@ -83,7 +85,8 @@ def relid2url(relid):
 def all_linerefs(mode="bus"):
     """Return a lineref:[urllist] dict of all linerefs in Helsinki region.
     URLs points to the relations in OSM."""
-    q = '%s rel(area.hel)[type=route][route="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
+    q = '%s\nrel(area.hel)[type=route][route="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
+    log.debug(q)
     rr = api.query(q)
     refs = defaultdict(list)
     for r in rr.relations:
@@ -98,7 +101,8 @@ def ptv2_linerefs(mode="bus"):
     """Return a lineref:url dict of linerefs with public_transport:version=2
     tag in Helsinki region.
     URL points to the relation in OSM."""
-    q = '%s rel(area.hel)[route="%s"][network~"HSL|Helsinki|Espoo|Vantaa"]["public_transport:version"="2"];out tags;' % (area, mode)
+    q = '%s\nrel(area.hel)[route="%s"][network~"HSL|Helsinki|Espoo|Vantaa"]["public_transport:version"="2"];out tags;' % (area, mode)
+    log.debug(q)
     rr = api.query(q)
     refs = {r.tags["ref"]:relid2url(r.id)
             for r in rr.relations if "ref" in r.tags.keys()}
@@ -108,7 +112,8 @@ def ptv2_linerefs(mode="bus"):
 def was_routes(mode="bus"):
     """Return a lineref:[urllist] dict of all was:route=<mode> routes in
     Helsinki region. URLs points to the relations in OSM."""
-    q = '%s rel(area.hel)[type="was:route"]["was:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
+    q = '%s\nrel(area.hel)[type="was:route"]["was:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
+    log.debug(q)
     rr = api.query(q)
     refs = defaultdict(list)
     for r in rr.relations:
@@ -120,7 +125,8 @@ def was_routes(mode="bus"):
 def disused_routes(mode="bus"):
     """Return a lineref:[urllist] dict of all disused:route=<mode> routes in
     Helsinki region. URLs points to the relations in OSM."""
-    q = '%s rel(area.hel)[type="disused:route"]["disused:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
+    q = '%s\nrel(area.hel)[type="disused:route"]["disused:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
+    log.debug(q)
     rr = api.query(q)
     refs = defaultdict(list)
     for r in rr.relations:
@@ -131,8 +137,10 @@ def disused_routes(mode="bus"):
 
 def route_master(route_ids):
     """Get route master relation from Overpass"""
+    # FIXME: Use 'rel(id:%s)'.join(...) below
     q = '[out:json][timeout:60];(%s);(rel(br)["type"="route_master"];);out body;' \
       % ("".join(["rel(%d);" % x for x in route_ids]))
+    log.debug(q)
     rr = api.query(q)
     return rr.relations
 
@@ -257,8 +265,9 @@ def stops_by_refs(refs, mode="bus"):
         "bus" : '''"highway"="bus_stop"''',
         "ferry" : '''"amenity="ferry_terminal"'''
     }
-    q = '%s node(area.hel)[%s][ref~"(%s)"];out tags;' \
+    q = '%s\nnode(area.hel)[%s][ref~"(%s)"];out tags;' \
         % (area, mode2stoptag[mode], "|".join(str(r) for r in refs))
+    log.debug(q)
     rr = api.query(q)
     stopids = []
     for ref in refs:
@@ -285,7 +294,7 @@ def stops(mode="bus"):
         qlist = mode2ovptags(mode)
     q = "[out:json][timeout:120];\n" + area + "\n(\n" \
       + "\n".join([ qtempl.format(t, t, t) for t in qlist ]) + "\n);out body;"
-    print(q)
+    log.debug(q)
     rr = api.query(q)
     return sanitize_rr(rr)
 
@@ -318,14 +327,17 @@ def sanitize_rr(rr):
 
 
 def rel(relno):
-    rr = api.query("rel(id:%d);(._;>;>;);out body;" % (relno))
+    q = "rel(id:%d);(._;>;>;);out body;" % (relno)
+    log.debug(q)
+    rr = api.query(q)
     return rr.relations[0]
 
 
 def rels_v2(lineref, mode="bus"):
     """Get public transport v2 lines corresponding to lineref in Helsinki area.
     """
-    q = '%s rel(area.hel)[route="%s"][ref="%s"]["public_transport:version"="2"];(._;>;>;);out body;' % (area, mode, lineref)
+    q = '%s\nrel(area.hel)[route="%s"][ref="%s"]["public_transport:version"="2"];(._;>;>;);out body;' % (area, mode, lineref)
+    log.debug(q)
     rr = api.query(q)
     return rr.relations
 
@@ -333,7 +345,8 @@ def rels_v2(lineref, mode="bus"):
 def rels(lineref, mode="bus"):
     """Get all lines corresponding to lineref and mode in area.
     """
-    q = '%s rel(area.hel)[route="%s"][ref="%s"];(._;>;>;);out body;' % (area, mode, lineref)
+    q = '%s\nrel(area.hel)[route="%s"][ref="%s"];(._;>;>;);out body;' % (area, mode, lineref)
+    log.debug(q)
     rr = api.query(q)
     return rr.relations
 
