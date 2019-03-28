@@ -981,6 +981,39 @@ def print_stoptable_cluster(sd, refs=None):
     wr(footer)
     wr("")
 
+
+def print_stoptable(sd, refs=None):
+    """Print a stoptable for stops from refs."""
+    cols = 8
+    header = '{| class="wikitable"'
+    subheader = """|-
+! ref
+! name
+! mode
+! type
+! delta
+! ref:findr
+! zone:HSL
+! wheelchair"""
+    footer = "|}"
+
+    ost = sd["ost"]
+    pst = sd["pst"] # data from provider
+    pcl = sd["pcl"]
+
+    if refs is None:
+        refs = list(pst.keys())
+    refs = [ r for r in refs if pst.get(r, None) ]
+    linecounter = 0
+    wr(header)
+    wr(subheader)
+    for ref in refs:
+        if linecounter > 15:
+            wr(subheader)
+            linecounter = 0
+        oslist = ost.get(ref, [])
+        ps = pst[ref]
+        linecounter += print_stopline(oslist, ps, cols)
     wr(footer)
     wr("")
 
@@ -991,3 +1024,18 @@ def report_stoptable_cluster(sd, city):
     pst = sd["pst"]
     refs = [ k for k in pst.keys() if pattern.match(k) ]
     print_stoptable_cluster(sd, refs)
+
+
+def report_stops(sd, mode=None, city=None):
+    """Output a report on stops. Either all, or limited by mode, city or both."""
+    pst = sd["pst"]
+    refs = pst.keys()
+    if mode:
+        refs = [ r for r in refs if pst[r]["mode"] == mode ]
+    if city:
+        prefixes = hsl.city2prefixes[city]
+        pattern = re.compile("^(" + "|".join(prefixes) + ")[0-9]{4,4}$")
+        refs = [ r for r in refs if pattern.match(r) ]
+    refs.sort()
+    print_stoptable(sd, refs)
+
