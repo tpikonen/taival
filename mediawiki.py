@@ -860,7 +860,80 @@ def check_wheelchair(os, ps):
         return (style_problem, "err")
 
 
+def print_stopline(oslist, ps, cols):
+    ref = ps["code"]
+    linecounter = 1
+    detlist = []
+    wr("|-")
+    wr("| [https://reittiopas.hsl.fi/pysakit/{} {}]"\
+      .format(ps["gtfsId"], ref))
+    if len(oslist) == 1:
+        os = oslist[0]
+        (st, txt, details) = check_name(os, ps)
+        if details:
+            detlist.append(details)
+        wr('| style="{}" | {}'.format(st, txt))
+        (st, txt, details) = check_mode(os, ps)
+        if details:
+            detlist.append(details)
+        wr('| style="{}" | {}'.format(st, txt))
+        wr('| style="{}" | {}'.format(*check_type(os)))
+        wr('| style="{}" | {}'.format(*check_dist(os, ps)))
+        (st, txt, details) = check_findr(os, ps)
+        if details:
+            detlist.append(details)
+        wr('| style="{}" | {}'.format(st, txt))
+        wr('| style="{}" | {}'.format(*check_zone(os, ps)))
+        wr('| style="{}" | {}'.format(*check_wheelchair(os, ps)))
+        if detlist:
+            linecounter += len(detlist)
+            wr('|-')
+            wr('| colspan={} style="{}" | {}'.format(cols, style_details, "\n".join(detlist)))
+    elif len(oslist) > 1:
+        (lat, lon) = ps["latlon"]
+        wr('| colspan={} style="{}" | More than one stop with the same ref in OSM'.format(cols-1, style_problem))
+        wr('|-')
+        taglist = []
+        taglist.append("'''name'''='{}'".format(hsl.get_stopname(ps)))
+        pzid = ps.get("zoneId", None)
+        if pzid and pzid != 99:
+            taglist.append("'''zone:HSL'''='{}'".format(hsl.zoneid2name[pzid]))
+        pw = ps.get("wheelchairBoarding", None)
+        if pw and pw == 'POSSIBLE':
+            taglist.append("'''wheelchair'''='yes'")
+        elif pw and pw == 'NOT_POSSIBLE':
+            taglist.append("'''wheelchair'''='no'")
+        desc = "Mode is {}. ".format(ps["mode"])
+        desc += "Tags from HSL: " + ", ".join(taglist) + "."
+        desc += "\nMatching stops in OSM: {}.".format(", ".join(\
+          [ "[https://www.openstreetmap.org/{}/{} {}]"\
+          .format(xtype2osm[e["x:type"]], e["x:id"], e["x:id"]) for e in oslist ]))
+        wr('| colspan={} style="{}" | {}'.format(cols, style_details, desc))
+        linecounter += 2
+    else:
+        (lat, lon) = ps["latlon"]
+        wr('| colspan={} style="{}" | missing from [https://www.openstreetmap.org/#map=19/{}/{} OSM]'.format(cols-1, style_problem, lat, lon))
+        wr('|-')
+        taglist = []
+        taglist.append("'''name'''='{}'".format(hsl.get_stopname(ps)))
+        pzid = ps.get("zoneId", None)
+        if pzid and pzid != 99:
+            taglist.append("'''zone:HSL'''='{}'".format(hsl.zoneid2name[pzid]))
+        pw = ps.get("wheelchairBoarding", None)
+        if pw and pw == 'POSSIBLE':
+            taglist.append("'''wheelchair'''='yes'")
+        elif pw and pw == 'NOT_POSSIBLE':
+            taglist.append("'''wheelchair'''='no'")
+        desc = "Mode is {}. ".format(ps["mode"])
+        desc += "Tags from HSL: " + ", ".join(taglist) + "."
+        wr('| colspan={} style="{}" | {}'.format(cols, style_details, desc))
+        linecounter += 1
+    return linecounter
+
+
 def print_stoptable_cluster(sd, refs=None):
+    """Print a stoptable grouped by clusters, for clusters which contain
+    at least one stop from refs."""
     cols = 8
     header = '{| class="wikitable"\n|-\n! colspan=%d | Cluster' % (cols)
     subheader = """|-
@@ -902,72 +975,11 @@ def print_stoptable_cluster(sd, refs=None):
         wr("|-")
         wr("|colspan={} | {}".format(cols, c["name"]))
         for ref in clist:
-            linecounter += 1
-            detlist = []
-            wr("|-")
             oslist = wc.pop(ref, [])
             ps = pst[ref]
-            wr("| [https://reittiopas.hsl.fi/pysakit/{} {}]"\
-              .format(ps["gtfsId"], ref))
-            if len(oslist) == 1:
-                os = oslist[0]
-                (st, txt, details) = check_name(os, ps)
-                if details:
-                    detlist.append(details)
-                wr('| style="{}" | {}'.format(st, txt))
-                (st, txt, details) = check_mode(os, ps)
-                if details:
-                    detlist.append(details)
-                wr('| style="{}" | {}'.format(st, txt))
-                wr('| style="{}" | {}'.format(*check_type(os)))
-                wr('| style="{}" | {}'.format(*check_dist(os, ps)))
-                (st, txt, details) = check_findr(os, ps)
-                if details:
-                    detlist.append(details)
-                wr('| style="{}" | {}'.format(st, txt))
-                wr('| style="{}" | {}'.format(*check_zone(os, ps)))
-                wr('| style="{}" | {}'.format(*check_wheelchair(os, ps)))
-                if detlist:
-                    linecounter += len(detlist)
-                    wr('|-')
-                    wr('| colspan={} style="{}" | {}'.format(cols, style_details, "\n".join(detlist)))
-            elif len(oslist) > 1:
-                (lat, lon) = ps["latlon"]
-                wr('| colspan={} style="{}" | More than one stop with the same ref in OSM'.format(cols-1, style_problem))
-                wr('|-')
-                taglist = []
-                taglist.append("'''name'''='{}'".format(hsl.get_stopname(ps)))
-                pzid = ps.get("zoneId", None)
-                if pzid and pzid != 99:
-                    taglist.append("'''zone:HSL'''='{}'".format(hsl.zoneid2name[pzid]))
-                pw = ps.get("wheelchairBoarding", None)
-                if pw and pw == 'POSSIBLE':
-                    taglist.append("'''wheelchair'''='yes'")
-                elif pw and pw == 'NOT_POSSIBLE':
-                    taglist.append("'''wheelchair'''='no'")
-                desc = "Mode is {}. ".format(ps["mode"])
-                desc += "Tags from HSL: " + ", ".join(taglist) + "."
-                desc += "\nMatching stops in OSM: {}.".format(", ".join(\
-                  [ "[https://www.openstreetmap.org/{}/{} {}]"\
-                  .format(xtype2osm[e["x:type"]], e["x:id"], e["x:id"]) for e in oslist ]))
-                wr('| colspan={} style="{}" | {}'.format(cols, style_details, desc))
-            else:
-                (lat, lon) = ps["latlon"]
-                wr('| colspan={} style="{}" | missing from [https://www.openstreetmap.org/#map=19/{}/{} OSM]'.format(cols-1, style_problem, lat, lon))
-                wr('|-')
-                taglist = []
-                taglist.append("'''name'''='{}'".format(hsl.get_stopname(ps)))
-                pzid = ps.get("zoneId", None)
-                if pzid and pzid != 99:
-                    taglist.append("'''zone:HSL'''='{}'".format(hsl.zoneid2name[pzid]))
-                pw = ps.get("wheelchairBoarding", None)
-                if pw and pw == 'POSSIBLE':
-                    taglist.append("'''wheelchair'''='yes'")
-                elif pw and pw == 'NOT_POSSIBLE':
-                    taglist.append("'''wheelchair'''='no'")
-                desc = "Mode is {}. ".format(ps["mode"])
-                desc += "Tags from HSL: " + ", ".join(taglist) + "."
-                wr('| colspan={} style="{}" | {}'.format(cols, style_details, desc))
+            linecounter += print_stopline(oslist, ps, cols)
+    wr(footer)
+    wr("")
 
     wr(footer)
     wr("")
