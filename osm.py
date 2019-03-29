@@ -138,8 +138,8 @@ def disused_routes(mode="bus"):
 def route_master(route_ids):
     """Get route master relation from Overpass"""
     # FIXME: Use 'rel(id:%s)'.join(...) below
-    q = '[out:json][timeout:60];(%s);(rel(br)["type"="route_master"];);out body;' \
-      % ("".join(["rel(%d);" % x for x in route_ids]))
+    q = '[out:json][timeout:60];rel(id:%s);(rel(br)["type"="route_master"];);out body;' \
+      % (",".join(str(x) for x in route_ids))
     log.debug(q)
     rr = api.query(q)
     return rr.relations
