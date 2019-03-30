@@ -402,8 +402,7 @@ def sub_collect(args):
     if args.mode == 'stops':
         d = collect_stops()
     elif args.mode in osm.stoptags.keys():
-        # FIXME: interval_tags should not be in collect_routes args?
-        d = collect_routes(mode=args.mode, interval_tags=False)
+        d = collect_routes(mode=args.mode, interval_tags=args.interval_tags)
     else:
         log.error("mode/stops not recognized in 'collect'")
         return
@@ -498,6 +497,8 @@ if __name__ == '__main__' and '__file__' in globals ():
         default="bus",
         help="'stops' or transport mode: {} (default bus)".format(", ".\
           join(osm.stoptags.keys())))
+    parser_collect.add_argument('--interval-tags', '-i', action='store_true',
+        dest='interval_tags', help="Collect info for 'interval*' tags")
     parser_collect.add_argument('--output', '-o', metavar='<output-file>',
         dest='output', default=None,
         help="Direct output to file (default '<provider>_<mode_or_stops>.pickle')")
