@@ -884,7 +884,7 @@ def print_stopline(oslist, ps, cols):
 #        if details:
 #            detlist.append(details)
 #        wr('| style="{}" | {}'.format(st, txt))
-        wr('| style="{}" | {}'.format(*check_zone(os, ps)))
+#        wr('| style="{}" | {}'.format(*check_zone(os, ps)))
         wr('| style="{}" | {}'.format(*check_wheelchair(os, ps)))
         if detlist:
             linecounter += len(detlist)
@@ -935,7 +935,7 @@ def print_stopline(oslist, ps, cols):
 def print_stoptable_cluster(sd, refs=None):
     """Print a stoptable grouped by clusters, for clusters which contain
     at least one stop from refs."""
-    cols = 7
+    cols = 6
     header = '{| class="wikitable"\n|-\n! colspan=%d | Cluster' % (cols)
     subheader = """|-
 ! ref
@@ -943,7 +943,6 @@ def print_stoptable_cluster(sd, refs=None):
 ! mode
 ! type
 ! delta
-! zone:HSL
 ! wheelchair"""
     footer = "|}"
 
@@ -984,7 +983,7 @@ def print_stoptable_cluster(sd, refs=None):
 
 def print_stoptable(sd, refs=None):
     """Print a stoptable for stops from refs."""
-    cols = 7
+    cols = 6
     header = '{| class="wikitable"'
     subheader = """|-
 ! ref
@@ -992,7 +991,6 @@ def print_stoptable(sd, refs=None):
 ! mode
 ! type
 ! delta
-! zone:HSL
 ! wheelchair"""
     footer = "|}"
 
