@@ -324,7 +324,7 @@ def collect_stops():
 def sub_gpx(args):
     log.info("Processing line %s, mode '%s'" % (args.line, args.mode))
     osm2gpx(args.line, args.mode)
-    digitransit2gpx(hsl, args.line, args.mode)
+    digitransit2gpx(pvd, args.line, args.mode)
 
 
 def sub_osmxml(args):
