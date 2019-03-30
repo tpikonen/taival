@@ -906,23 +906,11 @@ def print_stopline(oslist, ps, cols):
         (lat, lon) = ps["latlon"]
         wr('| colspan={} style="{}" | More than one stop with the same ref in OSM'.format(cols-1, style_problem))
         wr('|-')
-        taglist = []
-        taglist.append("'''name'''='{}'".format(hsl.get_stopname(ps)))
-        pzid = ps.get("zoneId", None)
-        if pzid and pzid != 99:
-            taglist.append("'''zone:HSL'''='{}'".format(hsl.zoneid2name[pzid]))
-        pw = ps.get("wheelchairBoarding", None)
-        if pw and pw == 'POSSIBLE':
-            taglist.append("'''wheelchair'''='yes'")
-        elif pw and pw == 'NOT_POSSIBLE':
-            taglist.append("'''wheelchair'''='no'")
-        desc = "Mode is {}. ".format(ps["mode"])
-        desc += "Tags from HSL: " + ", ".join(taglist) + "."
-        desc += "\nMatching stops in OSM: {}.".format(", ".join(\
+        desc = "\nMatching stops in OSM: {}.".format(", ".join(\
           [ "[https://www.openstreetmap.org/{}/{} {}]"\
           .format(xtype2osm[e["x:type"]], e["x:id"], e["x:id"]) for e in oslist ]))
         wr('| colspan={} style="{}" | {}'.format(cols, style_details, desc))
-        linecounter += 2
+        linecounter += 1
     else:
         isok = False
         (lat, lon) = ps["latlon"]
