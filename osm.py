@@ -257,21 +257,21 @@ def route_stops(rel):
 def stops_by_refs(refs, mode="bus"):
     """Return a list of OSM node ids which have one of the 'ref' tag values in
     a given refs list."""
-    # FIXME: This does not really work with all the tagging conventions in OSM
-    mode2stoptag = {
-        "train" : None,
-        "subway" : None,
-        "tram" : '''"railway"="tram_stop"''',
-        "bus" : '''"highway"="bus_stop"''',
-        "ferry" : '''"amenity="ferry_terminal"'''
-    }
-    q = '%s\nnode(area.hel)[%s][ref~"(%s)"];out tags;' \
-        % (area, mode2stoptag[mode], "|".join(str(r) for r in refs))
+    stoptags = mode2ovpstoptags(mode)
+    refpat = "|".join(str(r) for r in refs)
+    q = area + "(\n"
+    for st in stoptags:
+        q += 'node(area.hel){}[ref~"({})"];\n'.format(st, refpat)
+        q += 'way(area.hel){}[ref~"({})"];\n'.format(st, refpat)
+        q += 'rel(area.hel){}[ref~"({})"];\n'.format(st, refpat)
+    q += "); out tags;"
     log.debug(q)
     rr = api.query(q)
     stopids = []
     for ref in refs:
-        stopids.extend(n.id for n in rr.nodes if n.tags["ref"] == ref)
+        stopids.extend(("node", e.id) for e in rr.nodes if e.tags["ref"] == ref)
+        stopids.extend(("way", e.id) for e in rr.ways if e.tags["ref"] == ref)
+        stopids.extend(("relation", e.id) for e in rr.relations if e.tags["ref"] == ref)
     return stopids
 
 

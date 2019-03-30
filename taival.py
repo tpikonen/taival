@@ -329,10 +329,11 @@ def sub_gpx(args):
 
 def sub_osmxml(args):
 
-    def write_xml(fname, ids, htags, mode, reverse=False):
+    def write_xml(fname, platforms, htags, mode, reverse=False):
         with open(fname, "w") as ff:
-            for i in ids:
-                ff.write("    <member type='node' ref='%d' role='platform' />\n" % i)
+            for ptype, pid in platforms:
+                ff.write("    <member type='{}' ref='{}' role='platform' />\n"\
+                  .format(ptype, pid))
             stopnames = hsl.longname2stops(htags["longName"])
             if reverse:
                 stopnames.reverse()
