@@ -311,8 +311,10 @@ def collect_stops():
     osm.area = hsl.get_overpass_area(set(hsl.city2ref.keys()))
     collect_stops_mode("train")
 
-    osm.area = hsl.overpass_area
+    osm.area = hsl.get_overpass_area(hsl.cities + hsl.extracities_bus)
     collect_stops_mode("bus")
+
+    osm.area = hsl.overpass_area
 
     log.debug('Calling pvd.stops()')
     (pst, pcl) = pvd.stops()

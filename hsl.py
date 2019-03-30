@@ -5,6 +5,10 @@ from collections import defaultdict
 cities = [ "Helsinki", "Espoo", "Vantaa", "Kirkkonummi", "Kerava",
     "Kauniainen", "Sipoo", "Tuusula", "Siuntio" ]
 
+# Cities with some bus stops with HSL code
+extracities_bus = [ "Järvenpää", "Mäntsälä", "Nurmijärvi", "Pornainen",
+    "Porvoo" ]
+
 modecolors = { "bus": "#007AC9",
     "tram":     "#00985F",
     "train":    "#8C4799",
@@ -20,6 +24,7 @@ peakhours = [(7, 9), (15,18)]
 # normal services.
 nighthours = [(0, 5)]
 
+# Assigned bus code prefixes for cities
 prefix2city = {
     "": "Helsinki",
     "E": "Espoo",
@@ -65,7 +70,7 @@ city2ref = {
     "Siuntio": "755",
     "Tuusula": "858",
     "Vantaa": "092",
-} 
+}
 
 
 zoneid2name = {
