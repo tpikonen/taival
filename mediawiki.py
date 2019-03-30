@@ -862,12 +862,14 @@ def check_wheelchair(os, ps):
 
 
 def print_stopline(oslist, ps, cols):
+    """Print a line to stop table, return (nlines, isok)."""
     ref = ps["code"]
     linecounter = 1
     detlist = []
     wr("|-")
     wr("| [https://reittiopas.hsl.fi/pysakit/{} {}]"\
       .format(ps["gtfsId"], ref))
+    isok = True
     if len(oslist) == 1:
         os = oslist[0]
         (st, txt, details) = check_name(os, ps)
@@ -878,19 +880,29 @@ def print_stopline(oslist, ps, cols):
         if details:
             detlist.append(details)
         wr('| style="{}" | {}'.format(st, txt))
-        wr('| style="{}" | {}'.format(*check_type(os)))
-        wr('| style="{}" | {}'.format(*check_dist(os, ps)))
+        st, txt = check_type(os)
+        isok &= st == style_ok
+        wr('| style="{}" | {}'.format(st, txt))
+        st, txt = check_dist(os, ps)
+        isok &= st == style_ok
+        wr('| style="{}" | {}'.format(st, txt))
 #        (st, txt, details) = check_findr(os, ps)
 #        if details:
 #            detlist.append(details)
 #        wr('| style="{}" | {}'.format(st, txt))
-#        wr('| style="{}" | {}'.format(*check_zone(os, ps)))
-        wr('| style="{}" | {}'.format(*check_wheelchair(os, ps)))
+#        st, txt = check_zone(os, ps)
+#        isok &= st == style_ok
+#        wr('| style="{}" | {}'.format(st, txt))
+        st, txt = check_wheelchair(os, ps)
+        isok &= st == style_ok
+        wr('| style="{}" | {}'.format(st, txt))
         if detlist:
+            isok = False
             linecounter += len(detlist)
             wr('|-')
             wr('| colspan={} style="{}" | {}'.format(cols, style_details, "\n".join(detlist)))
     elif len(oslist) > 1:
+        isok = False
         (lat, lon) = ps["latlon"]
         wr('| colspan={} style="{}" | More than one stop with the same ref in OSM'.format(cols-1, style_problem))
         wr('|-')
@@ -912,6 +924,7 @@ def print_stopline(oslist, ps, cols):
         wr('| colspan={} style="{}" | {}'.format(cols, style_details, desc))
         linecounter += 2
     else:
+        isok = False
         (lat, lon) = ps["latlon"]
         wr('| colspan={} style="{}" | missing from [https://www.openstreetmap.org/#map=19/{}/{} OSM]'.format(cols-1, style_problem, lat, lon))
         wr('|-')
@@ -929,7 +942,7 @@ def print_stopline(oslist, ps, cols):
         desc += "Tags from HSL: " + ", ".join(taglist) + "."
         wr('| colspan={} style="{}" | {}'.format(cols, style_details, desc))
         linecounter += 1
-    return linecounter
+    return linecounter, isok
 
 
 def print_stoptable_cluster(sd, refs=None):
@@ -958,6 +971,8 @@ def print_stoptable_cluster(sd, refs=None):
     kk.sort()
     wc = ost.copy() # working copy
     linecounter = 0
+    stopcounter = 0
+    probcounter = 0
     wr(header)
     wr(subheader)
     for k in kk:
@@ -976,10 +991,15 @@ def print_stoptable_cluster(sd, refs=None):
         for ref in clist:
             oslist = wc.pop(ref, [])
             ps = pst[ref]
-            linecounter += print_stopline(oslist, ps, cols)
+            nlines, isok = print_stopline(oslist, ps, cols)
+            linecounter += nlines
+            stopcounter += 1
+            probcounter += 0 if isok else 1
     wr(footer)
     wr("")
-
+    wr("{} stops.\n".format(stopcounter))
+    wr("{} stops with differences.\n".format(probcounter))
+    wr("")
 
 def print_stoptable(sd, refs=None):
     """Print a stoptable for stops from refs."""
@@ -1002,6 +1022,8 @@ def print_stoptable(sd, refs=None):
         refs = list(pst.keys())
     refs = [ r for r in refs if pst.get(r, None) ]
     linecounter = 0
+    stopcounter = 0
+    probcounter = 0
     wr(header)
     wr(subheader)
     for ref in refs:
@@ -1010,8 +1032,14 @@ def print_stoptable(sd, refs=None):
             linecounter = 0
         oslist = ost.get(ref, [])
         ps = pst[ref]
-        linecounter += print_stopline(oslist, ps, cols)
+        nlines, isok = print_stopline(oslist, ps, cols)
+        linecounter += nlines
+        stopcounter += 1
+        probcounter += 0 if isok else 1
     wr(footer)
+    wr("")
+    wr("{} stops.\n".format(stopcounter))
+    wr("{} stops with differences.\n".format(probcounter))
     wr("")
 
 
