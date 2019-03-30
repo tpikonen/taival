@@ -382,10 +382,6 @@ def output_dict(d, args):
         mw.outfile = out
         if "lineref" in d.keys():
             mw.print_linedict(d)
-        elif "ost" in d.keys():
-            # FIXME: should format have a 'city' arg?
-            city = args.city if "city" in vars(args).keys() else "Helsinki"
-            mw.report_stoptable_cluster(d, city)
         else:
             mw.report_tabular(d)
     elif args.format == "pickle":
