@@ -814,9 +814,9 @@ def check_zone(os, ps):
             return (style_problem, "{}/{}".format(oz, pz))
     else:
         if pz == 'no':
-            return (style_ok, "no")
+            return (style_ok, "-/-")
         else:
-            return (style_problem, pz)
+            return (style_problem, "-/{}".format(pz))
 
 
 def check_wheelchair(os, ps):
