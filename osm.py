@@ -50,41 +50,35 @@ citybiketags = [ { "amenity": "bicycle_rental" } ]
 
 bikeparktags = [ { "amenity": "bicycle_parking" } ]
 
-
-def stoptags2mode(otags):
-    """Return a list of mode strings which correspond to OSM tags."""
-    outl = []
-    for mode, mtaglist in stoptags.items():
-        match = False
-        for mtags in mtaglist:
-            so_far_ok = True
-            for k, v in mtags.items():
-                if (not k in otags.keys()) or otags[k] != v:
-                    so_far_ok = False
-                    break
-            if so_far_ok:
-                match = True
-                break
-        if match:
-            outl.append(mode)
-    # train always matches also subway and monorail tags
-    if "train" in outl and ("subway" in outl or "monorail" in outl):
-        outl.remove("train")
-    return outl
-
-
-def mode2ovpstoptags(mode):
-    """Return a list of Overpass tag filters."""
-    tlist = stoptags[mode]
-    out = []
-    for tags in tlist:
-        out.append(''.join([ '["{}"="{}"]'.format(k, v) for k, v in tags.items() ]))
-    return out
-
+# Helper functions
 
 def relid2url(relid):
     return "https://www.openstreetmap.org/relation/" + str(relid)
 
+
+def member_coord(x):
+    """Return (lat, lon) coordinates from a resolved relation member.
+    Could be improved by calculating center of mass from ways etc."""
+    if type(x) == overpy.Way:
+        x.get_nodes(resolve_missing=True)
+        lats = [ float(v.lat) for v in x.nodes ]
+        lons = [ float(v.lon) for v in x.nodes ]
+        lat = sum(lats) / len(x.nodes)
+        lon = sum(lons) / len(x.nodes)
+    elif type(x) == overpy.Relation:
+        m = x.members[0].resolve(resolve_missing=True)
+        (lat, lon) = member_coord(m)
+    else:
+        lat = float(x.lat)
+        lon = float(x.lon)
+    return (lat, lon)
+
+
+def ndist2(n1, n2):
+    """Return distance metric squared for two nodes n1 and n2."""
+    return (n1.lat - n2.lat)**2 + (n1.lon - n2.lon)**2
+
+# route relations
 
 def all_linerefs(mode="bus"):
     """Return a lineref:[urllist] dict of all linerefs in Helsinki region.
@@ -113,45 +107,46 @@ def ptv2_linerefs(mode="bus"):
     return refs
 
 
-def was_routes(mode="bus"):
-    """Return a lineref:[urllist] dict of all was:route=<mode> routes in
-    Helsinki region. URLs points to the relations in OSM."""
-    q = '%s\nrel(area.hel)[type="was:route"]["was:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
-    log.debug(q)
-    rr = api.query(q)
-    refs = defaultdict(list)
-    for r in rr.relations:
-        if "ref" in r.tags.keys():
-            refs[r.tags["ref"]].append(relid2url(r.id))
-    return refs
-
-
-def disused_routes(mode="bus"):
-    """Return a lineref:[urllist] dict of all disused:route=<mode> routes in
-    Helsinki region. URLs points to the relations in OSM."""
-    q = '%s\nrel(area.hel)[type="disused:route"]["disused:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
-    log.debug(q)
-    rr = api.query(q)
-    refs = defaultdict(list)
-    for r in rr.relations:
-        if "ref" in r.tags.keys():
-            refs[r.tags["ref"]].append(relid2url(r.id))
-    return refs
-
-
-def route_master(route_ids):
-    """Get route master relation from Overpass"""
-    # FIXME: Use 'rel(id:%s)'.join(...) below
-    q = '[out:json][timeout:60];rel(id:%s);(rel(br)["type"="route_master"];);out body;' \
-      % (",".join(str(x) for x in route_ids))
+def rels_v2(lineref, mode="bus"):
+    """Get public transport v2 lines corresponding to lineref in Helsinki area.
+    """
+    q = '%s\nrel(area.hel)[route="%s"][ref="%s"]["public_transport:version"="2"];(._;>;>;);out body;' % (area, mode, lineref)
     log.debug(q)
     rr = api.query(q)
     return rr.relations
 
 
-def ndist2(n1, n2):
-    """Return distance metric squared for two nodes n1 and n2."""
-    return (n1.lat - n2.lat)**2 + (n1.lon - n2.lon)**2
+def rels(lineref, mode="bus"):
+    """Get all lines corresponding to lineref and mode in area.
+    """
+    q = '%s\nrel(area.hel)[route="%s"][ref="%s"];(._;>;>;);out body;' % (area, mode, lineref)
+    log.debug(q)
+    rr = api.query(q)
+    return rr.relations
+
+
+def route_platforms(rel):
+    retval = []
+    platforms = [mem.resolve(resolve_missing=True) \
+      for mem in rel.members if mem.role == "platform"]
+    for x in platforms:
+        (lat, lon) = member_coord(x)
+        ref = x.tags.get('ref', '<no ref in OSM>')
+        name = x.tags.get('name', '<no name in OSM>')
+        retval.append([float(lat),float(lon),ref,name])
+    return retval
+
+
+def route_stops(rel):
+    retval = []
+    stops = [mem.resolve(resolve_missing=True) \
+      for mem in rel.members if mem.role == "stop"]
+    for x in stops:
+        (lat, lon) = member_coord(x)
+        name = x.tags.get('ref', '<no ref>')
+        desc = x.tags.get('name', '<no name>')
+        retval.append([float(lat),float(lon),name,desc])
+    return retval
 
 
 def route_shape(rel):
@@ -215,47 +210,76 @@ def route_shape(rel):
     latlon = [[float(n.lat), float(n.lon)] for n in nodes]
     return (latlon, gaps)
 
+# Former routes
 
-def member_coord(x):
-    """Return (lat, lon) coordinates from a resolved relation member.
-    Could be improved by calculating center of mass from ways etc."""
-    if type(x) == overpy.Way:
-        x.get_nodes(resolve_missing=True)
-        lats = [ float(v.lat) for v in x.nodes ]
-        lons = [ float(v.lon) for v in x.nodes ]
-        lat = sum(lats) / len(x.nodes)
-        lon = sum(lons) / len(x.nodes)
-    elif type(x) == overpy.Relation:
-        m = x.members[0].resolve(resolve_missing=True)
-        (lat, lon) = member_coord(m)
-    else:
-        lat = float(x.lat)
-        lon = float(x.lon)
-    return (lat, lon)
+def was_routes(mode="bus"):
+    """Return a lineref:[urllist] dict of all was:route=<mode> routes in
+    Helsinki region. URLs points to the relations in OSM."""
+    q = '%s\nrel(area.hel)[type="was:route"]["was:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
+    log.debug(q)
+    rr = api.query(q)
+    refs = defaultdict(list)
+    for r in rr.relations:
+        if "ref" in r.tags.keys():
+            refs[r.tags["ref"]].append(relid2url(r.id))
+    return refs
 
 
-def route_platforms(rel):
-    retval = []
-    platforms = [mem.resolve(resolve_missing=True) \
-      for mem in rel.members if mem.role == "platform"]
-    for x in platforms:
-        (lat, lon) = member_coord(x)
-        ref = x.tags.get('ref', '<no ref in OSM>')
-        name = x.tags.get('name', '<no name in OSM>')
-        retval.append([float(lat),float(lon),ref,name])
-    return retval
+def disused_routes(mode="bus"):
+    """Return a lineref:[urllist] dict of all disused:route=<mode> routes in
+    Helsinki region. URLs points to the relations in OSM."""
+    q = '%s\nrel(area.hel)[type="disused:route"]["disused:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
+    log.debug(q)
+    rr = api.query(q)
+    refs = defaultdict(list)
+    for r in rr.relations:
+        if "ref" in r.tags.keys():
+            refs[r.tags["ref"]].append(relid2url(r.id))
+    return refs
+
+# route_master relations
+
+def route_master(route_ids):
+    """Get route master relation from Overpass"""
+    # FIXME: Use 'rel(id:%s)'.join(...) below
+    q = '[out:json][timeout:60];rel(id:%s);(rel(br)["type"="route_master"];);out body;' \
+      % (",".join(str(x) for x in route_ids))
+    log.debug(q)
+    rr = api.query(q)
+    return rr.relations
 
 
-def route_stops(rel):
-    retval = []
-    stops = [mem.resolve(resolve_missing=True) \
-      for mem in rel.members if mem.role == "stop"]
-    for x in stops:
-        (lat, lon) = member_coord(x)
-        name = x.tags.get('ref', '<no ref>')
-        desc = x.tags.get('name', '<no name>')
-        retval.append([float(lat),float(lon),name,desc])
-    return retval
+# Stops
+
+def stoptags2mode(otags):
+    """Return a list of mode strings which correspond to OSM tags."""
+    outl = []
+    for mode, mtaglist in stoptags.items():
+        match = False
+        for mtags in mtaglist:
+            so_far_ok = True
+            for k, v in mtags.items():
+                if (not k in otags.keys()) or otags[k] != v:
+                    so_far_ok = False
+                    break
+            if so_far_ok:
+                match = True
+                break
+        if match:
+            outl.append(mode)
+    # train always matches also subway and monorail tags
+    if "train" in outl and ("subway" in outl or "monorail" in outl):
+        outl.remove("train")
+    return outl
+
+
+def mode2ovpstoptags(mode):
+    """Return a list of Overpass tag filters."""
+    tlist = stoptags[mode]
+    out = []
+    for tags in tlist:
+        out.append(''.join([ '["{}"="{}"]'.format(k, v) for k, v in tags.items() ]))
+    return out
 
 
 def stops_by_refs(refs, mode="bus"):
@@ -328,22 +352,4 @@ def sanitize_rr(rr):
     sanitize_add(refstops, rest, rr.ways, "w")
     sanitize_add(refstops, rest, rr.relations, "r")
     return refstops, rest
-
-
-def rels_v2(lineref, mode="bus"):
-    """Get public transport v2 lines corresponding to lineref in Helsinki area.
-    """
-    q = '%s\nrel(area.hel)[route="%s"][ref="%s"]["public_transport:version"="2"];(._;>;>;);out body;' % (area, mode, lineref)
-    log.debug(q)
-    rr = api.query(q)
-    return rr.relations
-
-
-def rels(lineref, mode="bus"):
-    """Get all lines corresponding to lineref and mode in area.
-    """
-    q = '%s\nrel(area.hel)[route="%s"][ref="%s"];(._;>;>;);out body;' % (area, mode, lineref)
-    log.debug(q)
-    rr = api.query(q)
-    return rr.relations
 
