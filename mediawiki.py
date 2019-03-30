@@ -1,5 +1,5 @@
 import difflib, sys
-import osm, hsl, digiroad
+import osm, hsl
 from util import *
 from digitransit import pattern2url
 
@@ -771,6 +771,7 @@ def check_findr(os, ps):
     Compares value to Digiroad data."""
     # FIXME: Should also compare by position, useless as it is now
     findr = os.get("ref:findr", None)
+    import digiroad
     dlist = digiroad.stops_by_name.get(ps["name"], [])
     drid = None
     mindist = 1e6;
@@ -879,10 +880,10 @@ def print_stopline(oslist, ps, cols):
         wr('| style="{}" | {}'.format(st, txt))
         wr('| style="{}" | {}'.format(*check_type(os)))
         wr('| style="{}" | {}'.format(*check_dist(os, ps)))
-        (st, txt, details) = check_findr(os, ps)
-        if details:
-            detlist.append(details)
-        wr('| style="{}" | {}'.format(st, txt))
+#        (st, txt, details) = check_findr(os, ps)
+#        if details:
+#            detlist.append(details)
+#        wr('| style="{}" | {}'.format(st, txt))
         wr('| style="{}" | {}'.format(*check_zone(os, ps)))
         wr('| style="{}" | {}'.format(*check_wheelchair(os, ps)))
         if detlist:
@@ -934,7 +935,7 @@ def print_stopline(oslist, ps, cols):
 def print_stoptable_cluster(sd, refs=None):
     """Print a stoptable grouped by clusters, for clusters which contain
     at least one stop from refs."""
-    cols = 8
+    cols = 7
     header = '{| class="wikitable"\n|-\n! colspan=%d | Cluster' % (cols)
     subheader = """|-
 ! ref
@@ -942,7 +943,6 @@ def print_stoptable_cluster(sd, refs=None):
 ! mode
 ! type
 ! delta
-! ref:findr
 ! zone:HSL
 ! wheelchair"""
     footer = "|}"
@@ -984,7 +984,7 @@ def print_stoptable_cluster(sd, refs=None):
 
 def print_stoptable(sd, refs=None):
     """Print a stoptable for stops from refs."""
-    cols = 8
+    cols = 7
     header = '{| class="wikitable"'
     subheader = """|-
 ! ref
@@ -992,7 +992,6 @@ def print_stoptable(sd, refs=None):
 ! mode
 ! type
 ! delta
-! ref:findr
 ! zone:HSL
 ! wheelchair"""
     footer = "|}"
