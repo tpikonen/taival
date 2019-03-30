@@ -1027,7 +1027,7 @@ def print_stoptable(sd, refs=None):
     wr(header)
     wr(subheader)
     for ref in refs:
-        if linecounter > 15:
+        if linecounter > 19:
             wr(subheader)
             linecounter = 0
         oslist = ost.get(ref, [])
