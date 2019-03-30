@@ -420,10 +420,17 @@ def sub_report(args):
     output_dict(md, args)
 
 
-def sub_format(args):
+def sub_routes(args):
     with open(args.file, 'rb') as f:
         d = pickle.load(f)
-    output_dict(d, args)
+    if "mode" in d.keys():
+        out = get_output(args)
+        mw.outfile = out
+        mw.report_tabular(d)
+        if out and out != sys.stdout:
+            out.close()
+    else:
+        log.error("Unrecognized route dictionary from pickle file.")
 
 
 def sub_stops(args):
@@ -532,8 +539,19 @@ if __name__ == '__main__' and '__file__' in globals ():
         help='Output format: mediawiki (default), pickle')
     parser_report.set_defaults(func=sub_report)
 
+    parser_routes = subparsers.add_parser('routes',
+        help='Output a mediawiki report on routes from previously collected data in pickle format.')
+    # TODO: Add start/stop limits by route ref
+    parser_routes.add_argument('file', metavar='<pickle-file>',
+        help='Input file')
+    parser_routes.add_argument('--interval-tags', '-n', action='store_true',
+        dest='interval_tags', help='Also report on "interval*" tags')
+    parser_routes.add_argument('--output', '-o', metavar='<output-file>',
+        dest='output', default='-', help='Direct output to file (default stdout)')
+    parser_routes.set_defaults(func=sub_routes)
+
     parser_stops = subparsers.add_parser('stops',
-        help='Output a mediawiki report on stops, possibly limited by mode and/or city')
+        help='Output a mediawiki report on stops from previously collected data in pickle format, possibly limited by mode and/or city')
     parser_stops.add_argument('--input', '-i', metavar='<input-file>',
         dest='input', default=None, help="Read data from a pickle file (default '<provider>_stops.pickle')")
     parser_stops.add_argument('--output', '-o', metavar='<output-file>',
@@ -548,17 +566,6 @@ if __name__ == '__main__' and '__file__' in globals ():
         help='Only report on stops in given city: {}'\
           .format(", ".join(hsl.city2prefixes.keys())))
     parser_stops.set_defaults(func=sub_stops)
-
-    parser_format = subparsers.add_parser('format',
-        help='Format and output previously collected data from pickle format.')
-    parser_format.add_argument('file', nargs='?', metavar='<pickle-file>',
-        help='Input file')
-    parser_format.add_argument('--output', '-o', metavar='<output-file>',
-        dest='output', default='-', help='Direct output to file (default stdout)')
-    parser_format.add_argument('--format', '-f', metavar='<format>',
-        dest='format', default='mediawiki',
-        help='Output format: mediawiki (default), pickle')
-    parser_format.set_defaults(func=sub_format)
 
 #    parser_fullreport = subparsers.add_parser('fullreport',
 #        help='Create a report for all lines.')
