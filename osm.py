@@ -46,6 +46,10 @@ stoptags = {
         { "aerialway": "station" } ],
 }
 
+citybiketags = [ { "amenity": "bicycle_rental" } ]
+
+bikeparktags = [ { "amenity": "bicycle_parking" } ]
+
 
 def stoptags2mode(otags):
     """Return a list of mode strings which correspond to OSM tags."""
