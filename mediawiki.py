@@ -826,15 +826,15 @@ def check_wheelchair(os, ps):
     pw = ps.get("wheelchairBoarding", None)
     if not ow:
         if not pw:
-            return (style_problem, "?/err1")
+            return (style_problem, "-/err1")
         elif pw == "NO_INFORMATION":
-            return (style_ok, "?/?")
+            return (style_ok, "-/?")
         elif pw == "POSSIBLE":
-            return (style_problem, "?/yes")
+            return (style_problem, "-/yes")
         elif pw == "NOT_POSSIBLE":
-            return (style_problem, "?/no")
+            return (style_problem, "-/no")
         else:
-            return (style_problem, "?/err2")
+            return (style_problem, "-/err2")
     elif ow == 'yes' or ow == 'limited' or ow == 'designated':
         if not pw:
             return (style_problem, "yes/err1")
