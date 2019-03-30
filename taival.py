@@ -83,6 +83,7 @@ def collect_interval_tags(code):
     daynames = ["saturday", "sunday", None] # weekdays (monday) is the default
     for i in range(3):
         day = (today + datetime.timedelta(days=delta+i)).strftime("%Y%m%d")
+        log.debug("Calling pvd.arrivals_for_date()")
         (norm, peak, night) = arrivals2intervals(\
             pvd.arrivals_for_date(code, day), pvd.peakhours, pvd.nighthours)
         tagname = "interval" + (":" + daynames[i] if daynames[i] else "")
