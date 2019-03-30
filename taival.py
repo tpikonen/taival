@@ -365,15 +365,16 @@ def sub_osmxml(args):
         print("Line '%s' not found in %s." % lineref, pvd.agency)
 
 
+def get_output(args):
+    if args.output == '-':
+        out = sys.stdout
+    else:
+        out = open(args.output, "wb")
+    return out
+
+
 def output_dict(d, args):
     """Write output from dict"""
-    def get_output(args):
-        if args.output == '-':
-            out = sys.stdout
-        else:
-            out = open(args.output, "wb")
-        return out
-
     out = None
     if args.format == "mediawiki":
         out = get_output(args)
@@ -396,7 +397,6 @@ def output_dict(d, args):
 
 
 def sub_collect(args):
-    args.format = "pickle"
     if not args.output:
         args.output = "{}_{}.pickle".format(pvd.agency, args.mode)
     if args.mode == 'stops':
@@ -407,7 +407,8 @@ def sub_collect(args):
     else:
         log.error("mode/stops not recognized in 'collect'")
         return
-    output_dict(d, args)
+    with open(args.output, "wb") as out:
+        pickle.dump(d, out)
 
 
 def sub_line(args):
