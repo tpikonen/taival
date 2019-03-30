@@ -702,7 +702,7 @@ def report_tabular(md):
 
 def check_mode(os, ps):
     """Return a (style, text, details) tuple on mode related OSM tags."""
-    modelist = osm.tags2mode(os)
+    modelist = osm.stoptags2mode(os)
     pmode = ps["mode"]
     if not modelist:
         details = "No mode found, HSL has mode '{}'."\

@@ -248,7 +248,7 @@ def collect_line(lineref, mode="bus", interval_tags=False):
     return ld
 
 
-def collect_mode(mode="bus", interval_tags=False):
+def collect_routes(mode="bus", interval_tags=False):
     """Collect data for a given mode from APIs, call collect_line for
     all discovered lines."""
     md = {}
@@ -401,8 +401,8 @@ def sub_collect(args):
     if args.mode == 'stops':
         d = collect_stops()
     elif args.mode in osm.stoptags.keys():
-        # FIXME: interval_tags should not be in collect_mode args?
-        d = collect_mode(mode=args.mode, interval_tags=False)
+        # FIXME: interval_tags should not be in collect_routes args?
+        d = collect_routes(mode=args.mode, interval_tags=False)
     else:
         log.error("mode/stops not recognized in 'collect'")
         return
@@ -415,7 +415,7 @@ def sub_line(args):
 
 
 def sub_report(args):
-    md = collect_mode(mode=args.mode, interval_tags=args.interval_tags)
+    md = collect_routes(mode=args.mode, interval_tags=args.interval_tags)
     output_dict(md, args)
 
 

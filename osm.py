@@ -47,7 +47,7 @@ stoptags = {
 }
 
 
-def tags2mode(otags):
+def stoptags2mode(otags):
     """Return a list of mode strings which correspond to OSM tags."""
     outl = []
     for mode, mtaglist in stoptags.items():
@@ -69,7 +69,7 @@ def tags2mode(otags):
     return outl
 
 
-def mode2ovptags(mode):
+def mode2ovpstoptags(mode):
     """Return a list of Overpass tag filters."""
     tlist = stoptags[mode]
     out = []
@@ -289,9 +289,9 @@ def stops(mode="bus"):
 """
     qtempl = "node(area.hel){};\nway(area.hel){};\nrel(area.hel){};"
     if isinstance(mode, list):
-        qlist = [ e for m in mode for e in mode2ovptags(m) ]
+        qlist = [ e for m in mode for e in mode2ovpstoptags(m) ]
     else:
-        qlist = mode2ovptags(mode)
+        qlist = mode2ovpstoptags(mode)
     q = "[out:json][timeout:120];\n" + area + "\n(\n" \
       + "\n".join([ qtempl.format(t, t, t) for t in qlist ]) + "\n);out body;"
     log.debug(q)
@@ -324,13 +324,6 @@ def sanitize_rr(rr):
     sanitize_add(refstops, rest, rr.ways, "w")
     sanitize_add(refstops, rest, rr.relations, "r")
     return refstops, rest
-
-
-def rel(relno):
-    q = "rel(id:%d);(._;>;>;);out body;" % (relno)
-    log.debug(q)
-    rr = api.query(q)
-    return rr.relations[0]
 
 
 def rels_v2(lineref, mode="bus"):
