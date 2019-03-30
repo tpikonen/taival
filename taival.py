@@ -308,7 +308,9 @@ def collect_stops():
     osm.area = hsl.get_overpass_area(["Helsinki", "Espoo"])
     collect_stops_mode("subway")
 
-    osm.area = hsl.get_overpass_area(set(hsl.city2ref.keys()))
+    osm.area = hsl.get_overpass_area(["Helsinki", "Espoo", "Hyvinkää",
+        "Järvenpää", "Kauniainen", "Kerava", "Kirkkonummi", "Lahti",
+        "Mäntsälä", "Riihimäki", "Siuntio", "Tuusula", "Vantaa" ])
     collect_stops_mode("train")
 
     osm.area = hsl.get_overpass_area(hsl.cities + hsl.extracities_bus)
