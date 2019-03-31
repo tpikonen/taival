@@ -731,7 +731,7 @@ def check_mode(os, ps):
             return (style_problem, pmode, details)
 
 
-def check_type(os):
+def check_type(os, _=None):
     type2style = {
         "node": style_ok,
         "way": style_maybe,
@@ -880,31 +880,23 @@ def print_stopline(oslist, ps, cols):
       .format(ps["gtfsId"], ref))
     isok = True
     if len(oslist) == 1:
+        def wr_cell(f, o, p):
+            tt = f(o, p)
+            st = tt[0]
+            txt = tt[1]
+            if len(tt) > 2 and tt[2]:
+                detlist.append(tt[2])
+            wr('| style="{}" | {}'.format(st, txt))
+            return st != style_problem
+
         os = oslist[0]
-        (st, txt, details) = check_name(os, ps)
-        if details:
-            detlist.append(details)
-        wr('| style="{}" | {}'.format(st, txt))
-        (st, txt, details) = check_mode(os, ps)
-        if details:
-            detlist.append(details)
-        wr('| style="{}" | {}'.format(st, txt))
-        st, txt = check_type(os)
-        isok &= st == style_ok
-        wr('| style="{}" | {}'.format(st, txt))
-        st, txt = check_dist(os, ps)
-        isok &= st == style_ok
-        wr('| style="{}" | {}'.format(st, txt))
-#        (st, txt, details) = check_findr(os, ps)
-#        if details:
-#            detlist.append(details)
-#        wr('| style="{}" | {}'.format(st, txt))
-#        st, txt = check_zone(os, ps)
-#        isok &= st == style_ok
-#        wr('| style="{}" | {}'.format(st, txt))
-        st, txt = check_wheelchair(os, ps)
-        isok &= st == style_ok
-        wr('| style="{}" | {}'.format(st, txt))
+        isok &= wr_cell(check_name, os, ps)
+        isok &= wr_cell(check_mode, os, ps)
+        isok &= wr_cell(check_type, os, ps)
+        isok &= wr_cell(check_dist, os, ps)
+#        isok &= wr_cell(check_findr, os, ps)
+#        isok &= wr_cell(check_zone, os, ps)
+        isok &= wr_cell(check_wheelchair, os, ps)
         if detlist:
             isok = False
             linecounter += len(detlist)
