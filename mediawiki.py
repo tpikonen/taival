@@ -759,23 +759,25 @@ def check_dist(os, ps):
 
 def check_name(os, ps):
     """Return (style, text, details) cell tuple comparing name value."""
+    def shorten(s, maxlen=25):
+        return s if len(s) < maxlen else s[:(maxlen-5)] + u"\u2026" + s[-3:]
+    maxlen = 25
     on = os.get("name", None)
     pn = hsl.get_stopname(ps)
     cn = pn if pn else "<no name in HSL>"
-    cn = cn if len(cn) < 20 else cn[:15] + u"\u2026" + cn[-3:]
+    cn = shorten(cn)
     if on:
         if on == pn:
             return (style_ok, cn, "")
         else:
             for abbr, repl in hsl.synonyms:
                 if on.replace(repl, abbr) == pn:
-                    cn = on if len(on) < 20 else on[:15] + u"\u2026" + on[-3:]
-                    return (style_ok, cn, "")
+                    return (style_ok, shorten(on), "")
             details = "'''name''' set to '{}', should be '{}'."\
               .format(on, pn)
             return (style_problem, cn, details)
     else:
-        details = "'''name''' not set in OSM, should be '{}'.".format(pn)
+        details = "'''name''' not set in OSM, HSL has '{}'.".format(pn)
         return (style_problem, cn, details)
 
 
