@@ -282,7 +282,7 @@ class Digitransit:
 
 
     def sanitize_stops(self, data):
-        stops = {} # (ref -> tags) dict
+        stops = { k:{} for k in self.modecolors.keys() }
         clusters = defaultdict(list) # cluster gtfsId -> ref list
         for d in data:
             ref = d["code"]
@@ -293,7 +293,7 @@ class Digitransit:
             d["latlon"] = (d["lat"], d["lon"])
             d.pop('lat', None)
             d.pop('lon', None)
-            stops[ref] = d
+            stops[d["mode"]][ref] = d
             cref = d["cluster"]["gtfsId"]
             clusters[cref].append(ref)
         return (stops, clusters)
