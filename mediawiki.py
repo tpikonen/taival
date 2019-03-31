@@ -767,6 +767,10 @@ def check_name(os, ps):
         if on == pn:
             return (style_ok, cn, "")
         else:
+            for abbr, repl in hsl.synonyms:
+                if on.replace(repl, abbr) == pn:
+                    cn = on if len(on) < 20 else on[:15] + u"\u2026" + on[-3:]
+                    return (style_ok, cn, "")
             details = "'''name''' set to '{}', should be '{}'."\
               .format(on, pn)
             return (style_problem, cn, details)

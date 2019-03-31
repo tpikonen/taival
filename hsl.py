@@ -83,6 +83,66 @@ zoneid2name = {
 }
 
 
+synonyms = [
+    ('A. Petreliuksen', 'Albert Petreliuksen'),
+    ('Aleksant.', 'Aleksanterin'),
+    ('Aurinkol.', 'Aurinkolahden'),
+    ('Etel.', 'Eteläinen'),
+    ('G. Paulig', 'Gustav Paulig'),
+    ('Hels.pit.', 'Helsingin pitäjän'),
+    ('Hertton.terv.as.', 'Herttoniemen terveysasema'),
+    ('Juhana Herttuan', 'Juhana-herttuan'),
+    ('Järvenpää L.-autoas.', 'Järvenpään linja-autoasema'),
+    ('Laversinti', 'Laversintie'),
+    ('Luonnontiet.', 'Luonnontieteellinen'),
+    ('Martinl. terv. asema', 'Martinlaakson terveysasema'),
+    ('Munkkin.', 'Munkkiniemen'),
+    ('Pohj.', 'Pohjoinen'),
+    ('Saariselän palvelut.', 'Saariseläntien palvelutalo'),
+    ('Saariselänt. palv.t.', 'Saariseläntien palvelutalo'),
+    ('Sipoonl. levähd.al.', 'Sipoonlahden levähdysalue'),
+    ('Siren', 'Sirén'),
+    ('Terv.', 'Terveys'),
+    ('Tv', 'TV'),
+    ('Viikinm.', 'Viikinmäen'),
+    ('ammattik.', 'ammattikoulu'),
+    ('as.', 'asema'),
+    ('hautausm', 'hautausmaa'),
+    ('huoltol', 'huoltolaituri'),
+    ('kesk.', 'keskus'),
+    ('la-as.', 'linja-autoasema'),
+    ('lab.', 'laboratorio'),
+    ('leikkiniitt', 'leikkiniitty'),
+    ('matkakesk', 'matkakeskus'),
+    ('mk', 'matkakeskus'),
+    ('op.', 'opisto'),
+    ('opetusp.', 'opetuspiste'),
+    ('ostosk.', 'ostoskeskus'),
+    ('p', 'polku'),
+    ('p.', 'puisto'),
+    ('palv.talo', 'palvelutalo'),
+    ('palveluk', 'palvelukeskus'),
+    ('poh', 'pohjoinen'),
+    ('puist.', 'puistikko'),
+    ('päälait', 'päälaituri'),
+    ('ristey', 'risteys'),
+    ('siirt.puutarha', 'siirtolapuutarha'),
+    ('t.', 'tie'),
+    ('term.', 'terminaali'),
+    ('terv.as.', 'terveysasema'),
+    ('terv.asema', 'terveysasema'),
+    ('terveysas.', 'terveysasema'),
+    ('uimah.', 'uimahalli'),
+    ('urheiluk.', 'urheilukenttä'),
+    ('urheiluk.', 'urheilukeskus'),
+    ('vanhaink.', 'vanhainkoti'),
+    ('virastot.', 'virastotalo'),
+    ('Östersund.', 'Östersundomin'),
+]
+
+# Sort to descending length of abbreviation
+synonyms.sort(key=lambda x: (len(x[0]), x[1], x[0]), reverse=True)
+
 def get_overpass_area(clist):
     area = "("+ ' '.join(\
       [ 'area[boundary=administrative][admin_level=8][name="{}"][ref={}];'\
