@@ -278,10 +278,6 @@ class Digitransit:
         r.raise_for_status()
         r.encoding = 'utf-8'
         data = json.loads(r.text)["data"]["stops"]
-        return self.sanitize_stops(data)
-
-
-    def sanitize_stops(self, data):
         stops = { k:{} for k in self.modecolors.keys() }
         clusters = defaultdict(list) # cluster gtfsId -> ref list
         for d in data:
