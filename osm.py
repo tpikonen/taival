@@ -349,3 +349,39 @@ def stops(mode="bus"):
     sanitize_add(refstops, rest, rr.relations, "r")
     return refstops, rest
 
+
+def citybikes():
+    """Return citybike stations."""
+    qtempl = "node(area.hel){};\nway(area.hel){};\nrel(area.hel){};"
+    qlist = []
+    for tags in citybiketags:
+        qlist.append(''.join([ '["{}"="{}"]'.format(k, v) for k, v in tags.items() ]))
+    q = "[out:json][timeout:120];\n" + area + "\n(\n" \
+      + "\n".join([ qtempl.format(t, t, t) for t in qlist ]) + "\n);out body;"
+    log.debug(q)
+    rr = api.query(q)
+    def sanitize_add(sd, rd, elist, etype):
+        for e in elist:
+            dd =  { \
+                "x:id": e.id,
+                "x:type": etype,
+                "x:latlon": member_coord(e),
+            }
+            dd.update(e.tags)
+            ref = e.tags.get("ref", None)
+            if ref:
+                # sd is defaultdict(list)
+                sd[ref].append(dd)
+            else:
+                # rd is dict
+                rd[e.id] = dd
+    refstops = defaultdict(list)
+    rest = {}
+    # NB: Because sanitize_add() calls member_coords(), which gets more
+    # (untagged) nodes (and maybe ways), the order of calls below
+    # must be like this.
+    sanitize_add(refstops, rest, rr.nodes, "n")
+    sanitize_add(refstops, rest, rr.ways, "w")
+    sanitize_add(refstops, rest, rr.relations, "r")
+    return refstops, rest
+
