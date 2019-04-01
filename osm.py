@@ -324,10 +324,6 @@ def stops(mode="bus"):
       + "\n".join([ qtempl.format(t, t, t) for t in qlist ]) + "\n);out body;"
     log.debug(q)
     rr = api.query(q)
-    return sanitize_rr(rr)
-
-
-def sanitize_rr(rr):
     def sanitize_add(sd, rd, elist, etype):
         for e in elist:
             dd =  { \
