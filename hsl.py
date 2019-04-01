@@ -176,3 +176,15 @@ def get_stopname(ps):
     else:
         pn = pname
     return pn
+
+
+def normalize_helsinki_codes(dd, change_code=False):
+    """Convert keys of the type 'dddd' in input dict to 'Hdddd'."""
+    pattern = re.compile("^[0-9]{4,4}$")
+    for r in list(dd.keys()): # need a static copy of the keys
+        if pattern.match(r):
+            newref = 'H' + r
+            if change_code and dd[r].get('code'):
+                dd[r]['code'] = newref
+            dd[newref] = dd.pop(r)
+

@@ -321,6 +321,10 @@ def collect_stops():
     log.debug('Calling pvd.stops()')
     (pst, pcl) = pvd.stops()
 
+    hsl.normalize_helsinki_codes(ost)
+    for pmode in pst.values():
+        hsl.normalize_helsinki_codes(pmode, change_code=True)
+
     sd = { "ost": ost, "rst": rst, "pst": pst, "pcl": pcl }
 
     return sd
