@@ -295,3 +295,54 @@ class Digitransit:
         return (stops, clusters)
 
 
+    def citybikes(self):
+        """Return all citybike stations."""
+        query = """{
+  bikeRentalStations {
+    name
+    stationId
+    bikesAvailable
+    spacesAvailable
+    lat
+    lon
+  }
+}"""
+        r = requests.post(url=self.url, data=query, headers=self.headers)
+        r.raise_for_status()
+        r.encoding = 'utf-8'
+        data = json.loads(r.text)["data"]["bikeRentalStations"]
+        cbs = []
+        for d in data:
+            d["capacity"] = d.pop('spacesAvailable', None)\
+              + d.pop('bikesAvailable', None)
+            d["latlon"] = (d["lat"], d["lon"])
+            d.pop('lat', None)
+            d.pop('lon', None)
+            cbs.append(d)
+        return cbs
+
+
+    def bikeparks(self):
+        """Return all bicycle parking spaces."""
+        query = """{
+  bikeParks {
+    name
+    bikeParkId
+    spacesAvailable
+    lat
+    lon
+  }
+}"""
+        r = requests.post(url=self.url, data=query, headers=self.headers)
+        r.raise_for_status()
+        r.encoding = 'utf-8'
+        data = json.loads(r.text)["data"]["bikeParks"]
+        bps = []
+        for d in data:
+            d["name"] = d["name"].replace(" (pyörä)", "")
+            d["capacity"] = d.pop('spacesAvailable', None)
+            d["latlon"] = (d["lat"], d["lon"])
+            d.pop('lat', None)
+            d.pop('lon', None)
+            bps.append(d)
+        return bps
