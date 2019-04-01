@@ -50,10 +50,24 @@ citybiketags = [ { "amenity": "bicycle_rental" } ]
 
 bikeparktags = [ { "amenity": "bicycle_parking" } ]
 
+xtype2osm = {\
+    'n': "node",
+    'w': "way",
+    'r': "relation",
+}
+
 # Helper functions
 
 def relid2url(relid):
     return "https://www.openstreetmap.org/relation/" + str(relid)
+
+
+def stop2url(s):
+    return "https://www.openstreetmap.org/{}/{}".format(xtype2osm[s["x:type"]], s["x:id"])
+
+
+def stoplist2links(stoplist):
+    return " ".join("[{} {}]".format(stop2url(s), s["ref"]) for s in stoplist)
 
 
 def member_coord(x):

@@ -11,12 +11,6 @@ style_maybe = "background-color: #eeee00"
 style_relstart = "border-style: solid; border-width: 1px 1px 1px 3px"
 style_details = "background-color: #ffffff"
 
-xtype2osm = {\
-    'n': "node",
-    'w': "way",
-    'r': "relation",
-}
-
 def wr(*args, **kwargs):
     kwargs["file"] = outfile
     print(*args, **kwargs)
@@ -737,8 +731,8 @@ def check_type(os, _=None):
         "way": style_maybe,
         "relation": style_problem,
     }
-    osmtype = xtype2osm[os["x:type"]]
-    text = "[https://www.openstreetmap.org/{}/{} {}]".format(osmtype, os["x:id"], osmtype)
+    osmtype = osm.xtype2osm[os["x:type"]]
+    text = "[{} {}]".format(osm.stop2url(os), osmtype)
     return type2style[osmtype], text
 
 
@@ -915,7 +909,7 @@ def print_stopline(oslist, ps, cols):
         wr('|-')
         desc = "\nMatching stops in OSM: {}.".format(", ".join(\
           [ "[https://www.openstreetmap.org/{}/{} {}]"\
-          .format(xtype2osm[e["x:type"]], e["x:id"], e["x:id"]) for e in oslist ]))
+          .format(osm.xtype2osm[e["x:type"]], e["x:id"], e["x:id"]) for e in oslist ]))
         wr('| colspan={} style="{}" | {}'.format(cols, style_details, desc))
         linecounter += 1
     else:
