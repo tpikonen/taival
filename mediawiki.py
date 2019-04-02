@@ -1023,7 +1023,8 @@ def print_stoptable(sd, stops=None):
         ref = ps["code"]
         oslist = ost.get(ref, [])
         nlines, isok = print_stopline(oslist, ps, cols)
-        linecounter += nlines
+        #linecounter += nlines
+        linecounter += 1 # Makes diffs more stable
         stopcounter += 1
         probcounter += 0 if isok else 1
     wr(footer)
