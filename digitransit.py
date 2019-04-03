@@ -295,6 +295,31 @@ class Digitransit:
         return (stops, clusters)
 
 
+    def stations(self):
+        """Return all stations in a 'mode' -> list of stations dict."""
+        query = """{
+  stations {
+    name
+    gtfsId
+    zoneId
+    vehicleMode
+    lat
+    lon
+  }
+}"""
+        r = requests.post(url=self.url, data=query, headers=self.headers)
+        r.raise_for_status()
+        r.encoding = 'utf-8'
+        data = json.loads(r.text)["data"]["stations"]
+        stations = defaultdict(list)
+        for d in data:
+            mode = self.mode_to_osm[d.pop("vehicleMode")]
+            d["mode"] = mode
+            d["latlon"] = (d.pop("lat"), d.pop("lon"))
+            stations[mode].append(d)
+        return stations
+
+
     def citybikes(self):
         """Return all citybike stations."""
         query = """{
@@ -346,3 +371,4 @@ class Digitransit:
             d.pop('lon', None)
             bps.append(d)
         return bps
+
