@@ -485,9 +485,32 @@ def sub_stops(args):
         log.error("Incompatible pickle file")
 
 
-# TODO
 def sub_stations(args):
-    pass
+    if args.filt1 in osm.stationtags.keys():
+        mode = args.filt1
+    elif args.filt1 is None:
+        mode = None
+    else:
+        log.error("Unrecognized transport mode '{}'.".format(args.filt1))
+        sys.exit(1)
+
+    if not args.input:
+        args.input = "{}_stations.pickle".format(pvd.agency)
+    log.debug("Stations input: '{}', mode: {}".format(args.input, mode))
+    with open(args.input, 'rb') as f:
+        d = pickle.load(f)
+    if "ostat" in d.keys() and "pstat" in d.keys():
+        if args.output == '-':
+            out = sys.stdout
+        else:
+            out = open(args.output, "wb")
+        mw.outfile = out
+        mw.report_stations(d, mode=mode)
+        if out and out != sys.stdout:
+            out.close()
+    else:
+        log.error("Incompatible pickle file")
+        sys.exit(2)
 
 
 if __name__ == '__main__' and '__file__' in globals ():
@@ -579,6 +602,20 @@ if __name__ == '__main__' and '__file__' in globals ():
         help='Only report on stops in given city: {}'\
           .format(", ".join(hsl.city2prefixes.keys())))
     parser_stops.set_defaults(func=sub_stops)
+
+    parser_stations = subparsers.add_parser('stations',
+        help='Output a mediawiki report on stations from previously collected data in pickle format, possibly limited by mode')
+    parser_stations.add_argument('--input', '-i', metavar='<input-file>',
+        dest='input', default=None, help="Read data from a pickle file (default '<provider>_stations.pickle')")
+    parser_stations.add_argument('--output', '-o', metavar='<output-file>',
+        dest='output', default='-', help='Direct output to file (default stdout)')
+    parser_stations.add_argument('filt1', nargs='?', metavar='<mode>',
+        help='Only report on stations with given mode: {}'\
+          .format(", ".join(osm.stoptags.keys())))
+#    parser_stations.add_argument('filt2', nargs='?', metavar='<city>',
+#        help='Only report on stations in given city: {}'\
+#          .format(", ".join(hsl.city2prefixes.keys())))
+    parser_stations.set_defaults(func=sub_stations)
 
 #    parser_fullreport = subparsers.add_parser('fullreport',
 #        help='Create a report for all lines.')
