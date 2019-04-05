@@ -70,12 +70,12 @@ def relid2url(relid):
     return "https://www.openstreetmap.org/relation/" + str(relid)
 
 
-def stop2url(s):
+def obj2url(s):
     return "https://www.openstreetmap.org/{}/{}".format(xtype2osm[s["x:type"]], s["x:id"])
 
 
 def stoplist2links(stoplist):
-    return " ".join("[{} {}]".format(stop2url(s), s["ref"]) for s in stoplist)
+    return " ".join("[{} {}]".format(obj2url(s), s["ref"]) for s in stoplist)
 
 
 def member_coord(x):
