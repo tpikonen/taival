@@ -15,6 +15,10 @@ def pattern2url(code):
         + ":".join(code.split(':')[:2]) +"/pysakit/" + str(code)
 
 
+def terminalid2url(gtfs):
+    return "https://reittiopas.hsl.fi/terminaalit/" + gtfs
+
+
 class Digitransit:
     def __init__(self, agency, url, modecolors=None, peakhours=None, \
       nighthours=None):
