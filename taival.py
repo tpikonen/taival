@@ -330,6 +330,12 @@ def collect_stops():
     return sd
 
 
+def collect_stations():
+    pstat = pvd.stations()
+    ostat = { mode: osm.stations(mode) for mode in pstat.keys() }
+    return { "ostat": ostat, "pstat": pstat, "agency": pvd.agency }
+
+
 def sub_gpx(args):
     log.info("Processing line %s, mode '%s'" % (args.line, args.mode))
     osm2gpx(args.line, args.mode)
@@ -406,6 +412,8 @@ def sub_collect(args):
         args.output = "{}_{}.pickle".format(pvd.agency, args.mode)
     if args.mode == 'stops':
         d = collect_stops()
+    elif args.mode == 'stations':
+        d = collect_stations()
     elif args.mode in osm.stoptags.keys():
         d = collect_routes(mode=args.mode, interval_tags=args.interval_tags)
     else:
@@ -504,13 +512,13 @@ if __name__ == '__main__' and '__file__' in globals ():
     parser_osmxml.set_defaults(func=sub_osmxml)
 
     parser_collect = subparsers.add_parser('collect',
-        help='Collect info from APIs to a file for a mode or stops')
-    parser_collect.add_argument('mode', nargs='?', metavar='<mode> | stops',
+        help='Collect info from APIs to a file for stops, stations, or routes for mode')
+    parser_collect.add_argument('mode', nargs='?', metavar='<mode> | stops | stations',
         default="bus",
-        help="'stops' or transport mode: {} (default bus)".format(", ".\
-          join(osm.stoptags.keys())))
+        help="'stops', 'stations' or transport mode of route: {} (default bus)"\
+          .format(", ".join(osm.stoptags.keys())))
     parser_collect.add_argument('--interval-tags', '-i', action='store_true',
-        dest='interval_tags', help="Collect info for 'interval*' tags")
+        dest='interval_tags', help="Collect info for 'interval*' tags for routes")
     parser_collect.add_argument('--output', '-o', metavar='<output-file>',
         dest='output', default=None,
         help="Direct output to file (default '<provider>_<mode_or_stops>.pickle')")
