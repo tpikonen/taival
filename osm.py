@@ -46,6 +46,14 @@ stoptags = {
         { "aerialway": "station" } ],
 }
 
+stationtags = {
+    "bus": [ { "amenity": "bus_station" } ],
+    # "station": None means [!station] in overpass (i.e. no station tag)
+    "train": [ { "railway": "station", "station": None } ],
+    "subway": [ { "railway": "station", "station": "subway" } ],
+    "light_rail": [ { "railway": "station", "station": "light_rail" } ],
+}
+
 citybiketags = [ { "amenity": "bicycle_rental" } ]
 
 bikeparktags = [ { "amenity": "bicycle_parking" } ]
@@ -287,19 +295,26 @@ def stoptags2mode(otags):
     return outl
 
 
-def mode2ovpstoptags(mode):
+def mode2ovptags(mode, modetags=stoptags):
     """Return a list of Overpass tag filters."""
-    tlist = stoptags[mode]
+    tlist = modetags[mode]
     out = []
     for tags in tlist:
-        out.append(''.join([ '["{}"="{}"]'.format(k, v) for k, v in tags.items() ]))
+        ovp = ""
+        for k, v in tags.items():
+            if v:
+                ovp += '["{}"="{}"]'.format(k, v)
+            else:
+                ovp += '[!"{}"]'.format(k)
+        if ovp:
+            out.append(ovp)
     return out
 
 
 def stops_by_refs(refs, mode="bus"):
     """Return a list of OSM node ids which have one of the 'ref' tag values in
     a given refs list."""
-    stoptags = mode2ovpstoptags(mode)
+    stoptags = mode2ovptags(mode)
     refpat = "|".join(str(r) for r in refs)
     q = area + "(\n"
     for st in stoptags:
@@ -331,9 +346,9 @@ def stops(mode="bus"):
 """
     qtempl = "node(area.hel){};\nway(area.hel){};\nrel(area.hel){};"
     if isinstance(mode, list):
-        qlist = [ e for m in mode for e in mode2ovpstoptags(m) ]
+        qlist = [ e for m in mode for e in mode2ovptags(m) ]
     else:
-        qlist = mode2ovpstoptags(mode)
+        qlist = mode2ovptags(mode)
     q = "[out:json][timeout:120];\n" + area + "\n(\n" \
       + "\n".join([ qtempl.format(t, t, t) for t in qlist ]) + "\n);out body;"
     log.debug(q)
@@ -362,6 +377,46 @@ def stops(mode="bus"):
     sanitize_add(refstops, rest, rr.ways, "w")
     sanitize_add(refstops, rest, rr.relations, "r")
     return refstops, rest
+
+
+def stations(mode="bus"):
+    """Return all stations for a given mode in the area. The mode can also be
+    a list of mode strings, in which case stations for all the modes listed
+    are returned.
+
+    A list with tags dictionaries as values is returned.
+    The following additional keys are included in the tag dictionaries:
+    x:id    id of the object
+    x:type  type if the object as a string of length 1 ('n', 'w', or 'r')
+    x:latlon (latitude, longitude) tuple of the object, as calculated
+            by osm.member_coord()
+"""
+    qtempl = "node(area.hel){};\nway(area.hel){};\nrel(area.hel){};"
+    if isinstance(mode, list):
+        qlist = [ e for m in mode for e in mode2ovptags(m, stationtags) ]
+    else:
+        qlist = mode2ovptags(mode, stationtags)
+    q = "[out:json][timeout:120];\n" + area + "\n(\n" \
+      + "\n".join([ qtempl.format(t, t, t) for t in qlist ]) + "\n);out body;"
+    log.debug(q)
+    rr = api.query(q)
+    def sanitize_addlist(sl, elist, etype):
+        for e in elist:
+            dd =  { \
+                "x:id": e.id,
+                "x:type": etype,
+                "x:latlon": member_coord(e),
+            }
+            dd.update(e.tags)
+            sl.append(dd)
+    stations = []
+    # NB: Because sanitize_add() calls member_coords(), which gets more
+    # (untagged) nodes (and maybe ways), the order of calls below
+    # must be like this.
+    sanitize_addlist(stations, rr.nodes, "n")
+    sanitize_addlist(stations, rr.ways, "w")
+    sanitize_addlist(stations, rr.relations, "r")
+    return stations
 
 
 def citybikes():
