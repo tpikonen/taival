@@ -22,8 +22,8 @@ def wr_if(s, **kwargs):
         wr(s, **kwargs)
 
 
-def keykey(dkey):
-    return lambda x: x[dkey]
+def keykey(dkey, return_type=str):
+    return lambda x: x.get(dkey, return_type())
 
 
 def test_tag(ts, key, value=None, badtag=False):
