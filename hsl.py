@@ -181,7 +181,9 @@ def get_stopname(ps):
     """Return stop name composed from 'name' and 'platformCode' fields."""
     pname = ps.get("name", None)
     pplat = ps.get("platformCode", None)
-    if pplat and pplat[0].isnumeric():
+    namecount = ps.get("namecount", None)
+    req_plat = (namecount and namecount > 2) or not namecount
+    if req_plat and pname and pplat and pplat[0].isnumeric():
         pn = "{}, laituri {}".format(pname, pplat)
     else:
         pn = pname
