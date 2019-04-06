@@ -757,6 +757,7 @@ def check_dist(os, ps):
     else:
         return style_problem, "Error"
 
+
 def check_name(os, ps):
     """Return (style, text, details) cell tuple comparing name value."""
     def shorten(s, maxlen=25):
@@ -768,7 +769,14 @@ def check_name(os, ps):
     cn = shorten(cn)
     if on:
         if on == pn:
-            return (style_ok, cn, "")
+            namefi = os.get("name:fi", None)
+            namesv = os.get("name:sv", None)
+            if namefi and namesv and namefi != on and namesv != on:
+                details = "'''name:fi'''={} and '''name:sv'''={}, but '''name'''={}."\
+                  .format(namefi, namesv, on)
+                return (style_problem, cn, details)
+            else:
+                return (style_ok, cn, "")
         else:
             for abbr, repl in hsl.synonyms:
                 if on.replace(repl, abbr) == pn:
