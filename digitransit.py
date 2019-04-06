@@ -282,7 +282,7 @@ class Digitransit:
         r.raise_for_status()
         r.encoding = 'utf-8'
         data = json.loads(r.text)["data"]["stops"]
-        stops = { k:{} for k in self.modecolors.keys() }
+        stops = defaultdict(dict)
         clusters = defaultdict(list) # cluster gtfsId -> ref list
         for d in data:
             ref = d["code"]
