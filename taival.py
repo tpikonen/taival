@@ -325,6 +325,12 @@ def collect_stops():
     for pmode in pst.values():
         hsl.normalize_helsinki_codes(pmode, change_code=True)
 
+    for mdict in pst.values():
+        for ps in mdict.values():
+            namecount = len([True for d in pst.values()\
+              for s in d.values() if s["name"] == ps["name"]])
+            ps["namecount"] = namecount
+
     sd = { "ost": ost, "rst": rst, "pst": pst, "pcl": pcl }
 
     return sd
