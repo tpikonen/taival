@@ -1,7 +1,7 @@
 import difflib, sys
 import osm, hsl
 from util import *
-from digitransit import pattern2url, terminalid2url
+from digitransit import pattern2url, terminalid2url, citybike2url
 
 outfile = None
 
@@ -1208,3 +1208,182 @@ def report_stations(sd, mode=None):
     for m in modelist:
         wr("== {} stations ==".format(m.capitalize()))
         print_stationtable(sd, m)
+
+
+def check_cbname(os, ps):
+    """Return (style, text, details) cell tuple comparing citybike station name value."""
+    onorig = os.get("name", None)
+    pn = ps["name"]
+    stationext_fi = " kaupunkipyöräasema"
+    stationext_en = " city bike station"
+    if onorig:
+        on = onorig.replace(stationext_fi, "")
+        if on == pn:
+            detlist = []
+            st = style_ok
+            namefi = os.get("name:fi", None)
+            if namefi and namefi != onorig:
+                detlist.append("'''name:fi'''='{}', but '''name'''='{}'."\
+                  .format(namefi, onorig))
+                st = style_problem
+#            else:
+#                nameenorig = os.get("name:en", None)
+#                nameen = nameenorig.replace(stationext_en, "") if nameenorig else None
+#                if nameen and nameen != on:
+#                    detlist.append("'''name:en'''='{}', is maybe '{}'."\
+#                      .format(nameenorig, pn + stationext_en))
+#                    st = style_maybe
+            return (st, pn, "\n".join(detlist))
+        else:
+            for abbr, repl in hsl.synonyms:
+                if on.replace(repl, abbr) == pn:
+                    return (style_ok, shorten(on), "")
+            details = "'''name''' set to '{}', should be '{} kaupunkipyöräasema'."\
+              .format(onorig, pn)
+            return (style_problem, pn, details)
+    else:
+        details = "'''name''' not set in OSM, HSL has '{} kaupunkipyöräasema'.".format(pn)
+        return (style_problem, pn, details)
+
+
+def check_capacity(os, ps):
+    """Return (style, text, details) cell tuple comparing citybike station capacity."""
+    if ps["state"] != 'Station on':
+        return (style_maybe, "N/A", "")
+    oc = os.get("capacity", None)
+    pc = str(int(ps['bikesAvailable']) + int(ps['spacesAvailable']))
+    if oc:
+        if oc == pc:
+            return (style_ok, pc, "")
+        else:
+            cell = "{}/{}".format(oc, pc)
+            #details = "'''capacity'''='{}', should be '{}'.".format(oc, pc)
+            return (style_problem, cell, "")
+    else:
+        cell = "-/{}".format(pc)
+        #details = "'''capacity''' not set in OSM, HSL has '{}'.".format(pc)
+        return (style_problem, cell, "")
+
+
+def print_citybikeline(oslist, ps, cols):
+    """Print a line to citybike table, return (nlines, isok)."""
+    ref = ps["stationId"]
+    linecounter = 1
+    detlist = []
+    wr("|-")
+    wr("| [{} {}]".format(citybike2url(ps["latlon"]), ref))
+    isok = True
+    if len(oslist) == 1:
+        def wr_cell(f, o, p):
+            tt = f(o, p)
+            st = tt[0]
+            txt = tt[1]
+            if len(tt) > 2 and tt[2]:
+                detlist.append(tt[2])
+            wr('| style="{}" | {}'.format(st, txt))
+            return st != style_problem
+
+        os = oslist[0]
+        isok &= wr_cell(check_cbname, os, ps)
+        isok &= wr_cell(check_type, os, ps)
+        isok &= wr_cell(check_dist, os, ps)
+        isok &= wr_cell(check_capacity, os, ps)
+        if detlist:
+            isok = False
+            linecounter += len(detlist)
+            wr('|-')
+            wr('| colspan={} style="{}" | {}'.format(cols, style_details, "\n".join(detlist)))
+    elif len(oslist) > 1:
+        isok = False
+        wr('| {}'.format(ps["name"]))
+        (lat, lon) = ps["latlon"]
+        wr('| colspan={} style="{}" | More than one station with the same ref in OSM'.format(cols-2, style_problem))
+        wr('|-')
+        desc = "\nMatching stations in OSM: {}.".format(", ".join(\
+          [ "[https://www.openstreetmap.org/{}/{} {}]"\
+          .format(osm.xtype2osm[e["x:type"]], e["x:id"], e["x:id"]) for e in oslist ]))
+        wr('| colspan={} style="{}" | {}'.format(cols, style_details, desc))
+        linecounter += 1
+    else:
+        isok = False
+        wr('| {}'.format(ps["name"]))
+        (lat, lon) = ps["latlon"]
+        wr('| colspan={} style="{}" | missing from [https://www.openstreetmap.org/#map=19/{}/{} OSM]'.format(cols-2, style_problem, lat, lon))
+        wr('|-')
+        taglist = []
+        taglist.append("'''name'''='{}'".format(ps["name"]))
+        if ps["state"] == 'Station on':
+            cap = str(int(ps['bikesAvailable']) + int(ps['spacesAvailable']))
+            taglist.append("'''capacity'''='{}'".format(cap))
+        desc = "Tags from HSL: " + ", ".join(taglist) + "."
+        wr('| colspan={} style="{}" | {}'.format(cols, style_details, desc))
+        linecounter += 1
+    return linecounter, isok
+
+
+def print_citybiketable(sd, refs=None):
+    """Print a table of citybike stations."""
+    cols = 6
+    header = '{| class="wikitable"'
+    subheader = """|-
+! ref
+! name
+! type
+! delta
+! capacity"""
+    footer = "|}"
+
+    ost = sd["ocbs"].copy()
+    pst = sd["pcbs"] # data from provider
+
+    refs = refs if refs else pst.keys()
+    refs.sort()
+
+    linecounter = 0
+    statcounter = 0
+    probcounter = 0
+    wr(header)
+    wr(subheader)
+    for ref in refs:
+        if linecounter > 19:
+            wr(subheader)
+            linecounter = 0
+        ps = pst[ref]
+        oslist = ost.pop(ref, [])
+        nlines, isok = print_citybikeline(oslist, ps, cols)
+        #linecounter += nlines
+        linecounter += 1 # Makes diffs more stable
+        statcounter += 1
+        probcounter += 0 if isok else 1
+    wr(footer)
+    wr("")
+    wr("{} citybike stations.\n".format(statcounter))
+    wr("{} citybike stations with differences.\n".format(probcounter))
+
+
+def report_citybikes(sd):
+    """Output a report on citybike stations."""
+    ost = sd["ocbs"]
+    pst = sd["pcbs"]
+    wr("__FORCETOC__")
+    wr("This is a comparison of OSM citybike station data with [https://www.hsl.fi/ HSL] data (via [http://digitransit.fi digitransit.fi]) generated by a [https://github.com/tpikonen/taival script].\n")
+    #wr("= Citybike stations in HSL =\n")
+
+    wr("== Active citybike stations ==\n")
+    active_refs = [ v["stationId"] for v in pst.values() if v["state"] == "Station on" ]
+    print_citybiketable(sd, active_refs)
+
+    wr("== Citybike stations not in use ==\n")
+    inactive_refs = [ v["stationId"] for v in pst.values() if v["state"] != "Station on" ]
+    print_citybiketable(sd, inactive_refs)
+
+    wr("== Other citybike stations ==\n")
+    printedset = set(active_refs + inactive_refs)
+    rest_w_ref = [ e for l in ost.values() for e in l if not e["ref"] in printedset ]
+    rest_w_ref.sort(key=lambda x: linesortkey(keykey("ref")(x)))
+    orest = list(sd["orest"].values())
+    orest.sort(key=keykey("name"))
+    wr("{} citybike stations not in {}:\n".format(len(rest_w_ref) + len(orest), sd["agency"]))
+    rlist = ["[{} {}]".format(osm.obj2url(s), s.get("ref", "<no ref in OSM>")) for s in rest_w_ref]
+    olist = ["[{} {}]".format(osm.obj2url(s), s.get("name", "<no name in OSM>")) for s in orest]
+    wr(" {}\n".format(", ".join(rlist + olist)))
