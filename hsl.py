@@ -182,7 +182,8 @@ def get_stopname(ps):
     pname = ps.get("name", None)
     pplat = ps.get("platformCode", None)
     namecount = ps.get("namecount", None)
-    req_plat = (namecount and namecount > 2) or not namecount
+    req_plat = ((namecount and namecount > 2) or not namecount
+      or ps.get('mode', 'bus') == 'train')
     if req_plat and pname and pplat and pplat[0].isnumeric():
         pn = "{}, laituri {}".format(pname, pplat)
     else:
