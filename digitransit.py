@@ -332,6 +332,8 @@ class Digitransit:
     stationId
     bikesAvailable
     spacesAvailable
+    state
+    realtime
     lat
     lon
   }
@@ -340,14 +342,14 @@ class Digitransit:
         r.raise_for_status()
         r.encoding = 'utf-8'
         data = json.loads(r.text)["data"]["bikeRentalStations"]
-        cbs = []
+        cbs = {}
         for d in data:
-            d["capacity"] = d.pop('spacesAvailable', None)\
-              + d.pop('bikesAvailable', None)
+#            d["capacity"] = d.pop('spacesAvailable', None)\
+#              + d.pop('bikesAvailable', None)
             d["latlon"] = (d["lat"], d["lon"])
             d.pop('lat', None)
             d.pop('lon', None)
-            cbs.append(d)
+            cbs[d['stationId']] = d
         return cbs
 
 
