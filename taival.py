@@ -342,6 +342,12 @@ def collect_stations():
     return { "ostat": ostat, "pstat": pstat, "agency": pvd.agency }
 
 
+def collect_citybikes():
+    pcbs = pvd.citybikes()
+    refcbs, rest = osm.citybikes()
+    return { "ocbs": refcbs, "orest": rest, "pcbs": pcbs, "agency": pvd.agency }
+
+
 def sub_gpx(args):
     log.info("Processing line %s, mode '%s'" % (args.line, args.mode))
     osm2gpx(args.line, args.mode)
@@ -420,6 +426,8 @@ def sub_collect(args):
         d = collect_stops()
     elif args.mode == 'stations':
         d = collect_stations()
+    elif args.mode == 'citybikes':
+        d = collect_citybikes()
     elif args.mode in osm.stoptags.keys():
         d = collect_routes(mode=args.mode, interval_tags=args.interval_tags)
     else:
@@ -542,9 +550,9 @@ if __name__ == '__main__' and '__file__' in globals ():
 
     parser_collect = subparsers.add_parser('collect',
         help='Collect info from APIs to a file for stops, stations, or routes for mode')
-    parser_collect.add_argument('mode', nargs='?', metavar='<mode> | stops | stations',
+    parser_collect.add_argument('mode', nargs='?', metavar='<mode> | stops | stations | citybikes',
         default="bus",
-        help="'stops', 'stations' or transport mode of route: {} (default bus)"\
+        help="'stops', 'stations' 'citybikes' or transport mode of route: {} (default bus)"\
           .format(", ".join(osm.stoptags.keys())))
     parser_collect.add_argument('--interval-tags', '-i', action='store_true',
         dest='interval_tags', help="Collect info for 'interval*' tags for routes")
