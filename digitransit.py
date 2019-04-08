@@ -19,6 +19,9 @@ def terminalid2url(gtfs):
     return "https://reittiopas.hsl.fi/terminaalit/" + gtfs
 
 
+def citybike2url(latlon):
+    return "https://reittiopas.hsl.fi/::{},{}".format(latlon[0], latlon[1])
+
 class Digitransit:
     def __init__(self, agency, url, modecolors=None, peakhours=None, \
       nighthours=None):
