@@ -527,6 +527,26 @@ def sub_stations(args):
         sys.exit(2)
 
 
+def sub_citybikes(args):
+    if not args.input:
+        args.input = "{}_citybikes.pickle".format(pvd.agency)
+    log.debug("Citybikes input: '{}'".format(args.input))
+    with open(args.input, 'rb') as f:
+        d = pickle.load(f)
+    if "ocbs" in d.keys() and "pcbs" in d.keys():
+        if args.output == '-':
+            out = sys.stdout
+        else:
+            out = open(args.output, "wb")
+        mw.outfile = out
+        mw.report_citybikes(d)
+        if out and out != sys.stdout:
+            out.close()
+    else:
+        log.error("Incompatible pickle file")
+        sys.exit(2)
+
+
 if __name__ == '__main__' and '__file__' in globals ():
     parser = argparse.ArgumentParser()
     parser.add_argument('--version', '-v', action='version', version='0.0.1')
@@ -630,6 +650,14 @@ if __name__ == '__main__' and '__file__' in globals ():
 #        help='Only report on stations in given city: {}'\
 #          .format(", ".join(hsl.city2prefixes.keys())))
     parser_stations.set_defaults(func=sub_stations)
+
+    parser_citybikes = subparsers.add_parser('citybikes',
+        help='Output a mediawiki report on citybike stations from previously collected data in pickle format')
+    parser_citybikes.add_argument('--input', '-i', metavar='<input-file>',
+        dest='input', default=None, help="Read data from a pickle file (default '<provider>_citybikes.pickle')")
+    parser_citybikes.add_argument('--output', '-o', metavar='<output-file>',
+        dest='output', default='-', help='Direct output to file (default stdout)')
+    parser_citybikes.set_defaults(func=sub_citybikes)
 
 #    parser_fullreport = subparsers.add_parser('fullreport',
 #        help='Create a report for all lines.')
