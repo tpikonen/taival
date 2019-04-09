@@ -1248,9 +1248,10 @@ def check_cbname(os, ps):
 
 def check_capacity(os, ps):
     """Return (style, text, details) cell tuple comparing citybike station capacity."""
-    if ps["state"] != 'Station on':
-        return (style_maybe, "N/A", "")
     oc = os.get("capacity", None)
+    if ps["state"] != 'Station on':
+        cell = "{} / N/A".format(oc if oc else "-")
+        return (style_maybe, cell, "")
     pc = str(int(ps['bikesAvailable']) + int(ps['spacesAvailable']))
     if oc:
         if oc == pc:
