@@ -1074,6 +1074,8 @@ def report_stops(sd, mode=None, city=None):
         orefs = ost.keys()
     if city:
         prefixes = hsl.city2prefixes[city]
+        # temporary(?) stops to be added to "Stops not in HSL" section
+        prefixes.extend([ "X" + p for p in prefixes])
         pattern = re.compile("^(" + "|".join(prefixes) + ")[0-9]{4,4}$")
         stops = [ s for s in stops if pattern.match(s["code"]) ]
         orefs = (r for r in orefs if pattern.match(r))
