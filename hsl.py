@@ -9,6 +9,8 @@ cities = [ "Helsinki", "Espoo", "Vantaa", "Kirkkonummi", "Kerava",
 extracities_bus = [ "Järvenpää", "Mäntsälä", "Nurmijärvi", "Pornainen",
     "Porvoo" ]
 
+extracities_stations = [ "Järvenpää" ]
+
 modecolors = { "bus": "#007AC9",
     "tram":     "#00985F",
     "train":    "#8C4799",

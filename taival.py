@@ -338,7 +338,9 @@ def collect_stops():
 
 def collect_stations():
     pstat = pvd.stations()
+    osm.area = hsl.get_overpass_area(hsl.cities + hsl.extracities_stations)
     ostat = { mode: osm.stations(mode) for mode in pstat.keys() }
+    osm.area = hsl.overpass_area
     return { "ostat": ostat, "pstat": pstat, "agency": pvd.agency }
 
 
