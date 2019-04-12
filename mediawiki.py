@@ -1126,7 +1126,7 @@ def print_stationline(os, ps, cols):
     detlist = []
     wr("|-")
     wr("| [{} {}]".format(terminalid2url(ps["gtfsId"]), ps["name"]))
-    if dist > 0.99:
+    if dist > 0.200:
         isok = False
         (lat, lon) = ps["latlon"]
         wr('| colspan={} style="{}" | Station not found in [https://www.openstreetmap.org/#map=19/{}/{} OSM]'.format(cols-1, style_problem, lat, lon))
