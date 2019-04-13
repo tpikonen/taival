@@ -1,4 +1,5 @@
-import re
+import re, csv
+from collections import defaultdict
 from math import radians, degrees, cos, sin, asin, sqrt
 
 def ddl_merge(m1, m2):
@@ -149,3 +150,33 @@ def arrivals2intervals(arrivals, peakhours=None, nighthours=None):
     #print("inights: %s" % (str(inights)))
     return (inorms, ipeaks, inights)
 
+
+def csv2dict(fname, keyfield, unique=True):
+    """
+    Read a CSV file into a dict of dicts, one dict per line.
+
+    The CSV file is given in 'fname', each line is read into a dict with
+    keys taken from the CSV header line. The line-dicts are collected into
+    a result dict with 'keyfield' CSV field as key.
+
+    If 'unique' is True, 'keyfield' values are assumed to be unique and the
+    result dict is a straight key -> dict mapping. If 'keyfield' is not
+    unique, previously read values are overwritten when reading the CSV file.
+
+    If 'unique' is False, the result dict is a key -> list mapping (i.e. a
+    defaultdict(list)), with CSV lines read into dicts which are appended
+    to the list stored under its 'keyfield' value in the result dict.
+    """
+    dialect = 'excel'
+    with open(fname, 'r', encoding='utf-8-sig') as fi:
+        reader = csv.DictReader(fi)
+        if unique:
+            retdict = {}
+            for r in reader:
+                retdict[r[keyfield]] = r
+        else:
+            retdict = defaultdict(list)
+            for r in reader:
+                retdict[r[keyfield]].append(r)
+
+    return retdict
