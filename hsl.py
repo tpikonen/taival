@@ -173,6 +173,8 @@ def longname2stops(longname):
     # Other place names with hyphens
     extrapat="|Pohjois-Nikinmä|Länsi-Pasila|Etelä-Leppäv"
     pat = pat + extrapat
+    longname = re.sub(r"^\(([^-]*-)\)(.*)$", r"\1\2", longname) # Handle '(Inkoo-)blah-...'
+    longname = re.sub(r"(.*)\((-.*)\)$", r"\1\2", longname) # Handle '...-blah(-Inkoo)'
     subf = lambda m: m.group().replace('-', '☺')
     stops = re.sub(pat, subf, longname).split('-')
     stops = [s.replace('☺', '-').strip() for s in stops]
