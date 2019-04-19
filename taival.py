@@ -205,22 +205,33 @@ def collect_line(lineref, mode="bus", interval_tags=False):
     log.debug("Calling pvd.tags")
     htags = pvd.tags(lineref)
     ld["htags"] = htags
+
+    # OSM route <-> provider shape mapping
+    # Get candidate pattern codes
+    osm_stopcounts = [ len([ mem for mem in rel.members if mem.role == 'platform']) for rel in rels ]
+    osm_stopcounts.sort()
+    nstops = osm_stopcounts[int(len(osm_stopcounts)/2)]
+    log.debug("Calling codes_match_stopcount, with stopcount = {}".format(nstops))
+    codes = pvd.codes_match_stopcount(lineref, nstops, mode)
+
 #    codes = pvd.codes_after_date(lineref, \
 #                datetime.date.today().strftime("%Y%m%d"), mode)
+
 #    codes = pvd.codes_longest_per_direction(lineref, mode)
-    log.debug("Calling codes_longest_after_date")
-    codes = pvd.codes_longest_after_date(lineref, \
-                datetime.date.today().strftime("%Y%m%d"), mode)
-    ld["codes"] = codes
-    log.debug("Found HSL pattern codes: %s\n" %
-        (", ".join("[%s %s]" % (digitransit.pattern2url(c), c) for c in codes)))
+#    log.debug("Calling codes_longest_after_date")
+#    codes = pvd.codes_longest_after_date(lineref, \
+#                datetime.date.today().strftime("%Y%m%d"), mode)
+
 #    # Use just the ':01' route variant
 #    cfilt = [c for c in codes if (len(c) - c.rfind(":01")) == 3]
 #    if len(cfilt) >= len(rels):
 #        codes = cfilt
 #        log.debug("Using just first route variants: %s\n" % (str(codes)))
 
-    # Mapping
+    ld["codes"] = codes
+    log.debug("Found HSL pattern codes: %s\n" %
+        (", ".join("[%s %s]" % (digitransit.pattern2url(c), c) for c in codes)))
+
     # FIXME: Duplicate call to osm.route_shape() in route checking loop.
     osmshapes = [osm.route_shape(rel)[0] for rel in rels]
     hslshapes = [pvd.shape(c)[1] for c in codes]
