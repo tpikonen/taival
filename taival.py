@@ -459,11 +459,6 @@ def sub_line(args):
     output_dict(ld, args)
 
 
-def sub_report(args):
-    md = collect_routes(mode=args.mode, interval_tags=args.interval_tags)
-    output_dict(md, args)
-
-
 def sub_routes(args):
     with open(args.file, 'rb') as f:
         d = pickle.load(f)
@@ -611,20 +606,6 @@ if __name__ == '__main__' and '__file__' in globals ():
         dest='format', default='mediawiki',
         help='Output format: mediawiki (default), pickle')
     parser_line.set_defaults(func=sub_line)
-
-    parser_report = subparsers.add_parser('report',
-        help='Report on all lines for a given mode.')
-    parser_report.add_argument('--interval-tags', '-i', action='store_true',
-        dest='interval_tags', help='Also report on "interval*" tags')
-    parser_report.add_argument('mode', nargs='?', metavar='<mode>',
-        default="bus",
-        help='Transport mode: train, subway, tram, bus (default) or ferry')
-    parser_report.add_argument('--output', '-o', metavar='<output-file>',
-        dest='output', default='-', help='Direct output to file (default stdout)')
-    parser_report.add_argument('--format', '-f', metavar='<format>',
-        dest='format', default='mediawiki',
-        help='Output format: mediawiki (default), pickle')
-    parser_report.set_defaults(func=sub_report)
 
     parser_routes = subparsers.add_parser('routes',
         help='Output a mediawiki report on routes from previously collected data in pickle format.')
