@@ -134,6 +134,37 @@ class Digitransit:
         return code0 + code1
 
 
+    @staticmethod
+    def _match_stopcount(plist, stopcount):
+        """
+        Return a list of patterns codes with stop count closest to 'stopcount'.
+        """
+        out = []
+        mindelta = 1e6
+        for p in plist:
+            delta = abs(len(p["stops"]) - stopcount)
+            log.debug("code {}, delta = {}".format(p["code"], delta))
+            if delta < mindelta:
+                out = [p]
+                mindelta = delta
+            elif delta == mindelta:
+                out.append(p)
+        return [p["code"] for p in out]
+
+
+    def codes_match_stopcount(self, lineid, stopcount, mode="bus"):
+        """
+        Return a list pattern codes for a line with the number of stops
+        closes to the number given in 'stopcount'. The list includes the
+        longest pattern per direction, i.e. at least two patterns. If two
+        or more patterns have the same number of stops, both are returned.
+        """
+        pats = self.patterns(lineid, mode, ["directionId", "stops {id}"])
+        code0 = self._match_stopcount([p for p in pats if p["directionId"] == 0], stopcount)
+        code1 = self._match_stopcount([p for p in pats if p["directionId"] == 1], stopcount)
+        return code0 + code1
+
+
     def codes_for_date(self, lineid, datestr, mode="bus"):
         """Get patterns which are valid (have trips) on a date given in
         YYYYMMDD format."""
