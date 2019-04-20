@@ -8,7 +8,7 @@ from collections import defaultdict
 
 pvd = digitransit.Digitransit("HSL", \
         "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql", \
-        hsl.modecolors, hsl.peakhours, hsl.nighthours)
+        hsl.modecolors, hsl.peakhours, hsl.nighthours, hsl.shapetols)
 
 osm.area = hsl.overpass_area
 
@@ -265,6 +265,7 @@ def collect_routes(mode="bus", interval_tags=False):
     all discovered lines."""
     md = {}
     md["mode"] = mode
+    md["shapetol"] = pvd.shapetols[mode]
     md["interval_tags"] = interval_tags
     # TODO: Replace HSL with agency var everywhere.
     agency = "HSL"

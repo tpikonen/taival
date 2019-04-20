@@ -250,7 +250,7 @@ def print_linedict(ld, agency):
 
         wr("'''Shape:'''\n")
         if hsli is not None:
-            tol = 30
+            tol = agency["shapetol"]
             (shape, gaps) = osm.route_shape(rel)
             if gaps:
                 wr("Route has '''gaps'''!\n")
@@ -420,7 +420,9 @@ def print_modedict(md):
 
     lines = md["lines"]
     wr("= Lines =")
-    agdict = { "name" : agency, "modecolors" : md["modecolors"] }
+    agdict = { "name" : agency,
+        "modecolors" : md["modecolors"],
+        "shapetol" : md["shapetol"] }
     for l in lines:
         print_linedict(lines[l], agdict)
 
@@ -598,7 +600,7 @@ def print_table(md):
             # Shape
             sdetlist = []
             if hsli is not None:
-                tol = 30
+                tol = md["shapetol"]
                 (shape, gaps) = osm.route_shape(rel)
                 ovl = test_shape_overlap(shape, ld["hslshapes"][hsli], tol=tol)
                 if gaps:
