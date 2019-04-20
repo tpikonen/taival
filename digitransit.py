@@ -24,7 +24,7 @@ def citybike2url(latlon):
 
 class Digitransit:
     def __init__(self, agency, url, modecolors=None, peakhours=None, \
-      nighthours=None):
+      nighthours=None, shapetols=None):
         self.agency = agency
         self.url = url
         self.headers = {'Content-type': 'application/graphql'}
@@ -43,6 +43,8 @@ class Digitransit:
             self.modecolors = modecolors
         self.peakhours = self.normalize_hours(peakhours) if peakhours else None
         self.nighthours = self.normalize_hours(nighthours) if nighthours else None
+        self.shapetols = shapetols if shapetols \
+          else { k: 30.0 for k in self.modecolors.keys() }
         # Digitransit API transportModes: BUS, RAIL, TRAM, SUBWAY, FERRY
         self.mode_from_osm = {
             "train":    "RAIL",
