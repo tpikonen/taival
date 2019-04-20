@@ -21,6 +21,9 @@ modecolors = { "bus": "#007AC9",
     "trolleybus": None
 }
 
+shapetols = { k: 30.0 for k in modecolors.keys() }
+shapetols["train"] = 100.0
+
 peakhours = [(7, 9), (15,18)]
 # HSL night services start at 23, but use midnight to avoid overlap with
 # normal services.
