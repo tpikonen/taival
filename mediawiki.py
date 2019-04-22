@@ -1085,7 +1085,9 @@ def report_stops(sd, mode=None, city=None):
     print_stoptable(sd, stops)
     orefs = set(orefs)
     pstops = set(ps["code"] for ps in stops)
-    extras = list(orefs.difference(pstops))
+    extras = orefs.difference(pstops)
+    hslpat = re.compile(r"^[^0-9]*[0-9]{4,4}$")
+    extras = [ r for r in extras if hslpat.match(r) ]
     extras.sort()
     wr("= Stops not in HSL data =\n")
     wr("{} stops not in HSL:\n".format(len(extras)))
