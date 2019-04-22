@@ -357,8 +357,8 @@ def collect_stations():
 
 
 def collect_citybikes():
+    csvd = csv2dict("../HSL_kaupunkipyöräasemat.csv", "id")
     pcbs = pvd.citybikes()
-    csvd = csv2dict("../HSL%3An_kaupunkipy%C3%B6r%C3%A4asemat.csv", "id")
     # Update total_slots from CSV data
     for k in csvd.keys():
         pcbs[k]["total_slots"] = csvd[k]["total_slot"]
