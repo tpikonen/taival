@@ -418,28 +418,6 @@ def get_output(args):
     return out
 
 
-def output_dict(d, args):
-    """Write output from dict"""
-    out = None
-    if args.format == "mediawiki":
-        out = get_output(args)
-        mw.outfile = out
-        if "lineref" in d.keys():
-            agdict = { "name" : pvd.agency,
-                "modecolors" : pvd.modecolors,
-                "shapetol" : pvd.shapetols[args.mode] }
-            mw.print_linedict(d, agdict)
-        else:
-            mw.report_tabular(d)
-    elif args.format == "pickle":
-        out = get_output(args)
-        pickle.dump(d, out)
-    else:
-        log.error("Unknown output format '%s'" % args.output)
-    if out and out != sys.stdout:
-        out.close()
-
-
 def sub_collect(args):
     if not args.output:
         args.output = "{}_{}.pickle".format(pvd.agency, args.mode)
@@ -456,11 +434,6 @@ def sub_collect(args):
         return
     with open(args.output, "wb") as out:
         pickle.dump(d, out)
-
-
-def sub_line(args):
-    ld = collect_line(args.line, args.mode, args.interval_tags)
-    output_dict(ld, args)
 
 
 def sub_routes(args):
@@ -596,20 +569,6 @@ if __name__ == '__main__' and '__file__' in globals ():
         dest='output', default=None,
         help="Direct output to file (default '<provider>_<mode_or_stops>.pickle')")
     parser_collect.set_defaults(func=sub_collect)
-
-    parser_line = subparsers.add_parser('line', help='Create a report for a given line.')
-    parser_line.add_argument('--interval-tags', '-i', action='store_true',
-        dest='interval_tags', help='Also report on "interval*" tags')
-    parser_line.add_argument('line', metavar='<lineid>',
-        help='Line id to report on.')
-    parser_line.add_argument('mode', nargs='?', metavar='<mode>', default="bus",
-        help='Transport mode: train, subway, tram, bus (default) or ferry')
-    parser_line.add_argument('--output', '-o', metavar='<output-file>',
-        dest='output', default='-', help='Direct output to file (default stdout)')
-    parser_line.add_argument('--format', '-f', metavar='<format>',
-        dest='format', default='mediawiki',
-        help='Output format: mediawiki (default), pickle')
-    parser_line.set_defaults(func=sub_line)
 
     parser_routes = subparsers.add_parser('routes',
         help='Output a mediawiki report on routes from previously collected data in pickle format.')
