@@ -425,7 +425,10 @@ def output_dict(d, args):
         out = get_output(args)
         mw.outfile = out
         if "lineref" in d.keys():
-            mw.print_linedict(d)
+            agdict = { "name" : pvd.agency,
+                "modecolors" : pvd.modecolors,
+                "shapetol" : pvd.shapetols[args.mode] }
+            mw.print_linedict(d, agdict)
         else:
             mw.report_tabular(d)
     elif args.format == "pickle":
