@@ -194,7 +194,7 @@ def collect_line(lineref, mode="bus", interval_tags=False):
     relids = [r.id for r in rels]
     ld["rels"] = rels
 
-    log.debug("Calling osm.route_master")
+    log.debug("Calling osm.route_master for line {}".format(lineref))
     ld["rm_rels"] = osm.route_master(relids)
 
     log.debug("Found OSM route ids: %s\n" % \
