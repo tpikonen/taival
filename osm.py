@@ -102,21 +102,38 @@ def ndist2(n1, n2):
 
 # route relations
 
-def all_linerefs(mode="bus"):
-    """Return a lineref:[urllist] dict of all linerefs in Helsinki region.
-    URLs points to the relations in OSM."""
-    q = '%s\nrel(area.hel)[type=route][route="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
+overpy_route_cache = { k: None for k in list(stoptags.keys()) + ["minibus"] }
+
+def get_route_rr(mode="bus"):
+    """
+    Return a (possibly cached) overpy.Result object with all the routes
+    for mode in area.
+    """
+    if overpy_route_cache.get(mode, None):
+        return overpy_route_cache[mode]
+    q = '[out:json][timeout:300];%s\nrel(area.hel)[type=route][route="%s"][ref];(._;>;>;);out body;' % (area, mode)
     log.debug(q)
     rr = api.query(q)
+    overpy_route_cache[mode] = rr
+    return rr
+
+
+def all_linerefs(mode, agency):
+    """
+    Return a lineref:[urllist] dict of all linerefs which have
+    "network"=agency or no network.
+    URLs points to the relations in OSM.
+    """
+    rr = get_route_rr(mode)
     refs = defaultdict(list)
     for r in rr.relations:
-        if "ref" in r.tags.keys():
+        if "ref" in r.tags.keys() and \
+          (not "network" in r.tags.keys() or r.tags["network"] == agency):
             refs[r.tags["ref"]].append(relid2url(r.id))
-    #refs = {r.tags["ref"]:relid2url(r.id)
-    #        for r in rr.relations if "ref" in r.tags.keys()}
     return refs
 
 
+# TODO: Remove
 def ptv2_linerefs(mode="bus"):
     """Return a lineref:url dict of linerefs with public_transport:version=2
     tag in Helsinki region.
@@ -139,12 +156,12 @@ def rels_v2(lineref, mode="bus"):
 
 
 def rels(lineref, mode="bus"):
-    """Get all lines corresponding to lineref and mode in area.
     """
-    q = '%s\nrel(area.hel)[route="%s"][ref="%s"];(._;>;>;);out body;' % (area, mode, lineref)
-    log.debug(q)
-    rr = api.query(q)
-    return rr.relations
+    Get all lines corresponding to lineref and mode in area.
+    """
+    rr = get_route_rr(mode)
+    retval = [ r for r in rr.relations if r.tags.get("ref", None) == lineref ]
+    return retval
 
 
 def route_platforms(rel):
@@ -263,7 +280,6 @@ def disused_routes(mode="bus"):
 
 def route_master(route_ids):
     """Get route master relation from Overpass"""
-    # FIXME: Use 'rel(id:%s)'.join(...) below
     q = '[out:json][timeout:60];rel(id:%s);(rel(br)["type"="route_master"];);out body;' \
       % (",".join(str(x) for x in route_ids))
     log.debug(q)

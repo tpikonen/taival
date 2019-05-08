@@ -274,7 +274,7 @@ def collect_routes(mode="bus", interval_tags=False):
     md["agencyurl"] = agencyurl
     md["modecolors"] = hsl.modecolors
 
-    osmdict = osm.all_linerefs(mode)
+    osmdict = osm.all_linerefs(mode, agency)
     hsldict = pvd.all_linerefs(mode)
     hsl_localbus = pvd.taxibus_linerefs(mode)
     osm2dict = osm.ptv2_linerefs(mode)
@@ -288,7 +288,7 @@ def collect_routes(mode="bus", interval_tags=False):
     md["disroutes"] = disroutes
 
     if mode == "bus":
-        osm_minibusdict = osm.all_linerefs(mode="minibus")
+        osm_minibusdict = osm.all_linerefs("minibus", agency)
         md["osm_minibusdict"] = osm_minibusdict
 
     osm2lines = set(osm2dict)
