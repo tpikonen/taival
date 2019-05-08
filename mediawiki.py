@@ -203,8 +203,8 @@ def print_linedict(ld, agency):
     osm2hsl = ld["osm2hsl"]
     hsl2osm = ld["hsl2osm"]
     if len(codes) != 2:
-        wr("%d route pattern(s) in HSL data, matching may be wrong.\n" \
-          % (len(codes)))
+        wr("%d route pattern(s) in %s data, matching may be wrong.\n" \
+          % (len(codes), agency))
         for i in range(len(relids)):
             wr(" %s -> %s" % \
               (relids[i], "None" if osm2hsl[i] is None else codes[osm2hsl[i]]))
@@ -255,8 +255,8 @@ def print_linedict(ld, agency):
             if gaps:
                 wr("Route has '''gaps'''!\n")
             ovl = test_shape_overlap(shape, hslshapes[hsli], tol=tol)
-            wr("Route [%s %s] overlap (tolerance %d m) with HSL pattern [%s %s] is '''%1.0f %%'''.\n" \
-              % (osm.relid2url(rel.id), rel.id, tol, pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
+            wr("Route [%s %s] overlap (tolerance %d m) with %s pattern [%s %s] is '''%1.0f %%'''.\n" \
+              % (osm.relid2url(rel.id), rel.id, tol, agency, pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
         else:
             wr("Route %s overlap could not be calculated.\n" \
               % (rel.id))
@@ -275,7 +275,7 @@ def print_linedict(ld, agency):
             #hslp = [str(p[2])+" "+str(p[3])+"\n" for p in hslplatform]
             osmp = [p[2]+"\n" for p in osmplatform]
             hslp = [p[2]+"\n" for p in hslplatform]
-            diff = list(difflib.unified_diff(osmp, hslp, "OSM", "HSL"))
+            diff = list(difflib.unified_diff(osmp, hslp, "OSM", agency))
             if diff:
                 outfile.writelines(" " + d for d in diff)
             else:
@@ -307,7 +307,7 @@ def print_summary(md):
     osmextra = osmlines.difference(hsllines)
     osmextra = list(osmextra.difference(hsl_locallines))
     osmextra.sort(key=linesortkey)
-    wr("%d lines in OSM but not in HSL:" % len(osmextra))
+    wr("%d lines in OSM but not in %s:" % (len(osmextra), md["agency"]))
     if osmextra:
         wr(" %s" % ", ".join(["%s (%s)" % \
           (x, ", ".join(["[%s %d]" % (osmdict[x][z], z+1) \
@@ -316,14 +316,14 @@ def print_summary(md):
 
     hslextra = list(hsllines.difference(osmlines))
     hslextra.sort(key=linesortkey)
-    wr("%d lines in HSL but not in OSM:" % len(hslextra))
+    wr("%d lines in %s but not in OSM:" % (len(hslextra), md["agency"]))
     if hslextra:
         wr(" %s" % ", ".join(["[%s %s]" % (hsldict[x], x) for x in hslextra]))
     wr("")
 
     commons = list(hsllines.intersection(osmlines))
     commons.sort(key=linesortkey)
-    wr("%d lines in both HSL and OSM." % len(commons))
+    wr("%d lines in both %s and OSM." % (len(commons), md["agency"]))
     if commons:
         wr(" %s" % ", ".join(["%s (%s)" % \
           (x, ", ".join(["[%s %d]" % (osmdict[x][z], z+1) \
@@ -409,7 +409,7 @@ def print_modedict(md):
     osm2lines = set(osm2dict)
     commons2 = list(hsllines.intersection(osm2lines))
     commons2.sort(key=linesortkey)
-    wr("%d lines in both HSL and OSM with public_transport:version=2 tagging.\n" % len(commons2))
+    wr("%d lines in both %s and OSM with public_transport:version=2 tagging.\n" % (len(commons2), agency))
     wr(" %s" % ", ".join("[[#%s|%s]]" % (s, s) for s in commons2))
     wr("")
 
@@ -492,15 +492,16 @@ def print_table(md):
 ! Extra
 ! Match
 ! style="border-style: solid; border-width: 1px 1px 1px 3px" | OSM
-! HSL
+! {}
 ! Tags
 ! Shape
 ! Platf.
 ! style="border-style: solid; border-width: 1px 1px 1px 3px" | OSM
-! HSL
+! {}
 ! Tags
 ! Shape
 ! Platf."""
+    subheader = subheader.format(md["agency"], md["agency"])
     footer = "|}"
 
     mode = md["mode"]
@@ -712,7 +713,7 @@ def check_mode(os, ps):
     modelist = osm.stoptags2mode(os)
     pmode = ps["mode"]
     if not modelist:
-        details = "No mode found, HSL has mode '{}'."\
+        details = "No mode found, provider has mode '{}'."\
           .format(pmode)
         return (style_problem, pmode, details)
     elif len(modelist) > 1:
@@ -720,7 +721,7 @@ def check_mode(os, ps):
             m = "+".join(modelist)
             return (style_maybe, m, "")
         else:
-            details = "OSM tags match modes: {}. HSL has mode '{}'."\
+            details = "OSM tags match modes: {}. provider has mode '{}'."\
               .format(", ".join(modelist), pmode)
             return (style_problem, pmode, details)
     else:
@@ -728,7 +729,7 @@ def check_mode(os, ps):
         if omode == pmode:
             return (style_ok, omode, "")
         else:
-            details = "Mode from OSM tags is '{}', HSL has mode '{}'."\
+            details = "Mode from OSM tags is '{}', provider has mode '{}'."\
               .format(omode, pmode)
             return (style_problem, pmode, details)
 
@@ -767,7 +768,7 @@ def check_name(os, ps):
     maxlen = 25
     on = os.get("name", None)
     pn = hsl.get_stopname(ps)
-    cn = pn if pn else "<no name in HSL>"
+    cn = pn if pn else "<no name in data>"
     cn = shorten(cn)
     if on:
         if on == pn:
@@ -787,7 +788,7 @@ def check_name(os, ps):
               .format(on, pn)
             return (style_problem, cn, details)
     else:
-        details = "'''name''' not set in OSM, HSL has '{}'.".format(pn)
+        details = "'''name''' not set in OSM, provider has '{}'.".format(pn)
         return (style_problem, cn, details)
 
 
@@ -944,7 +945,7 @@ def print_stopline(oslist, ps, cols):
         elif pw and pw == 'NOT_POSSIBLE':
             taglist.append("'''wheelchair'''='no'")
         desc = "Mode is {}. ".format(ps["mode"])
-        desc += "Tags from HSL: " + ", ".join(taglist) + "."
+        desc += "Tags from provider: " + ", ".join(taglist) + "."
         wr('| colspan={} style="{}" | {}'.format(cols, style_details, desc))
         linecounter += 1
     return linecounter, isok
@@ -1059,7 +1060,8 @@ def report_stoptable_cluster(sd, city):
 
 def report_stops(sd, mode=None, city=None):
     """Output a report on stops. Either all, or limited by mode, city or both."""
-    header = "= HSL stops" if not mode else "= HSL {} stops".format(mode)
+    header = "= {} stops".format(sd["agency"]) if not mode \
+      else "= {} {} stops".format(sd["agency"], mode)
     header += " =\n" if not city else " in {} =\n".format(city)
     wr("__FORCETOC__")
     wr("This is a comparison of OSM public transit stop data with [https://www.hsl.fi/ HSL] data (via [http://digitransit.fi digitransit.fi]) generated by a [https://github.com/tpikonen/taival script].\n")

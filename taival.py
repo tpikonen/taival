@@ -343,7 +343,12 @@ def collect_stops():
               for s in d.values() if s["name"] == ps["name"]])
             ps["namecount"] = namecount
 
-    sd = { "ost": ost, "rst": rst, "pst": pst, "pcl": pcl }
+    sd = { "ost": ost,
+        "rst": rst,
+        "pst": pst,
+        "pcl": pcl,
+        "agency": pvd.agency,
+    }
 
     return sd
 
