@@ -95,6 +95,11 @@ def interp_shape(s, tol=10):
 def test_shape_overlap(s1, s2, tol=10.0, return_list=False):
     """Return the fraction [0...1.0] by which shape s1 overlaps s2 with
     tolerance tol (meters)."""
+    if not s1 or not s2:
+        if return_list:
+            return []
+        else:
+            return 0.0
     p = interp_shape(s2, tol/2.0)
     ltol2 = inv_haversine(tol/2000.0)**2.0
     startm = 0
