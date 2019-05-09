@@ -302,6 +302,9 @@ def get_route_master_dict(mode, agency):
 
 def route_master(route_ids):
     """Get route master relation from Overpass"""
+    if not route_ids:
+        log.error("route_master(): Empty route_ids list given")
+        return []
     q = '[out:json][timeout:60];rel(id:%s);(rel(br)["type"="route_master"];);out body;' \
       % (",".join(str(x) for x in route_ids))
     log.debug(q)
