@@ -151,12 +151,14 @@ def match_shapes(shapes1, shapes2):
     for i in range(len(s1)):
         if not s1[i]: # Handle empty shape
             m1to2[i] = 0
-            break
+            continue
         mind = 1.0e10
         minind = 0
         cbeg = s1[i][0]
         cend = s1[i][-1]
         for j in range(len(s2)):
+            if not s2[j]: # Handle empty shape
+                continue
             #d = min(ldist2(cbeg, s2[j][0]), ldist2(cend, s2[j][-1]))
             d = ldist2(cbeg, s2[j][0]) + ldist2(cend, s2[j][-1])
             if d < mind:
