@@ -193,7 +193,7 @@ def route_shape(rel):
     tuple, where gaps is True if the ways in route do not share endpoint
     nodes. """
     ways = [mem.resolve() for mem in rel.members
-        if isinstance(mem, overpy.RelationWay) and (mem.role is None)]
+        if isinstance(mem, overpy.RelationWay) and (not mem.role or mem.role in ('forward', 'backward'))]
     gaps = False
     if not ways:
         return ([], gaps)
