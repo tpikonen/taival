@@ -688,12 +688,12 @@ def print_table(md):
     wr("{} lines with differences.".format(lines_w_probs))
 
     # details
-    if any(ld["details"] for ld in md["lines"].values()):
+    if any(ld.get("details", None) for ld in md["lines"].values()):
         wr("= Details on differences =\n")
     else:
         return
     for ld in md["lines"].values():
-        if ld["details"]:
+        if ld.get("details", None):
             wr("== {} ==".format(ld["lineref"]))
             wr(ld["details"])
 
