@@ -278,6 +278,28 @@ def disused_routes(mode="bus"):
 
 # route_master relations
 
+# ref -> route_master relation dict
+overpy_route_master_dict = { k: None for k in list(stoptags.keys()) + ["minibus"] }
+
+def get_route_master_dict(mode, agency):
+    """
+    Return a (possibly cached) ref->route_master rel dict with all
+    route_master relations for mode and network (i.e. agency) with a ref.
+    """
+    if overpy_route_master_dict.get(mode, None):
+        return overpy_route_master_dict[mode]
+    q = 'rel[type=route_master][route_master="%s"][network="%s"];(._;>;>;);out body;' % (mode, agency)
+    log.debug(q)
+    rr = api.query(q)
+    rmd = defaultdict(list)
+    for rel in rr.relations:
+        ref = rel.tags.get("ref", None)
+        if ref:
+            rmd[ref].append(rel)
+    overpy_route_master_dict[mode] = rmd
+    return rmd
+
+
 def route_master(route_ids):
     """Get route master relation from Overpass"""
     q = '[out:json][timeout:60];rel(id:%s);(rel(br)["type"="route_master"];);out body;' \

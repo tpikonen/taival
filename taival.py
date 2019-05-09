@@ -173,13 +173,14 @@ def match_shapes(shapes1, shapes2):
         return (m1to2, m2to1)
 
 
-def collect_line(lineref, mode="bus", interval_tags=False):
+def collect_line(lineref, mode, agency, interval_tags=False):
     """Report on differences between OSM and HSL data for a given line."""
     ld = {} # line dict
     ld["lineref"] = lineref
     ld["mode"] = mode
+    ld["agency"] = agency
     ld["interval_tags"] = interval_tags
-    log.debug("Calling osm.rels")
+    log.debug("Processing line {}".format(lineref))
     rels = osm.rels(lineref, mode)
     if(len(rels) < 1):
         log.debug("No route relations found in OSM.")
@@ -187,15 +188,17 @@ def collect_line(lineref, mode="bus", interval_tags=False):
     allrelids = [r.id for r in rels]
     rels = [r for r in rels \
             if (r.tags.get("public_transport:version", "") == "2") and
-                (r.tags.get("network", "") == "HSL"
-                or r.tags.get("network", "") == "Helsinki"
-                or r.tags.get("network", "") == "Espoo"
-                or r.tags.get("network", "") == "Vantaa")]
+                (r.tags.get("network", "") == agency
+                or r.tags.get("network", "") in hsl.cities)] # FIXME
     relids = [r.id for r in rels]
     ld["rels"] = rels
 
-    log.debug("Calling osm.route_master for line {}".format(lineref))
-    ld["rm_rels"] = osm.route_master(relids)
+    rmd = osm.get_route_master_dict(mode, agency)
+    if rmd[lineref]:
+        ld["rm_rels"] = rmd[lineref]
+    else:
+        log.debug("Calling osm.route_master for line {}".format(lineref))
+        ld["rm_rels"] = osm.route_master(relids)
 
     log.debug("Found OSM route ids: %s\n" % \
       (", ".join("[%s %d]" % (osm.relid2url(rid), rid) for rid in relids)))
@@ -297,7 +300,7 @@ def collect_routes(mode="bus", interval_tags=False):
     commons2.sort(key=linesortkey)
     lines = {}
     for line in commons2:
-        ld = collect_line(line, mode, interval_tags)
+        ld = collect_line(line, mode, agency, interval_tags)
         lines[line] = ld
     md["lines"] = lines
     return md
