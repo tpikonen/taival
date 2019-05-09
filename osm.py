@@ -133,19 +133,6 @@ def all_linerefs(mode, agency):
     return refs
 
 
-# TODO: Remove
-def ptv2_linerefs(mode="bus"):
-    """Return a lineref:url dict of linerefs with public_transport:version=2
-    tag in Helsinki region.
-    URL points to the relation in OSM."""
-    q = '%s\nrel(area.hel)[route="%s"][network~"HSL|Helsinki|Espoo|Vantaa"]["public_transport:version"="2"];out tags;' % (area, mode)
-    log.debug(q)
-    rr = api.query(q)
-    refs = {r.tags["ref"]:relid2url(r.id)
-            for r in rr.relations if "ref" in r.tags.keys()}
-    return refs
-
-
 def rels_v2(lineref, mode="bus"):
     """Get public transport v2 lines corresponding to lineref in Helsinki area.
     """

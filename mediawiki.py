@@ -321,14 +321,14 @@ def print_summary(md):
         wr(" %s" % ", ".join(["[%s %s]" % (hsldict[x], x) for x in hslextra]))
     wr("")
 
-    commons = list(hsllines.intersection(osmlines))
-    commons.sort(key=linesortkey)
-    wr("%d lines in both %s and OSM." % (len(commons), md["agency"]))
-    if commons:
-        wr(" %s" % ", ".join(["%s (%s)" % \
-          (x, ", ".join(["[%s %d]" % (osmdict[x][z], z+1) \
-            for z in range(len(osmdict[x]))])) for x in commons] ))
-    wr("")
+#    commons = list(hsllines.intersection(osmlines))
+#    commons.sort(key=linesortkey)
+#    wr("%d lines in both %s and OSM." % (len(commons), md["agency"]))
+#    if commons:
+#        wr(" %s" % ", ".join(["%s (%s)" % \
+#          (x, ", ".join(["[%s %d]" % (osmdict[x][z], z+1) \
+#            for z in range(len(osmdict[x]))])) for x in commons] ))
+#    wr("")
 
 def print_localbus(md):
     hsl_localbus = md["hsl_localbus"]
@@ -505,9 +505,8 @@ def print_table(md):
     footer = "|}"
 
     mode = md["mode"]
-    wr("= PTv2 tagged {} lines in OSM =\n".format(md["agency"]))
-    wr("This table compares {} routes with".format(mode))
-    wr("[[Key:public_transport:version | public_transport:version=2]] tag set.")
+    wr("= {} {} lines in OSM =\n".format(md["agency"], mode))
+    wr("This table compares {} {} routes with OSM routes.".format(md["agency"], mode))
     wr("The checker uses [[Proposed_features/Refined_Public_Transport | Refined public transport schema]]")
     wr("as a reference.")
     wr("")
@@ -517,6 +516,8 @@ def print_table(md):
     for line in md["lines"]:
         cells = []
         ld = md["lines"][line]
+        if not "rels" in ld.keys():
+            continue
         ld["details"] = ""
         # Line, add a placeholder, edited later
         cells.append(("", ""))
@@ -582,41 +583,36 @@ def print_table(md):
                 for k in sorted(itags.keys()):
                     tdetlist.append(test_tag(rel.tags, k, itags[k]))
 
-            if rel.tags.get("public_transport:version", "0") != "2":
-                dirdetails += "Tag public_transport:version=2 not set. Tests below are probably not correct.\n\n"
-                dirdetails += "'''Tags:\n\n" + "\n\n".join([s for s in tdetlist if s]) + "\n\n"
-                cells.append((style_problem, "[[#{} | no PTv2]]".format(line)))
-            elif any(mem.role == 'forward' or mem.role == 'backward'
-              for mem in rel.members):
-                dirdetails += "OSM route tagged with public_transport:version=2,"
-                dirdetails += "but has members with 'forward' or 'backward' roles."
-                dirdetails += "Tests below are probably not correct.\n\n"
-                dirdetails += "'''Tags:\n\n" + "\n\n".join([s for s in tdetlist if s]) + "\n\n"
-                cells.append((style_problem, "[[#{} | PTv1]]".format(line)))
-            elif any(tdetlist):
+            if any(tdetlist):
                 dirdetails += "'''Tags:'''\n\n" + "\n\n".join([s for s in tdetlist if s]) + "\n\n"
                 cells.append((style_problem, "[[#{} | diffs]]".format(line)))
             else:
                 cells.append((style_ok, "OK"))
+            ptv1 = any(mem.role in ('forward', 'backward') for mem in rel.members)
             # Shape
             sdetlist = []
             if hsli is not None:
-                tol = md["shapetol"]
-                (shape, gaps) = osm.route_shape(rel)
-                ovl = test_shape_overlap(shape, ld["hslshapes"][hsli], tol=tol)
-                if gaps:
-                    sdetlist.append("Route has '''gaps'''!")
-                    sdetlist.append("Route [%s %s] overlap (tolerance %d m) with %s pattern [%s %s] is '''%1.0f %%'''." \
-                      % (osm.relid2url(rel.id), rel.id, tol, md["agency"], pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
-                    cells.append((style_problem, "[[#{} | gaps]]".format(line)))
-                elif ovl <= 0.90:
-                    sdetlist.append("Route [%s %s] overlap (tolerance %d m) with %s pattern [%s %s] is '''%1.0f %%'''." \
-                      % (osm.relid2url(rel.id), rel.id, tol, md["agency"], pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
-                    cells.append((style_problem, "%1.0f%%" % (ovl*100.0)))
-                elif ovl <= 0.95:
-                    cells.append((style_maybe, "%1.0f%%" % (ovl*100.0)))
+                if ptv1:
+                    sdetlist.append("Route [%s %s] has ways with 'forward' and 'backward' roles (PTv1)." \
+                      % (osm.relid2url(rel.id), rel.id))
+                    cells.append((style_problem, "PTv1"))
                 else:
-                    cells.append((style_ok, "%1.0f%%" % (ovl*100.0)))
+                    tol = md["shapetol"]
+                    (shape, gaps) = osm.route_shape(rel)
+                    ovl = test_shape_overlap(shape, ld["hslshapes"][hsli], tol=tol)
+                    if gaps:
+                        sdetlist.append("Route has '''gaps'''!")
+                        sdetlist.append("Route [%s %s] overlap (tolerance %d m) with %s pattern [%s %s] is '''%1.0f %%'''." \
+                          % (osm.relid2url(rel.id), rel.id, tol, md["agency"], pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
+                        cells.append((style_problem, "[[#{} | gaps]]".format(line)))
+                    elif ovl <= 0.90:
+                        sdetlist.append("Route [%s %s] overlap (tolerance %d m) with %s pattern [%s %s] is '''%1.0f %%'''." \
+                          % (osm.relid2url(rel.id), rel.id, tol, md["agency"], pattern2url(codes[hsli]),  codes[hsli], ovl*100.0))
+                        cells.append((style_problem, "%1.0f%%" % (ovl*100.0)))
+                    elif ovl <= 0.95:
+                        cells.append((style_maybe, "%1.0f%%" % (ovl*100.0)))
+                    else:
+                        cells.append((style_ok, "%1.0f%%" % (ovl*100.0)))
             else:
                 sdetlist.append("Route %s overlap could not be calculated.\n" \
                   % (rel.id))
@@ -626,7 +622,7 @@ def print_table(md):
             # Platforms
             hsli = id2hslindex[rel.id]
             hslplatforms = ld["hslplatforms"]
-            if hsli is not None:
+            if hsli is not None and not ptv1:
                 osmplatform = osm.route_platforms(rel)
                 hslplatform = hslplatforms[hsli]
                 # FIXME: Add stop names to unified diffs after diffing, somehow
@@ -660,8 +656,11 @@ def print_table(md):
                     cells.append((style_ok, "{}/{}".format(len(osmp), len(hslp))))
             else:
                 dirdetails += "'''Platforms:'''\n\n"
-                dirdetails += "Platforms could not be compared."
-                cells.append((style_problem, "[[#{} | error]]".format(line)))
+                if ptv1:
+                    dirdetails += "Cannot compare platforms for PTv1 routes.\n\n"
+                else:
+                    dirdetails += "Platforms could not be compared.\n\n"
+                cells.append((style_problem, "[[#{} | N/A]]".format(line)))
             # Add per direction details
             if dirdetails:
                 ld["details"] += \

@@ -188,10 +188,6 @@ def collect_line(lineref, mode, agency, interval_tags=False):
         log.debug("No route relations found in OSM.")
         return ld
     allrelids = [r.id for r in rels]
-    rels = [r for r in rels \
-            if (r.tags.get("public_transport:version", "") == "2") and
-                (r.tags.get("network", "") == agency
-                or r.tags.get("network", "") in hsl.cities)] # FIXME
     relids = [r.id for r in rels]
     ld["rels"] = rels
 
@@ -282,13 +278,11 @@ def collect_routes(mode="bus", interval_tags=False):
     osmdict = osm.all_linerefs(mode, agency)
     hsldict = pvd.all_linerefs(mode)
     hsl_localbus = pvd.taxibus_linerefs(mode)
-    osm2dict = osm.ptv2_linerefs(mode)
     wasroutes = osm.was_routes(mode)
     disroutes = osm.disused_routes(mode)
     md["osmdict"] = osmdict
     md["hsldict"] = hsldict
     md["hsl_localbus"] = hsl_localbus
-    md["osm2dict"] = osm2dict
     md["wasroutes"] = wasroutes
     md["disroutes"] = disroutes
 
@@ -296,12 +290,11 @@ def collect_routes(mode="bus", interval_tags=False):
         osm_minibusdict = osm.all_linerefs("minibus", agency)
         md["osm_minibusdict"] = osm_minibusdict
 
-    osm2lines = set(osm2dict)
     hsllines = set(hsldict)
-    commons2 = list(hsllines.intersection(osm2lines))
-    commons2.sort(key=linesortkey)
+    hsllines = list(hsllines)
+    hsllines.sort(key=linesortkey)
     lines = {}
-    for line in commons2:
+    for line in hsllines:
         ld = collect_line(line, mode, agency, interval_tags)
         lines[line] = ld
     md["lines"] = lines
