@@ -504,6 +504,20 @@ def print_table(md):
     subheader = subheader.format(md["agency"], md["agency"])
     footer = "|}"
 
+    def print_cells(cells, linecounter, lines_w_probs):
+        if linecounter % 20 == 0:
+            wr(subheader)
+        linecounter += 1
+        wr("|-")
+        if any(c[0] == style_problem for c in cells):
+            cells[0] = (style_problem, "[[#{} | {}]]".format(line, line))
+            lines_w_probs += 1
+        else:
+            cells[0] = (style_ok, str(line))
+        for style, content in cells:
+            wr('| style="{}" | {}'.format(style, content))
+        return (linecounter, lines_w_probs)
+
     mode = md["mode"]
     wr("= {} {} lines in OSM =\n".format(md["agency"], mode))
     wr("This table compares {} {} routes with OSM routes.".format(md["agency"], mode))
@@ -513,6 +527,7 @@ def print_table(md):
     wr(header)
     linecounter = 0
     lines_w_probs = 0
+
     for line in md["lines"]:
         cells = []
         ld = md["lines"][line]
@@ -541,8 +556,9 @@ def print_table(md):
         if len(ld["rels"]) > 2:
             ld["details"] += "More than 2 matching OSM routes found: %s.\n" % \
               (", ".join("[%s %d]" % (osm.relid2url(rid), rid) for rid in relids))
-            ld["details"] += "Giving up.\n"
             cells.append((style_problem, "[[#{} | no]]".format(line)))
+            print_cells(cells, linecounter, lines_w_probs)
+            wr('| colspan=10 | Matching problem, see details')
             continue
         elif len(codes) != 2:
             ld["details"] += "%d route pattern(s) in %s data, matching may be wrong.\n" \
@@ -669,17 +685,7 @@ def print_table(md):
                       pattern2url(codes[hsli]),  codes[hsli]) + dirdetails
             dirindex += 1
             # end 'for rel in rels'
-        if linecounter % 20 == 0:
-            wr(subheader)
-        linecounter += 1
-        wr("|-")
-        if any(c[0] == style_problem for c in cells):
-            cells[0] = (style_problem, "[[#{} | {}]]".format(line, line))
-            lines_w_probs += 1
-        else:
-            cells[0] = (style_ok, str(line))
-        for style, content in cells:
-            wr('| style="{}" | {}'.format(style, content))
+        (linecounter, lines_w_probs) = print_cells(cells, linecounter, lines_w_probs)
 
     wr(footer)
     wr("")
