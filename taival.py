@@ -274,16 +274,16 @@ def collect_routes(mode="bus", interval_tags=False):
 
     osmdict = osm.all_linerefs(mode, agency)
     hsldict = pvd.all_linerefs(mode)
-    hsl_localbus = pvd.taxibus_linerefs(mode)
     wasroutes = osm.was_routes(mode)
     disroutes = osm.disused_routes(mode)
     md["osmdict"] = osmdict
     md["hsldict"] = hsldict
-    md["hsl_localbus"] = hsl_localbus
     md["wasroutes"] = wasroutes
     md["disroutes"] = disroutes
 
     if mode == "bus":
+        hsl_localbus = pvd.taxibus_linerefs(mode)
+        md["hsl_localbus"] = hsl_localbus
         osm_minibusdict = osm.all_linerefs("minibus", agency)
         md["osm_minibusdict"] = osm_minibusdict
 

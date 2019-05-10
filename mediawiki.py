@@ -299,13 +299,16 @@ def print_summary(md):
     hsldict = md["hsldict"]
     osmlines = set(osmdict)
     hsllines = set(hsldict)
-    hsl_locallines = set(md["hsl_localbus"])
     wr("= Summary of %s transit in %s region. =" % (md["mode"], md["agency"]))
     wr("%d lines in OSM.\n" % len(osmlines))
     wr("%d lines in %s.\n" % (len(hsllines), md["agency"]))
 
     osmextra = osmlines.difference(hsllines)
-    osmextra = list(osmextra.difference(hsl_locallines))
+    if md["mode"] == "bus":
+        hsl_locallines = set(md["hsl_localbus"])
+        osmextra = list(osmextra.difference(hsl_locallines))
+    else:
+        osmextra = list(osmextra)
     osmextra.sort(key=linesortkey)
     wr("%d lines in OSM but not in %s:" % (len(osmextra), md["agency"]))
     if osmextra:
