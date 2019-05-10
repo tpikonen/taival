@@ -483,13 +483,11 @@ def print_table(md):
 ! style="border-style: none" |
 ! style="border-style: none" |
 ! style="border-style: none" |
-! style="border-style: none" |
 ! style="border-style: solid; border-width: 1px 1px 1px 3px" colspan=5 | Direction 0
 ! style="border-style: solid; border-width: 1px 1px 1px 3px" colspan=5 | Direction 1"""
     subheader = """|-
 ! Line
 ! Master
-! Extra
 ! Match
 ! style="border-style: solid; border-width: 1px 1px 1px 3px" | OSM
 ! {}
@@ -541,13 +539,6 @@ def print_table(md):
         if rm_details:
             ld["details"] += rm_details
         cells.append((rm_style, rm_cell))
-        # Extra
-        if ld["alsoids"]:
-            ld["details"] += "Extra routes in OSM with the same ref: %s\n\n" % \
-              (", ".join("[%s %d]" % (osm.relid2url(r), r) for r in ld["alsoids"]))
-            cells.append((style_problem, "[[#{} | yes]]".format(line)))
-        else:
-            cells.append((style_ok, "No"))
         # Match
         relids = [r.id for r in ld["rels"]]
         codes = ld["codes"]

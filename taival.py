@@ -187,7 +187,6 @@ def collect_line(lineref, mode, agency, interval_tags=False):
     if(len(rels) < 1):
         log.debug("No route relations found in OSM.")
         return ld
-    allrelids = [r.id for r in rels]
     relids = [r.id for r in rels]
     ld["rels"] = rels
 
@@ -200,8 +199,6 @@ def collect_line(lineref, mode, agency, interval_tags=False):
 
     log.debug("Found OSM route ids: %s\n" % \
       (", ".join("[%s %d]" % (osm.relid2url(rid), rid) for rid in relids)))
-    alsoids = [r for r in allrelids if r not in relids]
-    ld["alsoids"] = alsoids
 
     log.debug("Calling pvd.tags")
     htags = pvd.tags(lineref)
