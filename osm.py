@@ -118,17 +118,17 @@ def get_route_rr(mode="bus"):
     return rr
 
 
-def all_linerefs(mode, agency):
+def all_linerefs(mode, networks):
     """
     Return a lineref:[urllist] dict of all linerefs which have
-    "network"=agency or no network.
+    "network" tag one of the values in networks list, or no network.
     URLs points to the relations in OSM.
     """
     rr = get_route_rr(mode)
     refs = defaultdict(list)
     for r in rr.relations:
         if "ref" in r.tags.keys() and \
-          (not "network" in r.tags.keys() or r.tags["network"] == agency):
+          (not "network" in r.tags.keys() or r.tags["network"] in networks):
             refs[r.tags["ref"]].append(relid2url(r.id))
     return refs
 

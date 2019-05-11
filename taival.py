@@ -272,7 +272,8 @@ def collect_routes(mode="bus", interval_tags=False):
     md["agencyurl"] = agencyurl
     md["modecolors"] = hsl.modecolors
 
-    osmdict = osm.all_linerefs(mode, agency)
+    networks = [agency] + hsl.cities
+    osmdict = osm.all_linerefs(mode, networks)
     hsldict = pvd.all_linerefs(mode)
     wasroutes = osm.was_routes(mode)
     disroutes = osm.disused_routes(mode)
