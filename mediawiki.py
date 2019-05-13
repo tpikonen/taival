@@ -297,6 +297,7 @@ def print_abstract(md):
 def print_summary(md):
     osmdict = md["osmdict"]
     hsldict = md["hsldict"]
+    refless = md["refless"]
     osmlines = set(osmdict)
     hsllines = set(hsldict)
     wr("= Summary of %s transit in %s region. =" % (md["mode"], md["agency"]))
@@ -322,6 +323,11 @@ def print_summary(md):
     wr("%d lines in %s but not in OSM:" % (len(hslextra), md["agency"]))
     if hslextra:
         wr(" %s" % ", ".join(["[%s %s]" % (hsldict[x], x) for x in hslextra]))
+    wr("")
+
+    wr(f"{len(refless)} lines without a 'ref' tag:")
+    if refless:
+        wr(" %s" % ", ".join(["[%s %s]" % (osm.relid2url(r.id), r.tags.get("name", str(r.id))) for r in refless]))
     wr("")
 
 #    commons = list(hsllines.intersection(osmlines))

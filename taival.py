@@ -275,10 +275,13 @@ def collect_routes(mode="bus", interval_tags=False):
     networks = [agency] + hsl.cities
     osmdict = osm.all_linerefs(mode, networks)
     hsldict = pvd.all_linerefs(mode)
+    refless = osm.rels_refless(mode)
+    refless = [ r for r in refless if r.tags.get("network", None) in networks + [None] ]
     wasroutes = osm.was_routes(mode)
     disroutes = osm.disused_routes(mode)
     md["osmdict"] = osmdict
     md["hsldict"] = hsldict
+    md["refless"] = refless
     md["wasroutes"] = wasroutes
     md["disroutes"] = disroutes
 

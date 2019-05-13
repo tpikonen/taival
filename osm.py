@@ -142,6 +142,16 @@ def rels_v2(lineref, mode="bus"):
     return rr.relations
 
 
+def rels_refless(mode):
+    """
+    Get routes for mode which do not have a ref tag.
+    """
+    q = '%s\nrel(area.hel)[type=route][route="%s"][!ref];(._;);out tags;' % (area, mode)
+    log.debug(q)
+    rr = api.query(q)
+    return rr.relations
+
+
 def rels(lineref, mode="bus"):
     """
     Get all lines corresponding to lineref and mode in area.
