@@ -1,4 +1,4 @@
-import requests, json, logging
+import requests, json, logging, time
 from collections import defaultdict
 
 # Obtain data from digitransit.fi GraphQL API
@@ -59,7 +59,31 @@ class Digitransit:
         self.mode_to_osm = { v:k for (k,v) in self.mode_from_osm.items() if v }
         self.taxibus_refs = None
 
-    # TODO: def apiquery(self, query):
+
+    def apiquery(self, query, max_tries=5):
+        """
+        Make a graphql query via requests.
+        """
+        ok = False
+        tries = 0
+        sleeptime = 10
+        while tries < max_tries:
+            try:
+                tries += 1
+                r = requests.post(url=self.url, data=query, headers=self.headers)
+                r.raise_for_status()
+            except (requests.exceptions.ConnectionError,
+              requests.exceptions.HTTPError) as e:
+                log.warning(f"Digitransit API query failed, waiting {sleeptime} secs and retrying...")
+                time.sleep(sleeptime)
+            finally:
+                if r.status_code == requests.codes.ok:
+                    break
+        if tries >= max_tries:
+            log.error(f"Failed to get a response from Digitransit API after {max_tries} attempts.")
+        r.encoding = 'utf-8'
+        return r
+
 
     @staticmethod
     def normalize_hours(hours):
@@ -78,9 +102,7 @@ class Digitransit:
     def tags(self, lineref):
         """Return a dict with tag-like info for a route with given lineref."""
         query = '{routes(name:"%s") {shortName\nlongName\nmode\ntype\ndesc\ncolor\ntextColor\nbikesAllowed\nid\nurl\ngtfsId\n}}' % (lineref)
-        r = requests.post(url=self.url, data=query, headers=self.headers)
-        r.raise_for_status()
-        r.encoding = 'utf-8'
+        r = self.apiquery(query)
         data = json.loads(r.text)["data"]["routes"]
         for d in data:
             if d.get("shortName", "") == lineref:
@@ -94,9 +116,7 @@ class Digitransit:
         query = '{routes(name:"%s", transportModes:[%s]) {\nshortName\npatterns {code%s}}}' \
             % (lineid, self.mode_from_osm[mode],
                 ("\n" + "\n".join(extrafields)) if extrafields else "")
-        r = requests.post(url=self.url, data=query, headers=self.headers)
-        r.raise_for_status()
-        r.encoding = 'utf-8'
+        r = self.apiquery(query)
         rts = json.loads(r.text)["data"]["routes"]
         pats = [r["patterns"] for r in rts if r["shortName"] == lineid]
         out = pats[0] if pats and len(pats) > 0 else []
@@ -175,9 +195,7 @@ class Digitransit:
         for c in codes:
             query = '{pattern(id:"%s"){tripsForDate(serviceDate:"%s"){id}}}' \
               % (c, datestr)
-            r = requests.post(url=self.url, data=query, headers=self.headers)
-            r.raise_for_status()
-            r.encoding = 'utf-8'
+            r = self.apiquery(query)
             if len(json.loads(r.text)["data"]["pattern"]["tripsForDate"]) > 0:
                 valids.append(c)
         return valids
@@ -193,9 +211,7 @@ class Digitransit:
         for p in pats:
             c = p["code"]
             query = '{pattern(id:"%s"){trips{activeDates}}}' % (c)
-            r = requests.post(url=self.url, data=query, headers=self.headers)
-            r.encoding = 'utf-8'
-            r.raise_for_status()
+            r = self.apiquery(query)
             trips = json.loads(r.text)["data"]["pattern"]["trips"]
             for t in trips:
                if any(int(d) > dateint for d in t["activeDates"]):
@@ -231,9 +247,7 @@ class Digitransit:
         Return geometry for given pattern code as tuple (directionId, latlon).
         """
         query = '{pattern(id:"%s") {directionId\ngeometry {lat\nlon}}}' % (code)
-        r = requests.post(url=self.url, data=query, headers=self.headers)
-        r.encoding = 'utf-8'
-        r.raise_for_status()
+        r = self.apiquery(query)
         pat = json.loads(r.text)["data"]["pattern"]
         dirid = pat["directionId"] # int
         latlon = [[c["lat"], c["lon"]] for c in pat["geometry"]]
@@ -244,9 +258,7 @@ class Digitransit:
         """Return stops for a given pattern code as waypoint list
         [[lat, lon, stopcode, name]]."""
         query = '{pattern(id:"%s") {stops {code\nname\nlat\nlon}}}' % (code)
-        r = requests.post(url=self.url, data=query, headers=self.headers)
-        r.raise_for_status()
-        r.encoding = 'utf-8'
+        r = self.apiquery(query)
         stops = json.loads(r.text)["data"]["pattern"]["stops"]
         return [(s["lat"], s["lon"], s["code"], s["name"]) for s in stops]
 
@@ -256,9 +268,7 @@ class Digitransit:
         URL points to a reittiopas page for the line."""
         query = '{routes(transportModes:[%s]){shortName\ntype\ngtfsId\n}}' \
             %(self.mode_from_osm[mode])
-        r = requests.post(url=self.url, data=query, headers=self.headers)
-        r.raise_for_status()
-        r.encoding = 'utf-8'
+        r = self.apiquery(query)
         rts = json.loads(r.text)["data"]["routes"]
         # Also filter out taxibuses (lähibussit) (type == 704)
         #refs = [r["shortName"] for r in rts if r["type"] != 704]
@@ -281,9 +291,7 @@ class Digitransit:
         """Return arrival times to the first stop of the given pattern at
         a given date."""
         query = '{pattern(id:"%s"){tripsForDate(serviceDate:"%s"){stoptimes{scheduledArrival}}}}' % (code, datestr)
-        r = requests.post(url=self.url, data=query, headers=self.headers)
-        r.raise_for_status()
-        r.encoding = 'utf-8'
+        r = self.apiquery(query)
         alltimes = json.loads(r.text)["data"]["pattern"]["tripsForDate"]
         times = [t["stoptimes"][0]["scheduledArrival"] for t in alltimes]
         times.sort()
@@ -314,9 +322,7 @@ class Digitransit:
   }
 }
 """
-        r = requests.post(url=self.url, data=query, headers=self.headers)
-        r.raise_for_status()
-        r.encoding = 'utf-8'
+        r = self.apiquery(query)
         data = json.loads(r.text)["data"]["stops"]
         stops = defaultdict(dict)
         clusters = defaultdict(list) # cluster gtfsId -> ref list
@@ -347,9 +353,7 @@ class Digitransit:
     lon
   }
 }"""
-        r = requests.post(url=self.url, data=query, headers=self.headers)
-        r.raise_for_status()
-        r.encoding = 'utf-8'
+        r = self.apiquery(query)
         data = json.loads(r.text)["data"]["stations"]
         stations = defaultdict(list)
         for d in data:
@@ -374,9 +378,7 @@ class Digitransit:
     lon
   }
 }"""
-        r = requests.post(url=self.url, data=query, headers=self.headers)
-        r.raise_for_status()
-        r.encoding = 'utf-8'
+        r = self.apiquery(query)
         data = json.loads(r.text)["data"]["bikeRentalStations"]
         cbs = {}
         for d in data:
@@ -400,9 +402,7 @@ class Digitransit:
     lon
   }
 }"""
-        r = requests.post(url=self.url, data=query, headers=self.headers)
-        r.raise_for_status()
-        r.encoding = 'utf-8'
+        r = self.apiquery(query)
         data = json.loads(r.text)["data"]["bikeParks"]
         bps = []
         for d in data:
