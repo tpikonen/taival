@@ -25,6 +25,7 @@ def citybike2url(latlon):
 class Digitransit:
     def __init__(self, agency, url, modecolors=None, peakhours=None, \
       nighthours=None, shapetols=None):
+        self.routedict_cache = {}
         self.agency = agency
         self.url = url
         self.headers = {'Content-type': 'application/graphql'}
@@ -97,6 +98,37 @@ class Digitransit:
             else:
                 outhours.append(v)
         return outhours
+
+
+    # FIXME: Make routedict_cache a lineref->data dict
+    def get_routedict(self, mode):
+        """
+        Return a (possibly cached) dict with tags and stops for all routes.
+        """
+        query = """{
+    routes(transportModes:[%s]) {
+        shortName
+        longName
+        mode
+        type
+        desc
+        gtfsId
+        patterns {
+            code
+            directionId
+            stops {
+                code
+            }
+        }
+    }}""" % (self.mode_from_osm[mode])
+        if mode in self.routedict_cache.keys():
+            return self.routedict_cache[mode]
+        else:
+            log.debug(f"Running Digitransit.get_routedict('{mode}') query...")
+            r = self.apiquery(query)
+            data = json.loads(r.text)["data"]["routes"]
+            self.routedict_cache[mode] = data
+            return data
 
 
     def tags(self, lineref):
