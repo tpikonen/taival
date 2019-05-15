@@ -131,11 +131,9 @@ class Digitransit:
             return data
 
 
-    def tags(self, lineref):
+    def tags(self, lineref, mode):
         """Return a dict with tag-like info for a route with given lineref."""
-        query = '{routes(name:"%s") {shortName\nlongName\nmode\ntype\ndesc\ncolor\ntextColor\nbikesAllowed\nid\nurl\ngtfsId\n}}' % (lineref)
-        r = self.apiquery(query)
-        data = json.loads(r.text)["data"]["routes"]
+        data = self.get_routedict(mode)
         for d in data:
             if d.get("shortName", "") == lineref:
                 return d

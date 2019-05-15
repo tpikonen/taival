@@ -201,7 +201,7 @@ def collect_line(lineref, mode, agency, interval_tags=False):
       (", ".join("[%s %d]" % (osm.relid2url(rid), rid) for rid in relids)))
 
     log.debug("Calling pvd.tags")
-    htags = pvd.tags(lineref)
+    htags = pvd.tags(lineref, mode)
     ld["htags"] = htags
 
     # OSM route <-> provider shape mapping
@@ -398,7 +398,7 @@ def sub_osmxml(args):
     log.debug("Calling pvd.codes")
     codes = pvd.codes(args.line, args.mode)
     log.debug("Calling pvd.tags")
-    htags = pvd.tags(args.line)
+    htags = pvd.tags(args.line, args.mode)
     for c in codes:
         log.debug("Pattern code %s" % c)
         # reverse stops string if direction code is odd
