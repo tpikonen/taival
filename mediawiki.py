@@ -113,27 +113,6 @@ def test_stop_positions(rel, mode="bus"):
     wr("")
 
 
-def test_stop_locations():
-    # start to complain if stop pos is farther than this from HSL platform
-    # FIXME: Turn the comparison around and complain about HSL platforms
-    # missing stop positions?
-    tol = 0.050 # km FIXME: needs to be bigger for mode=subway?
-    osmstops = [osm.route_stops(rel) for rel in rels]
-    for r in range(len(osmstops)):
-        wr("Route '%s'." % (rels[r].tags.get("name", "<no-name-tag>")))
-        wr("Stops: %d in OSM vs. %d in HSL.\n" \
-        % (len(osmstops[r]), len(hslplatforms[r])))
-        for i in range(len(osmstops[r])):
-            pdists = [haversine(osmstops[r][i][:2], hslplatforms[r][x][:2])
-                for x in range(len(hslplatforms[r])) ]
-            pind = pdists.index(min(pdists))
-            mind = pdists[pind]
-            if mind > tol:
-                wr(" Distance from OSM stop %s to HSL platform %s (%s)" %
-                  (osmstops[r][i][2], hslplatforms[r][pind][2], \
-                  hslplatforms[r][pind][3], mind*1000, tol*1000))
-
-
 def print_route_master(ld):
     """Test if a route_master relation for lineref exists and contains the
     given route_ids."""
