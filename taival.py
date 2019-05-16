@@ -36,13 +36,13 @@ def write_gpx(latlon, fname, waypoints=[]):
 
 def digitransit2gpx(dt, lineref, mode="bus"):
     """Write gpx files for given lineref from digitransit API data."""
-    log.debug("Calling dt.codes")
-    codes = dt.codes(lineref, mode)
+    log.debug("Calling dt.codes_query")
+    codes = dt.codes_query(lineref, mode)
     for c in codes:
         log.debug("    Calling dt.shape")
         (dirid, latlon) = dt.shape(c)
-        log.debug("    Calling dt.platforms")
-        stops = dt.platforms(c)
+        log.debug("    Calling dt.platforms_query")
+        stops = dt.platforms_query(c)
         fname = "%s_%s_%s_%d.gpx" % (lineref, dt.agency, c, dirid)
         write_gpx(latlon, fname, waypoints=stops)
         print(fname)
@@ -248,8 +248,8 @@ def collect_line(lineref, mode, agency, interval_tags=False):
     for rel in rels:
         hsli = id2hslindex[rel.id]
         if hsli is not None:
-            hslplatforms[hsli] = [ p if p[2] else (p[0],p[1],"<no ref in HSL>",p[3])
-                for p in pvd.platforms(codes[hsli]) ]
+            hslplatforms[hsli] = [ p if p else "<no ref in HSL>" \
+                for p in pvd.platform_refs(codes[hsli], mode) ]
             if interval_tags:
                 hslitags[hsli] = collect_interval_tags(codes[hsli])
     ld["hslplatforms"] = hslplatforms
@@ -395,16 +395,16 @@ def sub_osmxml(args):
             ff.write("    <tag k='public_transport:version' v='2' />\n")
 
     log.info("Processing line %s, mode '%s'" % (args.line, args.mode))
-    log.debug("Calling pvd.codes")
-    codes = pvd.codes(args.line, args.mode)
-    log.debug("Calling pvd.tags")
-    htags = pvd.tags(args.line, args.mode)
+    log.debug("Calling pvd.codes_query")
+    codes = pvd.codes_query(args.line, args.mode)
+    log.debug("Calling pvd.tags_query")
+    htags = pvd.tags_query(args.line, args.mode)
     for c in codes:
         log.debug("Pattern code %s" % c)
         # reverse stops string if direction code is odd
         reverse = (int(c.split(":")[2]) % 2) == 1
-        log.debug("   Calling pvd.platforms")
-        stops = [p[2] for p in pvd.platforms(c)]
+        log.debug("   Calling pvd.platforms_query")
+        stops = [p[2] for p in pvd.platforms_query(c)]
         fname = "%s_%s_%s.osm" % (args.line, pvd.agency, c)
         log.debug("   Calling osm.stops_by_refs")
         ids = osm.stops_by_refs(stops, args.mode)

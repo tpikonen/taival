@@ -621,16 +621,14 @@ def print_table(md):
                 osmplatform = osm.route_platforms(rel)
                 hslplatform = hslplatforms[hsli]
                 # FIXME: Add stop names to unified diffs after diffing, somehow
-                #osmp = [p[2]+" "+p[3]+"\n" for p in osmplatform]
-                #hslp = [str(p[2])+" "+str(p[3])+"\n" for p in hslplatform]
                 if md["agency"] == 'HSL':
                     osmp = [re.sub(r"^([0-9]{4,4})$", r"H\1", p[2]) + "\n"\
                       for p in osmplatform]
-                    hslp = [re.sub(r"^([0-9]{4,4})$", r"H\1", p[2]) + "\n"\
+                    hslp = [re.sub(r"^([0-9]{4,4})$", r"H\1", p) + "\n"\
                       for p in hslplatform]
                 else:
                     osmp = [p[2]+"\n" for p in osmplatform]
-                    hslp = [p[2]+"\n" for p in hslplatform]
+                    hslp = [p+"\n" for p in hslplatform]
                 diff = list(difflib.unified_diff(osmp, hslp, "OSM", md["agency"]))
                 if diff:
                     dirdetails += "'''Platforms:'''\n\n"

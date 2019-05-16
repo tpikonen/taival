@@ -140,22 +140,50 @@ class Digitransit:
         return []
 
 
-    def patterns(self, lineid, mode="bus", extrafields=[]):
-        """Return a list of patterns with 'code' and 'directionId' fields
-        corresponding to a given line ID."""
-        query = '{routes(name:"%s", transportModes:[%s]) {\nshortName\npatterns {code%s}}}' \
-            % (lineid, self.mode_from_osm[mode],
-                ("\n" + "\n".join(extrafields)) if extrafields else "")
+    def tags_query(self, lineref, mode):
+        """
+        Return a dict with tag-like info for a route with given lineref
+        from a separate API query.
+        """
+        query = '{routes(name:"%s") {shortName\nlongName\nmode\ntype\ndesc\ncolor\ntextColor\nbikesAllowed\nid\nurl\ngtfsId\n}}' % (lineref)
         r = self.apiquery(query)
-        rts = json.loads(r.text)["data"]["routes"]
-        pats = [r["patterns"] for r in rts if r["shortName"] == lineid]
+        data = json.loads(r.text)["data"]["routes"]
+        for d in data:
+            if d.get("shortName", "") == lineref:
+                return d
+
+
+    def patterns_extra_query(self, lineref, mode, extrafields=[]):
+        """
+        Return a list of patterns with code and 'extrafields' fields
+        corresponding to a given lineref and mode from a separate
+        API query.
+        """
+        query = '{routes(name:"%s", transportModes:[%s]) {\nshortName\npatterns {code%s}}}' \
+            % (lineref, self.mode_from_osm[mode],
+                ("\n" + "\n".join(extrafields)) if extrafields else "")
+        d = self.apiquery(query)
+        rts = json.loads(d.text)["data"]["routes"]
+        pats = [r["patterns"] for r in rts if r["shortName"] == lineref]
         out = pats[0] if pats and len(pats) > 0 else []
         return out
 
 
-    def codes(self, lineid, mode="bus"):
-        """Return a list of pattern codes corresponding to a given line ID."""
-        pats = self.patterns(lineid, mode)
+    def patterns(self, lineref, mode):
+        """Return a list of patterns from a (cached) routedir
+        corresponding to a given lineref and mode."""
+        rts = self.get_routedict(mode)
+        pats = [r["patterns"] for r in rts if r["shortName"] == lineref]
+        out = pats[0] if pats and len(pats) > 0 else []
+        return out
+
+
+    def codes_query(self, lineid, mode="bus"):
+        """
+        Return a list of pattern codes corresponding to a given line ID
+        from a separate API query.
+        """
+        pats = self.patterns_extra_query(lineid, mode)
         return [d["code"] for d in pats]
 
 
@@ -179,7 +207,7 @@ class Digitransit:
         The list includes the longest pattern per direction, i.e. at least
         two patterns. If two or more patterns have the same number of stops,
         both are returned."""
-        pats = self.patterns(lineid, mode, ["directionId", "stops {id}"])
+        pats = self.patterns(lineid, mode)
 
         code0 = self._longest([p for p in pats if p["directionId"] == 0])
         code1 = self._longest([p for p in pats if p["directionId"] == 1])
@@ -211,7 +239,7 @@ class Digitransit:
         longest pattern per direction, i.e. at least two patterns. If two
         or more patterns have the same number of stops, both are returned.
         """
-        pats = self.patterns(lineid, mode, ["directionId", "stops {id}"])
+        pats = self.patterns(lineid, mode)
         code0 = self._match_stopcount([p for p in pats if p["directionId"] == 0], stopcount)
         code1 = self._match_stopcount([p for p in pats if p["directionId"] == 1], stopcount)
         return code0 + code1
@@ -220,7 +248,7 @@ class Digitransit:
     def codes_for_date(self, lineid, datestr, mode="bus"):
         """Get patterns which are valid (have trips) on a date given in
         YYYYMMDD format."""
-        codes = self.patterns(lineid, mode=mode)
+        codes = self.patterns(lineid, mode)
         valids = []
         for c in codes:
             query = '{pattern(id:"%s"){tripsForDate(serviceDate:"%s"){id}}}' \
@@ -231,11 +259,11 @@ class Digitransit:
         return valids
 
 
-    def patterns_after_date(self, lineid, datestr, mode="bus", extrafields=[]):
+    def patterns_after_date(self, lineid, mode, datestr):
         """Get patterns which are valid (have trips) after a date given in
         YYYYMMDD format. Can be used to discard patterns which are not valid
         any more."""
-        pats = self.patterns(lineid, mode, extrafields)
+        pats = self.patterns(lineid, mode)
         valids = []
         dateint = int(datestr)
         for p in pats:
@@ -254,7 +282,7 @@ class Digitransit:
         """Get pattern codes which are valid (have trips) after a date given in
         YYYYMMDD format. Can be used to discard patterns which are not valid
         any more."""
-        pats = self.patterns_after_date(lineid, datestr, mode)
+        pats = self.patterns_after_date(lineid, mode, datestr)
         return [p["code"] for p in pats]
 
 
@@ -264,8 +292,7 @@ class Digitransit:
         The list includes the longest pattern per direction, i.e. at least
         two patterns. If two or more patterns have the same number of stops,
         both are returned."""
-        pats = self.patterns_after_date(lineid, datestr, mode,
-          ["directionId", "stops {id}"])
+        pats = self.patterns_after_date(lineid, mode, datestr)
 
         code0 = self._longest([p for p in pats if p["directionId"] == 0])
         code1 = self._longest([p for p in pats if p["directionId"] == 1])
@@ -284,24 +311,33 @@ class Digitransit:
         return (dirid, latlon)
 
 
-    def platforms(self, code):
-        """Return stops for a given pattern code as waypoint list
-        [[lat, lon, stopcode, name]]."""
+    def platforms_query(self, code):
+        """
+        Return stops for a given pattern code as waypoint list
+        [[lat, lon, stopcode, name]] from a separate API query.
+        """
         query = '{pattern(id:"%s") {stops {code\nname\nlat\nlon}}}' % (code)
         r = self.apiquery(query)
         stops = json.loads(r.text)["data"]["pattern"]["stops"]
         return [(s["lat"], s["lon"], s["code"], s["name"]) for s in stops]
 
 
+    def platform_refs(self, code, mode):
+        """
+        Return stop refs from cached routes for a given pattern code as list.
+        """
+        routes = self.get_routedict(mode)
+        # FIXME: make a pattern dict from cached data
+        pats = [ p for r in routes for p in r["patterns"] if p["code"] == code ]
+        stops = pats[0]["stops"]
+        return [s["code"] for s in stops]
+
+
     def all_linerefs(self, mode="bus"):
         """Return a lineref:url dict of all linerefs for a given mode.
         URL points to a reittiopas page for the line."""
-        query = '{routes(transportModes:[%s]){shortName\ntype\ngtfsId\n}}' \
-            %(self.mode_from_osm[mode])
-        r = self.apiquery(query)
-        rts = json.loads(r.text)["data"]["routes"]
+        rts = self.get_routedict(mode)
         # Also filter out taxibuses (lähibussit) (type == 704)
-        #refs = [r["shortName"] for r in rts if r["type"] != 704]
         refs = {r["shortName"]: gtfsid2url(r["gtfsId"])
                 for r in rts if r["type"] != 704}
         self.taxibus_refs = {r["shortName"]: gtfsid2url(r["gtfsId"])
