@@ -146,7 +146,7 @@ def rels_refless(mode):
     """
     Get routes for mode which do not have a ref tag.
     """
-    q = '%s\nrel(area.hel)[type=route][route="%s"][!ref];(._;);out tags;' % (area, mode)
+    q = '[out:json][timeout:300];%s\nrel(area.hel)[type=route][route="%s"][!ref];(._;);out tags;' % (area, mode)
     log.debug(q)
     rr = api.query(q)
     return rr.relations
@@ -251,7 +251,7 @@ def route_shape(rel):
 def was_routes(mode="bus"):
     """Return a lineref:[urllist] dict of all was:route=<mode> routes in
     Helsinki region. URLs points to the relations in OSM."""
-    q = '%s\nrel(area.hel)[type="was:route"]["was:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
+    q = '[out:json][timeout:300];%s\nrel(area.hel)[type="was:route"]["was:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
     log.debug(q)
     rr = api.query(q)
     refs = defaultdict(list)
@@ -264,7 +264,7 @@ def was_routes(mode="bus"):
 def disused_routes(mode="bus"):
     """Return a lineref:[urllist] dict of all disused:route=<mode> routes in
     Helsinki region. URLs points to the relations in OSM."""
-    q = '%s\nrel(area.hel)[type="disused:route"]["disused:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
+    q = '[out:json][timeout:300];%s\nrel(area.hel)[type="disused:route"]["disused:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
     log.debug(q)
     rr = api.query(q)
     refs = defaultdict(list)
@@ -285,7 +285,7 @@ def get_route_master_dict(mode, agency):
     """
     if overpy_route_master_dict.get(mode, None):
         return overpy_route_master_dict[mode]
-    q = 'rel[type=route_master][route_master="%s"][network="%s"];(._;>;>;);out body;' % (mode, agency)
+    q = '[out:json][timeout:300];rel[type=route_master][route_master="%s"][network="%s"];(._;>;>;);out body;' % (mode, agency)
     log.debug(q)
     rr = api.query(q)
     rmd = defaultdict(list)
