@@ -111,7 +111,7 @@ def get_route_rr(mode="bus"):
     """
     if overpy_route_cache.get(mode, None):
         return overpy_route_cache[mode]
-    q = '[out:json][timeout:300];%s\nrel(area.hel)[type=route][route="%s"][ref];(._;>;>;);out body;' % (area, mode)
+    q = '[out:json][timeout:600];%s\nrel(area.hel)[type=route][route="%s"][ref];(._;>;>;);out body;' % (area, mode)
     log.debug(q)
     rr = api.query(q)
     overpy_route_cache[mode] = rr
