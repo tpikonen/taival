@@ -5,7 +5,7 @@ from util import ldist2
 log = logging.getLogger(__name__)
 
 api = overpy.Overpass()
-api.retry_timeout=12
+api.retry_timeout=30
 api.max_retry_count=10
 # Approximate HSL area = Helsinki + Porvoo regions
 #area = """(area[admin_level=7]["name"="Helsingin seutukunta"]["ref"="011"][boundary=administrative]; area[admin_level=7]["name"="Porvoon seutukunta"]["ref"="201"][boundary=administrative];)->.hel;"""
