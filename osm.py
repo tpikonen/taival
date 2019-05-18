@@ -164,7 +164,7 @@ def rels(lineref, mode="bus"):
 def route_platforms(rel):
     retval = []
     platforms = [mem.resolve(resolve_missing=True) \
-      for mem in rel.members if mem.role == "platform"]
+      for mem in rel.members if mem.role.startswith("platform")]
     for x in platforms:
         (lat, lon) = member_coord(x)
         ref = x.tags.get('ref', '<no ref in OSM>')
@@ -176,7 +176,7 @@ def route_platforms(rel):
 def route_stops(rel):
     retval = []
     stops = [mem.resolve(resolve_missing=True) \
-      for mem in rel.members if mem.role == "stop"]
+      for mem in rel.members if mem.role.startswith("stop")]
     for x in stops:
         (lat, lon) = member_coord(x)
         name = x.tags.get('ref', '<no ref>')
