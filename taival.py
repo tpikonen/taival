@@ -194,8 +194,7 @@ def collect_line(lineref, mode, agency, interval_tags=False):
     if rmd[lineref]:
         ld["rm_rels"] = rmd[lineref]
     else:
-        log.debug("Calling osm.route_master for line {}".format(lineref))
-        ld["rm_rels"] = osm.route_master(relids)
+        ld["rm_rels"] = []
 
     log.debug("Found OSM route ids: %s\n" % \
       (", ".join("[%s %d]" % (osm.relid2url(rid), rid) for rid in relids)))
