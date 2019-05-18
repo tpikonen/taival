@@ -119,6 +119,10 @@ class Digitransit:
             stops {
                 code
             }
+            geometry {
+                lat
+                lon
+            }
         }
     }}""" % (self.mode_from_osm[mode])
         if mode in self.routedict_cache.keys():
@@ -299,9 +303,24 @@ class Digitransit:
         return code0 + code1
 
 
-    def shape(self, code):
+    def shape(self, code, mode):
         """
-        Return geometry for given pattern code as tuple (directionId, latlon).
+        Return geometry from route cache for given pattern code as
+        tuple (directionId, latlon).
+        """
+        # FIXME needs a code -> pattern dict
+        rts = self.get_routedict(mode)
+        pats = [ p for r in rts for p in r["patterns"] if p["code"] == code ]
+        pat = pats[0]
+        dirid = pat["directionId"] # int
+        latlon = [[c["lat"], c["lon"]] for c in pat["geometry"]]
+        return (dirid, latlon)
+
+
+    def shape_query(self, code, mode):
+        """
+        Return geometry from a API query for given pattern code as
+        tuple (directionId, latlon).
         """
         query = '{pattern(id:"%s") {directionId\ngeometry {lat\nlon}}}' % (code)
         r = self.apiquery(query)

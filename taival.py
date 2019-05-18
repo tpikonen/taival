@@ -39,8 +39,8 @@ def digitransit2gpx(dt, lineref, mode="bus"):
     log.debug("Calling dt.codes_query")
     codes = dt.codes_query(lineref, mode)
     for c in codes:
-        log.debug("    Calling dt.shape")
-        (dirid, latlon) = dt.shape(c)
+        log.debug("    Calling dt.shape_query")
+        (dirid, latlon) = dt.shape_query(c, mode)
         log.debug("    Calling dt.platforms_query")
         stops = dt.platforms_query(c)
         fname = "%s_%s_%s_%d.gpx" % (lineref, dt.agency, c, dirid)
@@ -231,7 +231,7 @@ def collect_line(lineref, mode, agency, interval_tags=False):
 
     # FIXME: Duplicate call to osm.route_shape() in route checking loop.
     osmshapes = [osm.route_shape(rel)[0] for rel in rels]
-    hslshapes = [pvd.shape(c)[1] for c in codes]
+    hslshapes = [pvd.shape(c, mode)[1] for c in codes]
     (osm2hsl, hsl2osm) = match_shapes(osmshapes, hslshapes)
     id2hslindex = {}
     for i in range(len(relids)):
