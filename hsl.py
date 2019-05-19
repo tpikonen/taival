@@ -98,6 +98,7 @@ synonyms = [
     ('Hertton.terv.as.', 'Herttoniemen terveysasema'),
     ('Juhana Herttuan', 'Juhana-herttuan'),
     ('Järvenpää L.-autoas.', 'Järvenpään linja-autoasema'),
+    ('Kenttäpäällikönpuist', 'Kenttäpäällikönpuisto'),
     ('Laversinti', 'Laversintie'),
     ('Luonnontiet.museo', 'Luonnontieteellinen museo'),
     ('Martinl. terv. asema', 'Martinlaakson terveysasema'),
