@@ -468,7 +468,7 @@ def cell_route_master(ld):
     return style, cell, details
 
 
-def print_table(md):
+def print_routetable(md):
     header = """{| class="wikitable"
 |-
 ! style="border-style: none" |
@@ -687,14 +687,14 @@ def print_table(md):
             wr(ld["details"])
 
 
-def report_tabular(md):
-    """Write a mediawiki report page with summary and line table."""
+def report_routes(md):
+    """Write a mediawiki report page on routes with summary and line table."""
     print_abstract(md)
     print_summary(md)
     if md["mode"] == "bus":
         print_localbus(md)
     print_oldlines(md)
-    print_table(md)
+    print_routetable(md)
 
 
 def check_mode(os, ps):

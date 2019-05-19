@@ -445,7 +445,7 @@ def sub_routes(args):
     if "mode" in d.keys():
         out = get_output(args)
         mw.outfile = out
-        mw.report_tabular(d)
+        mw.report_routes(d)
         if out and out != sys.stdout:
             out.close()
     else:
