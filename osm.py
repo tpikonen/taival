@@ -161,28 +161,49 @@ def rels(lineref, mode="bus"):
     return retval
 
 
-def route_platforms(rel):
+def rel_members_w_role(rel, rstart):
+    """
+    Return members of relation which have role starting with string rstart.
+    The return value is a tuple (lat, lon, ref, name, role).
+    """
     retval = []
-    platforms = [mem.resolve(resolve_missing=True) \
-      for mem in rel.members if mem.role.startswith("platform")]
-    for x in platforms:
+    elems = [(mem.resolve(resolve_missing=True), mem.role) \
+      for mem in rel.members if mem.role and mem.role.startswith(rstart)]
+    for x, role in elems:
         (lat, lon) = member_coord(x)
         ref = x.tags.get('ref', '<no ref in OSM>')
         name = x.tags.get('name', '<no name in OSM>')
-        retval.append([float(lat),float(lon),ref,name])
+        retval.append((float(lat), float(lon), ref, name, role))
     return retval
+
+
+def route_platforms(rel):
+    """
+    Return members of route relations with role 'platform*'.
+    The return value is a tuple (lat, lon, ref, name, role).
+    """
+    return rel_members_w_role(rel, 'platform')
 
 
 def route_stops(rel):
-    retval = []
-    stops = [mem.resolve(resolve_missing=True) \
-      for mem in rel.members if mem.role.startswith("stop")]
-    for x in stops:
-        (lat, lon) = member_coord(x)
-        name = x.tags.get('ref', '<no ref>')
-        desc = x.tags.get('name', '<no name>')
-        retval.append([float(lat),float(lon),name,desc])
-    return retval
+    """
+    Return members of route relations with role 'stop*'.
+    The return value is a tuple (lat, lon, ref, name, role).
+    """
+    return rel_members_w_role(rel, 'stop')
+
+
+def route_platforms_or_stops(rel):
+    """
+    Return platforms for a route relation. If there are no relation
+    members with a role 'platform*', return members with role 'stop*'
+    instead.
+    The return value is a tuple (lat, lon, ref, name, role).
+    """
+    if any(m.role.startswith('platform') for m in rel.members):
+        return route_platforms(rel)
+    else:
+        return route_stops(rel)
 
 
 def route_shape(rel):

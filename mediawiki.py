@@ -625,7 +625,8 @@ def print_routetable(md):
             hsli = id2hslindex[rel.id]
             hslplatforms = ld["hslplatforms"]
             if hsli is not None and not ptv1:
-                osmplatform = osm.route_platforms(rel)
+                osmplatform = osm.route_platforms_or_stops(rel)
+                are_stops = any(p[4].startswith('stop') for p in osmplatform)
                 hslplatform = hslplatforms[hsli]
                 # FIXME: Add stop names to unified diffs after diffing, somehow
                 if md["agency"] == 'HSL':
@@ -639,6 +640,8 @@ def print_routetable(md):
                 diff = list(difflib.unified_diff(osmp, hslp, "OSM", md["agency"]))
                 if diff:
                     dirdetails += "'''Platforms:'''\n\n"
+                    if are_stops:
+                        dirdetails += "This route has platforms marked with role 'stop', role 'platform' is recommended.\n\n"
                     dirdetails += "{}/{} platforms in OSM / {}.\n".format(len(osmp), len(hslp), md["agency"])
                     dirdetails += " " + diff[0]
                     dirdetails += " " + diff[1]
@@ -650,8 +653,12 @@ def print_routetable(md):
                             ins += 1
                         elif d[0] == '-':
                             rem += 1
-                    cells.append((style_problem, "[[#{} | +{} -{}]]"\
-                      .format(line, ins, rem)))
+                    cells.append((style_problem, "[[#{} | +{} -{}{}]]"\
+                      .format(line, ins, rem, "(s)" if are_stops else "")))
+                elif are_stops:
+                    cells.append((style_maybe, "{}(s)".format(len(hslp))))
+                    dirdetails += "'''Platforms:'''\n\n"
+                    dirdetails += "This route has platforms marked with role 'stop', role 'platform' is recommended.\n\n"
                 else:
                     cells.append((style_ok, "{}/{}".format(len(osmp), len(hslp))))
             else:
