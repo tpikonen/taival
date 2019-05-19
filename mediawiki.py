@@ -11,6 +11,9 @@ style_maybe = "background-color: #eeee00"
 style_relstart = "border-style: solid; border-width: 1px 1px 1px 3px"
 style_details = "background-color: #ffffff"
 
+# Match codes with last number '0'
+zerocodepat = re.compile("^..*0[^0-9]*$")
+
 def wr(*args, **kwargs):
     kwargs["file"] = outfile
     print(*args, **kwargs)
@@ -490,10 +493,12 @@ def print_table(md):
     subheader = subheader.format(md["agency"], md["agency"])
     footer = "|}"
 
-    def print_cells(cells, linecounter, lines_w_probs):
-        if linecounter % 20 == 0:
+    def print_cells(cells, linecounter, statcounter, lines_w_probs):
+        if (zerocodepat.match(line) and linecounter > 9) or linecounter > 30:
             wr(subheader)
+            linecounter = 0
         linecounter += 1
+        statcounter += 1
         wr("|-")
         if any(c[0] == style_problem for c in cells):
             cells[0] = (style_problem, "[[#{} | {}]]".format(line, line))
@@ -502,7 +507,7 @@ def print_table(md):
             cells[0] = (style_ok, str(line))
         for style, content in cells:
             wr('| style="{}" | {}'.format(style, content))
-        return (linecounter, lines_w_probs)
+        return (linecounter, statcounter, lines_w_probs)
 
     mode = md["mode"]
     wr("= {} {} lines in OSM =\n".format(md["agency"], mode))
@@ -511,7 +516,9 @@ def print_table(md):
     wr("as a reference.")
     wr("")
     wr(header)
+    wr(subheader)
     linecounter = 0
+    statcounter = 0
     lines_w_probs = 0
 
     for line in md["lines"]:
@@ -536,7 +543,7 @@ def print_table(md):
             ld["details"] += "More than 2 matching OSM routes found: %s.\n" % \
               (", ".join("[%s %d]" % (osm.relid2url(rid), rid) for rid in relids))
             cells.append((style_problem, "[[#{} | no]]".format(line)))
-            print_cells(cells, linecounter, lines_w_probs)
+            (linecounter, statcounter, lines_w_probs) = print_cells(cells, linecounter, statcounter, lines_w_probs)
             wr('| colspan=10 | Matching problem, see details')
             continue
         elif len(codes) != 2:
@@ -662,11 +669,11 @@ def print_table(md):
                       pattern2url(codes[hsli]),  codes[hsli]) + dirdetails
             dirindex += 1
             # end 'for rel in rels'
-        (linecounter, lines_w_probs) = print_cells(cells, linecounter, lines_w_probs)
+        (linecounter, statcounter, lines_w_probs) = print_cells(cells, linecounter, statcounter, lines_w_probs)
 
     wr(footer)
     wr("")
-    wr("{} lines total.\n".format(linecounter))
+    wr("{} lines total.\n".format(statcounter))
     wr("{} lines with differences.".format(lines_w_probs))
 
     # details
@@ -1016,10 +1023,10 @@ def print_stoptable(sd, stops=None):
     wr(header)
     wr(subheader)
     for ps in stops:
-        if linecounter > 19:
+        ref = ps["code"]
+        if (zerocodepat.match(ref) and linecounter > 9) or linecounter > 30:
             wr(subheader)
             linecounter = 0
-        ref = ps["code"]
         oslist = ost.get(ref, [])
         nlines, isok = print_stopline(oslist, ps, cols)
         #linecounter += nlines
@@ -1338,7 +1345,7 @@ def print_citybiketable(sd, refs=None):
     wr(header)
     wr(subheader)
     for ref in refs:
-        if linecounter > 19:
+        if (zerocodepat.match(ref) and linecounter > 9) or linecounter > 30:
             wr(subheader)
             linecounter = 0
         ps = pst[ref]
