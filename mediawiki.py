@@ -1318,10 +1318,11 @@ def print_citybikeline(oslist, ps, cols):
         wr('|-')
         taglist = []
         taglist.append("'''name'''='{}'".format(ps["name"]))
-        if ps["state"] == 'Station on':
-            cap = str(int(ps['bikesAvailable']) + int(ps['spacesAvailable']))
-            taglist.append("'''capacity'''='{}'".format(cap))
-#        taglist.append("'''capacity'''='{}'".format(ps["total_slots"]))
+#        if ps["state"] == 'Station on':
+#            cap = str(int(ps['bikesAvailable']) + int(ps['spacesAvailable']))
+#            taglist.append("'''capacity'''='{}'".format(cap))
+#        if "total_slots" in ps.keys():
+#            taglist.append("'''capacity'''='{}'".format(ps["total_slots"]))
         desc = "Tags from HSL: " + ", ".join(taglist) + "."
         wr('| colspan={} style="{}" | {}'.format(cols, style_details, desc))
         linecounter += 1
