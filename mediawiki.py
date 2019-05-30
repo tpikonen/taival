@@ -534,7 +534,9 @@ def print_routetable(md):
 
     # details
     if any(ld.get("details", None) for ld in md["lines"].values()):
-        wr("= Details on differences =\n")
+        pass
+        # No separate subheader for differences any more
+        #wr("= Details on differences =\n")
     else:
         return
     for ld in md["lines"].values():
