@@ -59,6 +59,18 @@ def test_tag(ts, key, value=None, badtag=False):
 def test_hsl_routename(ts, lineref, longname):
     """Do a special test for the route name-tag.
     Return an empty string if ok, a string describing the problem if not."""
+    tag = ts.get("name", "")
+    # Handle ferry routes without ref number
+    if lineref == longname:
+        if tag == "":
+            out = "Tag '''name''' not set (should be '%s')." \
+              % (longname)
+        elif tag != longname:
+            out = "Tag '''name''' has value '%s' (should be '%s')." \
+              % (tag, longname)
+        else:
+            out = ""
+        return out
     # Reittiopas longName field sometimes has dangling hyphens, remove them.
     longname = longname[1:] if longname[0] == '-' else longname
     longname = longname[:-1] if longname[-1] == '-' else longname
@@ -66,7 +78,6 @@ def test_hsl_routename(ts, lineref, longname):
     name1 = lineref + " " + "–".join(stops) # Use en dash as a separator
     stops.reverse()
     name2 = lineref + " " + "–".join(stops)
-    tag = ts.get("name", "")
     out = ""
     if tag == "":
         out = "Tag '''name''' not set (should be either '%s' or '%s')." \
