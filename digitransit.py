@@ -118,6 +118,9 @@ class Digitransit:
             directionId
             stops {
                 code
+                name
+                lat
+                lon
             }
             geometry {
                 lat
@@ -341,15 +344,16 @@ class Digitransit:
         return [(s["lat"], s["lon"], s["code"], s["name"]) for s in stops]
 
 
-    def platform_refs(self, code, mode):
+    def platforms(self, code, mode):
         """
-        Return stop refs from cached routes for a given pattern code as list.
+        Return platform tuple (lat, lon, code, name) from cached routes for
+        a given pattern code as list.
         """
         routes = self.get_routedict(mode)
         # FIXME: make a pattern dict from cached data
         pats = [ p for r in routes for p in r["patterns"] if p["code"] == code ]
         stops = pats[0]["stops"]
-        return [s["code"] for s in stops]
+        return [(s["lat"], s["lon"], s["code"], s["name"]) for s in stops]
 
 
     def all_linerefs(self, mode="bus"):

@@ -328,7 +328,19 @@ def cell_route_master(ld):
     return style, cell, details
 
 
-def print_routetable(md):
+def print_routetable(md, linerefs=None, networkname=None, platformidx=2):
+    """
+    Print a route table and details on differences from modedict for
+    refs given in linerefs arg (by default all).
+
+    If the name of the network differs from agency/provider name, it can
+    be given in the networkname arg.
+
+    The platformidx arg gives the index of the member in the platform
+    tuple (lat, lon, ref, name) to be compared in the platform sequence
+    diffs. The default is 2=ref, but some routes do not have platforms with
+    refs, so 3=name can also be used).
+    """
     header = """{| class="wikitable"
 |-
 ! style="border-style: none" |
@@ -337,7 +349,7 @@ def print_routetable(md):
 ! style="border-style: solid; border-width: 1px 1px 1px 3px" colspan=5 | Direction 0
 ! style="border-style: solid; border-width: 1px 1px 1px 3px" colspan=5 | Direction 1"""
     subheader = """|-
-! Line
+! Route
 ! Master
 ! Match
 ! style="border-style: solid; border-width: 1px 1px 1px 3px" | OSM
@@ -370,8 +382,10 @@ def print_routetable(md):
         return (linecounter, statcounter, lines_w_probs)
 
     mode = md["mode"]
-    wr("= {} {} lines in OSM =\n".format(md["agency"], mode))
-    wr("This table compares {} {} routes with OSM routes.".format(md["agency"], mode))
+    if not networkname:
+        networkname = md["agency"]
+    wr("= {} {} lines in OSM =\n".format(networkname, mode))
+    wr("This table compares {} {} routes with OSM routes.".format(networkname, mode))
     wr("The checker uses [[Proposed_features/Refined_Public_Transport | Refined public transport schema]]")
     wr("as a reference.")
     wr("")
@@ -381,7 +395,10 @@ def print_routetable(md):
     statcounter = 0
     lines_w_probs = 0
 
-    for line in md["lines"]:
+    if not linerefs:
+        linerefs = [ e['lineref'] for e in md["lines"].values() ]
+
+    for line in linerefs:
         cells = []
         ld = md["lines"][line]
         if not "rels" in ld.keys():
@@ -433,8 +450,7 @@ def print_routetable(md):
             tdetlist = []
             # name-tag gets a special treatment
             tdetlist.append(test_hsl_routename(rel.tags, htags["shortName"],  htags["longName"]))
-            # FIXME: network != agency always
-            tdetlist.append(test_tag(rel.tags, "network", md["agency"]))
+            tdetlist.append(test_tag(rel.tags, "network", networkname))
             tdetlist.append(test_tag(rel.tags, "from"))
             tdetlist.append(test_tag(rel.tags, "to"))
 #            if md["modecolors"][mode]:
@@ -489,14 +505,14 @@ def print_routetable(md):
                 are_stops = any(p[4].startswith('stop') for p in osmplatform)
                 hslplatform = hslplatforms[hsli]
                 # FIXME: Add stop names to unified diffs after diffing, somehow
-                if md["agency"] == 'HSL':
+                if md["agency"] == 'HSL' and platformidx == 2:
                     osmp = [re.sub(r"^([0-9]{4,4})$", r"H\1", p[2]) + "\n"\
                       for p in osmplatform]
-                    hslp = [re.sub(r"^([0-9]{4,4})$", r"H\1", p) + "\n"\
+                    hslp = [re.sub(r"^([0-9]{4,4})$", r"H\1", p[2]) + "\n"\
                       for p in hslplatform]
                 else:
-                    osmp = [p[2]+"\n" for p in osmplatform]
-                    hslp = [p+"\n" for p in hslplatform]
+                    osmp = [p[platformidx]+"\n" for p in osmplatform]
+                    hslp = [p[platformidx]+"\n" for p in hslplatform]
                 diff = list(difflib.unified_diff(osmp, hslp, "OSM", md["agency"]))
                 if diff:
                     dirdetails += "'''Platforms:'''\n\n"
@@ -550,7 +566,7 @@ def print_routetable(md):
         #wr("= Details on differences =\n")
     else:
         return
-    for ld in md["lines"].values():
+    for ld in [ md["lines"][ref] for ref in linerefs ]:
         if ld.get("details", None):
             wr("== {} ==".format(ld["lineref"]))
             wr(ld["details"])
@@ -563,7 +579,15 @@ def report_routes(md):
     if md["mode"] == "bus":
         print_localbus(md)
     print_oldlines(md)
-    print_routetable(md)
+    if md["agency"] == "HSL" and md["mode"] == "ferry":
+        linerefs = [ e['lineref'] for e in md["lines"].values() \
+            if "htags" in e.keys() and not e["htags"]['gtfsId'].startswith('HSLlautta') ]
+        print_routetable(md, linerefs)
+        HSL_lautat = [ e['lineref'] for e in md["lines"].values() \
+            if "htags" in e.keys() and e["htags"]['gtfsId'].startswith('HSLlautta') ]
+        print_routetable(md, HSL_lautat, "Saaristoliikenne", 3)
+    else:
+        print_routetable(md)
 
 
 def check_mode(os, ps):

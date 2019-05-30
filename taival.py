@@ -247,8 +247,9 @@ def collect_line(lineref, mode, agency, interval_tags=False):
     for rel in rels:
         hsli = id2hslindex[rel.id]
         if hsli is not None:
-            hslplatforms[hsli] = [ p if p else "<no ref in HSL>" \
-                for p in pvd.platform_refs(codes[hsli], mode) ]
+            hslplatforms[hsli] = [ (lat, lon, ref, name) if ref \
+              else (lat, lon, "<no ref in HSL>", name) \
+                for (lat, lon, ref, name) in pvd.platforms(codes[hsli], mode) ]
             if interval_tags:
                 hslitags[hsli] = collect_interval_tags(codes[hsli])
     ld["hslplatforms"] = hslplatforms
@@ -272,6 +273,8 @@ def collect_routes(mode="bus", interval_tags=False):
     md["modecolors"] = hsl.modecolors
 
     networks = [agency] + hsl.cities
+    if agency == 'HSL':
+        networks.append("Saaristoliikenne")
     osmdict = osm.all_linerefs(mode, networks)
     hsldict = pvd.all_linerefs(mode)
     refless = osm.rels_refless(mode)
