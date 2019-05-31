@@ -413,7 +413,7 @@ def sub_osmxml(args):
         write_xml(fname, ids, htags, args.mode, reverse)
         print(fname)
     if not codes:
-        print("Line '%s' not found in %s." % lineref, pvd.agency)
+        print("Line '%s' not found in %s for mode %s." % args.line, pvd.agency, args.mode)
 
 
 def get_output(args):
