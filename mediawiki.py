@@ -416,7 +416,9 @@ def print_routetable(md, linerefs=None, networkname=None, platformidx=2):
         codes = ld["codes"]
         osm2hsl = ld["osm2hsl"]
         hsl2osm = ld["hsl2osm"]
-        if len(ld["rels"]) > 2:
+        if len(ld["rels"]) == len(codes) and all(x is not None for x in osm2hsl):
+            cells.append((style_ok, "Uniq."))
+        elif len(ld["rels"]) > 2:
             ld["details"] += "More than 2 matching OSM routes found: %s.\n" % \
               (", ".join("[%s %d]" % (osm.relid2url(rid), rid) for rid in relids))
             cells.append((style_problem, "[[#{} | no]]".format(line)))
