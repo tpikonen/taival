@@ -500,9 +500,9 @@ def print_routetable(md, linerefs=None, networkname=None, platformidx=2):
             # Platforms
             hsli = id2hslindex[rel.id]
             hslplatforms = ld["hslplatforms"]
-            if hsli is not None and not ptv1:
+            if hsli is not None:
                 osmplatform = osm.route_platforms_or_stops(rel)
-                are_stops = any(p[4].startswith('stop') for p in osmplatform)
+                are_stops = osmplatform and all(p[4].startswith('stop') for p in osmplatform)
                 hslplatform = hslplatforms[hsli]
                 # FIXME: Add stop names to unified diffs after diffing, somehow
                 if md["agency"] == 'HSL' and platformidx == 2:
@@ -514,10 +514,14 @@ def print_routetable(md, linerefs=None, networkname=None, platformidx=2):
                     osmp = [p[platformidx]+"\n" for p in osmplatform]
                     hslp = [p[platformidx]+"\n" for p in hslplatform]
                 diff = list(difflib.unified_diff(osmp, hslp, "OSM", md["agency"]))
-                if diff:
+                if not osmp or diff or are_stops:
                     dirdetails += "'''Platforms:'''\n\n"
-                    if are_stops:
-                        dirdetails += "This route has platforms marked with role 'stop', role 'platform' is recommended.\n\n"
+                if are_stops:
+                    dirdetails += "This route has platforms marked with role 'stop', role 'platform' is recommended.\n\n"
+                if not osmp:
+                    dirdetails += "{}/{} platforms in OSM / {}.\n\n".format(len(osmp), len(hslp), md["agency"])
+                    cells.append((style_problem, "[[#{} | {}/{}]]".format(line, len(osmp), len(hslp))))
+                elif diff:
                     dirdetails += "{}/{} platforms in OSM / {}.\n".format(len(osmp), len(hslp), md["agency"])
                     dirdetails += " " + diff[0]
                     dirdetails += " " + diff[1]
@@ -532,17 +536,12 @@ def print_routetable(md, linerefs=None, networkname=None, platformidx=2):
                     cells.append((style_problem, "[[#{} | +{} -{}{}]]"\
                       .format(line, ins, rem, "(s)" if are_stops else "")))
                 elif are_stops:
-                    cells.append((style_maybe, "{}(s)".format(len(hslp))))
-                    dirdetails += "'''Platforms:'''\n\n"
-                    dirdetails += "This route has platforms marked with role 'stop', role 'platform' is recommended.\n\n"
+                    cells.append((style_maybe, "[[#{} | {}/{}(s)]]".format(line, len(osmp), len(hslp))))
                 else:
                     cells.append((style_ok, "{}/{}".format(len(osmp), len(hslp))))
             else:
                 dirdetails += "'''Platforms:'''\n\n"
-                if ptv1:
-                    dirdetails += "Cannot compare platforms for PTv1 routes.\n\n"
-                else:
-                    dirdetails += "Platforms could not be compared.\n\n"
+                dirdetails += "Platforms could not be compared.\n\n"
                 cells.append((style_problem, "[[#{} | N/A]]".format(line)))
             # Add per direction details
             if dirdetails:
