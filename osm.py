@@ -203,7 +203,7 @@ def route_platforms_or_stops(rel):
     instead.
     The return value is a tuple (lat, lon, ref, name, role).
     """
-    if any(m.role.startswith('platform') for m in rel.members):
+    if any(m.role.startswith('platform') for m in rel.members if m.role):
         return route_platforms(rel)
     else:
         return route_stops(rel)
