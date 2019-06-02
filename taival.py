@@ -47,7 +47,7 @@ def digitransit2gpx(dt, lineref, mode="bus"):
         write_gpx(latlon, fname, waypoints=stops)
         print(fname)
     if not codes:
-        log.error("Line '%s' not found in %s." % lineref, dt.agency)
+        log.error(f"Line '{lineref}' not found in {dt.agency}.")
 
 
 def route2gpx(rel, fname):
@@ -68,7 +68,7 @@ def osm2gpx(lineref, mode="bus"):
             route2gpx(rels[i], fn)
             print(fn)
     else:
-        log.error("Line '%s' not found in OSM PTv2 relations." % lineref)
+        log.error("Line '{lineref}' not found in OSM.")
 
 
 def collect_interval_tags(code):
