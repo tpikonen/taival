@@ -152,12 +152,14 @@ def rels_refless(mode):
     return rr.relations
 
 
-def rels(lineref, mode="bus"):
+def rels(lineref, mode="bus", networks=None):
     """
     Get all lines corresponding to lineref and mode in area.
     """
     rr = get_route_rr(mode)
     retval = [ r for r in rr.relations if r.tags.get("ref", None) == lineref ]
+    if networks:
+        retval = [ r for r in retval if r.tags.get("network", None) in networks ]
     return retval
 
 

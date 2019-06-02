@@ -175,7 +175,7 @@ def match_shapes(shapes1, shapes2):
         return (m1to2, m2to1)
 
 
-def collect_line(lineref, mode, agency, interval_tags=False):
+def collect_line(lineref, mode, agency, networks, interval_tags=False):
     """Report on differences between OSM and HSL data for a given line."""
     ld = {} # line dict
     ld["lineref"] = lineref
@@ -183,7 +183,7 @@ def collect_line(lineref, mode, agency, interval_tags=False):
     ld["agency"] = agency
     ld["interval_tags"] = interval_tags
     log.debug("Processing line {}".format(lineref))
-    rels = osm.rels(lineref, mode)
+    rels = osm.rels(lineref, mode, networks)
     if(len(rels) < 1):
         log.debug("No route relations found in OSM.")
         return ld
@@ -272,13 +272,13 @@ def collect_routes(mode="bus", interval_tags=False):
     md["agencyurl"] = agencyurl
     md["modecolors"] = hsl.modecolors
 
-    networks = [agency] + hsl.cities
+    networks = [agency] + hsl.cities + [None]
     if agency == 'HSL':
         networks.append("Saaristoliikenne")
     osmdict = osm.all_linerefs(mode, networks)
     hsldict = pvd.all_linerefs(mode)
     refless = osm.rels_refless(mode)
-    refless = [ r for r in refless if r.tags.get("network", None) in networks + [None] ]
+    refless = [ r for r in refless if r.tags.get("network", None) in networks ]
     wasroutes = osm.was_routes(mode)
     disroutes = osm.disused_routes(mode)
     md["osmdict"] = osmdict
@@ -286,6 +286,7 @@ def collect_routes(mode="bus", interval_tags=False):
     md["refless"] = refless
     md["wasroutes"] = wasroutes
     md["disroutes"] = disroutes
+    md["networks"] = networks
 
     if mode == "bus":
         hsl_localbus = pvd.taxibus_linerefs(mode)
@@ -298,7 +299,7 @@ def collect_routes(mode="bus", interval_tags=False):
     hsllines.sort(key=linesortkey)
     lines = {}
     for line in hsllines:
-        ld = collect_line(line, mode, agency, interval_tags)
+        ld = collect_line(line, mode, agency, networks, interval_tags)
         lines[line] = ld
     md["lines"] = lines
     return md
