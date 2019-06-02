@@ -51,18 +51,17 @@ def digitransit2gpx(dt, lineref, mode="bus"):
 
 
 def route2gpx(rel, fname):
-    """Write a gpx-file fname from an overpy relation containing
-    an OSM public_transport:version=2 route."""
+    """Write a gpx-file fname from an overpy relation containing an OSM route."""
     log.debug("Calling osm.shape")
     latlon = osm.route_shape(rel)[0]
     log.debug("Calling osm.platforms")
-    waypts = osm.route_platforms(rel)
+    waypts = osm.route_platforms_or_stops(rel)
     write_gpx(latlon, fname, waypoints=waypts)
 
 
 def osm2gpx(lineref, mode="bus"):
-    log.debug("Calling osm.rels_v2")
-    rels = osm.rels_v2(lineref, mode)
+    log.debug("Calling osm.rels_query")
+    rels = osm.rels_query(lineref, mode)
     if len(rels) > 0:
         for i in range(len(rels)):
             fn = "%s_osm_%d.gpx" % (lineref, i)

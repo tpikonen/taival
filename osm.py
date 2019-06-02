@@ -133,10 +133,11 @@ def all_linerefs(mode, networks):
     return refs
 
 
-def rels_v2(lineref, mode="bus"):
-    """Get public transport v2 lines corresponding to lineref in Helsinki area.
+def rels_query(lineref, mode="bus"):
+    """Get public transport routes corresponding to lineref in area from
+    a direct query.
     """
-    q = '%s\nrel(area.hel)[route="%s"][ref="%s"]["public_transport:version"="2"];(._;>;>;);out body;' % (area, mode, lineref)
+    q = '%s\nrel(area.hel)[route="%s"][ref="%s"];(._;>;>;);out body;' % (area, mode, lineref)
     log.debug(q)
     rr = api.query(q)
     return rr.relations
