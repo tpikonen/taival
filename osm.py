@@ -7,9 +7,10 @@ log = logging.getLogger(__name__)
 api = overpy.Overpass()
 api.retry_timeout=30
 api.max_retry_count=10
-# Approximate HSL area = Helsinki + Porvoo regions
-#area = """(area[admin_level=7]["name"="Helsingin seutukunta"]["ref"="011"][boundary=administrative]; area[admin_level=7]["name"="Porvoon seutukunta"]["ref"="201"][boundary=administrative];)->.hel;"""
+
+# Areas must be initialized by e.g. hsl.overpass_area before queries
 area = None
+stopref_area = None
 
 stoptags = {
     "train": [
@@ -378,7 +379,7 @@ def stops_by_refs(refs, mode="bus"):
     a given refs list."""
     stoptags = mode2ovptags(mode)
     refpat = "|".join(str(r) for r in refs)
-    q = area + "(\n"
+    q = stopref_area + "(\n"
     for st in stoptags:
         q += 'node(area.hel){}[ref~"({})"];\n'.format(st, refpat)
         q += 'way(area.hel){}[ref~"({})"];\n'.format(st, refpat)

@@ -170,6 +170,8 @@ def get_overpass_area(clist):
     return area
 
 overpass_area = get_overpass_area(cities)
+# Stops can also be in cities outside of HSL area
+overpass_stopref_area = get_overpass_area(set(prefix2city.values()))
 
 
 def longname2stops(longname):

@@ -11,6 +11,7 @@ pvd = digitransit.Digitransit("HSL", \
         hsl.modecolors, hsl.peakhours, hsl.nighthours, hsl.shapetols)
 
 osm.area = hsl.overpass_area
+osm.stopref_area = hsl.overpass_stopref_area
 
 logging.basicConfig(level=logging.INFO,
     format="[%(asctime)s.%(msecs)03d] %(levelname)s: %(message)s",
