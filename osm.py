@@ -389,9 +389,15 @@ def stops_by_refs(refs, mode="bus"):
     rr = api.query(q)
     stopids = []
     for ref in refs:
-        stopids.extend(("node", e.id) for e in rr.nodes if e.tags["ref"] == ref)
-        stopids.extend(("way", e.id) for e in rr.ways if e.tags["ref"] == ref)
-        stopids.extend(("relation", e.id) for e in rr.relations if e.tags["ref"] == ref)
+        ids = []
+        ids.extend(("node", e.id) for e in rr.nodes if e.tags["ref"] == ref)
+        ids.extend(("way", e.id) for e in rr.ways if e.tags["ref"] == ref)
+        ids.extend(("relation", e.id) for e in rr.relations if e.tags["ref"] == ref)
+        if not ids:
+            log.warning(f"OSM stop object not found for ref '{ref}'")
+        elif len(ids) > 1:
+            log.warning(f"More than OSM object for ref '{ref}': {', '.join(str(i) for i in ids)}")
+        stopids.extend(ids)
     return stopids
 
 
