@@ -395,6 +395,8 @@ def sub_osmxml(args):
             ff.write("    <tag k='network' v='HSL' />\n")
             ff.write("    <tag k='route' v='%s' />\n" % mode)
             ff.write("    <tag k='type' v='route' />\n")
+            ff.write(f"    <tag k='from' v='{stopnames[0]}' />\n")
+            ff.write(f"    <tag k='to' v='{stopnames[-1]}' />\n")
             ff.write("    <tag k='public_transport:version' v='2' />\n")
 
     log.info("Processing line %s, mode '%s'" % (args.line, args.mode))
