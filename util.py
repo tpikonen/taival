@@ -27,7 +27,14 @@ def ddl_uniq_key_merge(m1, m2, ukey):
 
 def linesortkey(x):
     """Key function for list.sort() for correct line name sorting."""
-    return (len([c for c in x if c.isdigit()]), x)
+    num = ''
+    for c in x:
+        if c.isdigit():
+            num += c
+        else:
+            break
+    return (len(num), x)
+    #return (len([c for c in x if c.isdigit()]), x) # old version
 
 
 # Haversine function nicked from: https://stackoverflow.com/questions/4913349/haversine-formula-in-python-bearing-and-distance-between-two-gps-points
