@@ -237,14 +237,25 @@ def route_shape(rel):
         # Give up and do not orient
         return (latlon, gaps)
     # Initialize nodes list with first way, correctly oriented
+    gap_after_first = False
     if (ways[0].nodes[-1] == ways[1].nodes[0]) \
       or (ways[0].nodes[-1] == ways[1].nodes[-1]):
         nodes = ways[0].nodes
     elif (ways[0].nodes[0] == ways[1].nodes[0]) \
       or (ways[0].nodes[0] == ways[1].nodes[-1]):
         nodes = ways[0].nodes[::-1] # reverse
+    elif ways[1].nodes[0] == ways[1].nodes[-1]:
+        if not ways[1].tags.get("junction", None) == "roundabout":
+            log.debug(f"Circular (2nd) way is not a roundabout in relation {rel.id} !")
+        if ways[0].nodes[-1] in ways[1].nodes:
+            nodes = ways[0].nodes
+        elif ways[0].nodes[0] in ways[1].nodes:
+            nodes = ways[0].nodes[::-1]
+        else:
+            gap_after_first = True
     else:
-        # Gap between first two ways
+        gap_after_first = True
+    if gap_after_first: # Orient first segment in case of a gap
         gaps = True
         begmin = min(ndist2(ways[0].nodes[0], ways[1].nodes[0]),
                      ndist2(ways[0].nodes[0], ways[1].nodes[-1]))
@@ -255,9 +266,49 @@ def route_shape(rel):
         else:
             nodes = ways[0].nodes[::-1]
     # Combine nodes from the rest of the ways to a single list,
-    # flip ways when needed
-    for w in ways[1:]:
-        if nodes[-1] == w.nodes[0]:
+    # flip ways when needed, split roundabout ways
+    # Iterate with index, because we need to peek ways[i+1] for roundabouts
+    for i in range(1, len(ways)):
+        w = ways[i]
+        if w.nodes[0] == w.nodes[-1]:
+            if not w.tags.get("junction", None) == "roundabout":
+                log.debug(f"Circular way is not a roundabout in relation {rel.id} !")
+            startind = w.nodes.index(nodes[-1]) if nodes[-1] in w.nodes else None
+            wnext = ways[i+1] if (i+1) < len(ways) else None
+            if wnext:
+                # This does not work with 2 roundabouts in a row
+                if wnext.nodes[0] in w.nodes:
+                    nextstart = wnext.nodes[0]
+                elif wnext.nodes[-1] in w.nodes:
+                    nextstart = wnext.nodes[-1]
+                else:
+                    nextstart = None
+                nextind = w.nodes.index(nextstart) if nextstart else None
+                # We don't add a duplicate startind node, but do add the
+                # nextind node to the end of the node list in assignments
+                # below, hence the +1's in slices
+                if (not startind is None) and (not nextind is None):
+                    if startind < nextind:
+                        nodes.extend(w.nodes[(startind+1):(nextind+1)])
+                    else:
+                        nodes.extend(w.nodes[(startind+1):])
+                        nodes.extend(w.nodes[:(nextind+1)])
+                elif not startind is None:
+                    gaps = True
+                    nodes.extend(w.nodes[(startind+1):])
+                    nodes.extend(w.nodes[:(startind+1)]) # include startind again
+                elif not nextind is None:
+                    gaps = True
+                    nodes.extend(w.nodes[(nextind+1):])
+                    nodes.extend(w.nodes[:(nextind+1)])
+            else: # w is last way
+                if not startind is None:
+                    nodes.extend(w.nodes[(startind+1):])
+                    nodes.extend(w.nodes[:(startind+1)])
+                else:
+                    gaps = True
+                    nodes.extend(w.nodes)
+        elif nodes[-1] == w.nodes[0]:
             nodes.extend(w.nodes[1:])
         elif nodes[-1] == w.nodes[-1]:
             nodes.extend(w.nodes[::-1][1:])
