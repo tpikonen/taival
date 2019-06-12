@@ -716,8 +716,8 @@ def check_findr(os, ps):
 def check_zone(os, ps):
     """Return (style, text) cell tuple comparing zone:HSL value."""
     oz = os.get("zone:HSL", None)
-    pzid = ps.get("zoneId", None)
-    pz = hsl.zoneid2name[pzid] if pzid else "?"
+    pz = ps.get("zoneId", "?")
+    pz = "no" if pz == "Ei HSL" else pz
     if oz:
         if oz == pz:
             return (style_ok, oz)
@@ -799,8 +799,8 @@ def print_stopline(oslist, ps, cols):
         isok &= wr_cell(check_mode, os, ps)
         isok &= wr_cell(check_type, os, ps)
         isok &= wr_cell(check_dist, os, ps)
+        isok &= wr_cell(check_zone, os, ps)
 #        isok &= wr_cell(check_findr, os, ps)
-#        isok &= wr_cell(check_zone, os, ps)
         isok &= wr_cell(check_wheelchair, os, ps)
         if detlist:
             isok = False
@@ -898,7 +898,7 @@ def print_stoptable_cluster(sd, refs=None):
 
 def print_stoptable(sd, stops=None):
     """Print a stoptable for stops."""
-    cols = 6
+    cols = 7
     header = '{| class="wikitable"'
     subheader = """|-
 ! ref
@@ -906,6 +906,7 @@ def print_stoptable(sd, stops=None):
 ! mode
 ! type
 ! delta
+! zone:HSL
 ! wheelchair"""
     footer = "|}"
 
