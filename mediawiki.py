@@ -1,7 +1,9 @@
-import difflib, sys
+import difflib, sys, logging
 import osm, hsl
 from util import *
 from digitransit import pattern2url, terminalid2url, citybike2url
+
+log = logging.getLogger(__name__)
 
 outfile = None
 
