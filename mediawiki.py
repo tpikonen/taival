@@ -775,6 +775,9 @@ def check_wheelchair(os, ps):
 def print_stopline(oslist, ps, cols):
     """Print a line to stop table, return (nlines, isok)."""
     ref = ps["code"]
+    # Prefer exact ref matches (i.e. Hnnnn), if there are none, use all
+    flist = [ e for e in oslist if e.get("ref", None) == ref ]
+    oslist = flist if flist else oslist
     linecounter = 1
     detlist = []
     wr("|-")
