@@ -824,9 +824,9 @@ def print_stopline(oslist, ps, cols):
         wr('|-')
         taglist = []
         taglist.append("'''name'''='{}'".format(hsl.get_stopname(ps)))
-#        pzid = ps.get("zoneId", None)
-#        if pzid and pzid != 99:
-#            taglist.append("'''zone:HSL'''='{}'".format(hsl.zoneid2name[pzid]))
+        pz = ps.get("zoneId", None)
+        if pz and pz != "Ei HSL":
+            taglist.append(f"'''zone:HSL'''='{pz}'")
         pw = ps.get("wheelchairBoarding", None)
         if pw and pw == 'POSSIBLE':
             taglist.append("'''wheelchair'''='yes'")
