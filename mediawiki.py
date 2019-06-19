@@ -478,6 +478,8 @@ def print_routetable(md, linerefs=None, networkname=None, platformidx=2):
                     sdetlist.append("Route [%s %s] has ways with 'forward' and 'backward' roles (PTv1)." \
                       % (osm.relid2url(rel.id), rel.id))
                     cells.append((style_problem, "PTv1"))
+                elif len(ld["hslshapes"][hsli]) <= len(ld["hslplatforms"][hsli]):
+                    cells.append((style_maybe, "N/A"))
                 else:
                     tol = md["shapetol"]
                     (shape, gaps) = osm.route_shape(rel)
