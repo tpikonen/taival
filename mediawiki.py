@@ -62,24 +62,29 @@ def test_hsl_routename(ts, lineref, longname):
     """Do a special test for the route name-tag.
     Return an empty string if ok, a string describing the problem if not."""
     tag = ts.get("name", "")
+    # Reittiopas longName field sometimes has dangling hyphens, remove them.
+    longname = longname[1:] if longname[0] == '-' else longname
+    longname = longname[:-1] if longname[-1] == '-' else longname
+    stops = hsl.longname2stops(longname)
+    stopnames1 = "–".join(stops) # Use en dash as a separator
+    name1 = f"{lineref} {stopnames1}"
+    stops.reverse()
+    stopnames2 = "–".join(stops) # Use en dash as a separator
+    name2 = f"{lineref} {stopnames2}"
     # Handle ferry routes without ref number
     if lineref == longname:
         if tag == "":
             out = "Tag '''name''' not set (should be '%s')." \
               % (longname)
+        # Also allow a name derived from stops for ferry routes
+        elif tag == stopnames1 or tag == stopnames2:
+            out = ""
         elif tag != longname:
             out = "Tag '''name''' has value '%s' (should be '%s')." \
               % (tag, longname)
         else:
             out = ""
         return out
-    # Reittiopas longName field sometimes has dangling hyphens, remove them.
-    longname = longname[1:] if longname[0] == '-' else longname
-    longname = longname[:-1] if longname[-1] == '-' else longname
-    stops = hsl.longname2stops(longname)
-    name1 = lineref + " " + "–".join(stops) # Use en dash as a separator
-    stops.reverse()
-    name2 = lineref + " " + "–".join(stops)
     out = ""
     if tag == "":
         out = "Tag '''name''' not set (should be either '%s' or '%s')." \
