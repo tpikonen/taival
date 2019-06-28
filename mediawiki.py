@@ -454,7 +454,10 @@ def print_routetable(md, linerefs=None, networkname=None, platformidx=2):
             cells.append((style_relstart, "[%s %s]" % (osm.relid2url(rel.id), rel.id)))
             # HSL
             hsli = id2hslindex[rel.id]
-            cells.append(("", "[%s %s]" % (pattern2url(codes[hsli]),  codes[hsli])))
+            if hsli is not None:
+                cells.append(("", "[%s %s]" % (pattern2url(codes[hsli]),  codes[hsli])))
+            else:
+                cells.append(("", "N/A"))
             # Tags
             tdetlist = []
             # name-tag gets a special treatment
@@ -503,9 +506,8 @@ def print_routetable(md, linerefs=None, networkname=None, platformidx=2):
                     else:
                         cells.append((style_ok, "%1.0f%%" % (ovl*100.0)))
             else:
-                sdetlist.append("Route %s overlap could not be calculated.\n" \
-                  % (rel.id))
-                cells.append((style_problem, "[[#{} | error]]".format(line)))
+                sdetlist.append(f"Shape for route {rel.id} not available from provider.\n")
+                cells.append((style_problem, "[[#{} | N/A]]".format(line)))
             if any(sdetlist):
                 dirdetails += "'''Shape:'''\n\n" + "\n\n".join(sdetlist) + "\n\n"
             # Platforms
@@ -556,10 +558,15 @@ def print_routetable(md, linerefs=None, networkname=None, platformidx=2):
                 cells.append((style_problem, "[[#{} | N/A]]".format(line)))
             # Add per direction details
             if dirdetails:
-                ld["details"] += \
-                  "'''Direction {}''', route [{} {}], [{} {}]\n\n"\
-                    .format(dirindex, osm.relid2url(rel.id), rel.id,\
-                      pattern2url(codes[hsli]),  codes[hsli]) + dirdetails
+                if hsli is not None:
+                    ld["details"] += \
+                      "'''Direction {}''', route [{} {}], [{} {}]\n\n"\
+                        .format(dirindex, osm.relid2url(rel.id), rel.id,\
+                          pattern2url(codes[hsli]),  codes[hsli]) + dirdetails
+                else:
+                    ld["details"] += \
+                      "'''Direction {}''', route [{} {}], <No HSL route>\n\n"\
+                        .format(dirindex, osm.relid2url(rel.id), rel.id) + dirdetails
             dirindex += 1
             # end 'for rel in rels'
         (linecounter, statcounter, lines_w_probs) = print_cells(cells, linecounter, statcounter, lines_w_probs)
