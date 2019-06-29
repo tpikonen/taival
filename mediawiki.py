@@ -1164,7 +1164,7 @@ def check_capacity(os, ps):
         cell = "{} / N/A".format(oc if oc else "-")
         return (style_maybe, cell, "")
     #pc = str(int(ps['bikesAvailable']) + int(ps['spacesAvailable']))
-    pc = ps["total_slots"]
+    pc = ps.get("total_slots", "?")
     if oc:
         if oc == pc:
             return (style_ok, pc, "")
