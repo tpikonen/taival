@@ -1264,6 +1264,7 @@ def print_citybiketable(sd, refs=None):
             wr(subheader)
             linecounter = 0
         ps = pst[ref]
+        if not ps["networks"][0] in ["vantaa", "smoove"]: continue
         oslist = ost.pop(ref, [])
         nlines, isok = print_citybikeline(oslist, ps, cols)
         #linecounter += nlines

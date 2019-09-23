@@ -465,6 +465,7 @@ class Digitransit:
     realtime
     lat
     lon
+    networks
   }
 }"""
         r = self.apiquery(query)
