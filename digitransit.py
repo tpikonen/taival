@@ -353,7 +353,7 @@ class Digitransit:
         # FIXME: make a pattern dict from cached data
         pats = [ p for r in routes for p in r["patterns"] if p["code"] == code ]
         stops = pats[0]["stops"]
-        return [(s["lat"], s["lon"], s["code"], s["name"]) for s in stops]
+        return [(s["lat"], s["lon"], s.get("code", "<no code>"), s["name"]) for s in stops]
 
 
     def all_linerefs(self, mode="bus"):
