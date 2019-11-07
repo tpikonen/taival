@@ -416,7 +416,7 @@ class Digitransit:
         stops = defaultdict(dict)
         clusters = defaultdict(list) # cluster gtfsId -> ref list
         for d in data:
-            ref = d["code"]
+            ref = d.get("code", "")
             if not ref:
                 continue
             d["mode"] = self.mode_to_osm[d['vehicleMode']]
