@@ -316,7 +316,8 @@ class Digitransit:
         pats = [ p for r in rts for p in r["patterns"] if p["code"] == code ]
         pat = pats[0]
         dirid = pat["directionId"] # int
-        latlon = [[c["lat"], c["lon"]] for c in pat["geometry"]] if "geometry" in pat.keys() else []
+        latlon = [[c["lat"], c["lon"]] for c in pat["geometry"]] \
+          if ("geometry" in pat.keys() and pat["geometry"] is not None) else []
         return (dirid, latlon)
 
 
