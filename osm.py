@@ -1,4 +1,4 @@
-import overpy, logging
+import overpy, logging, time
 from collections import defaultdict
 from util import ldist2
 
@@ -7,6 +7,19 @@ log = logging.getLogger(__name__)
 api = overpy.Overpass()
 api.retry_timeout=30
 api.max_retry_count=10
+
+def apiquery(query):
+    waittimes = [2,3,4,8] # min
+    for t in waittimes:
+        try:
+            rr = api.query(query)
+            return rr
+        except overpy.exception.OverpassTooManyRequests:
+            tsec = t * 60
+            log.info(f"Too many Overpass requests, waiting {tsec} seconds.")
+            time.sleep(tsec)
+    log.error("Giving up on Overpass requests")
+    raise overpy.exception.OverpassTooManyRequests("Giving up")
 
 # Areas must be initialized by e.g. hsl.overpass_area before queries
 area = None
@@ -114,7 +127,7 @@ def get_route_rr(mode="bus"):
         return overpy_route_cache[mode]
     q = '[out:json][timeout:600];%s\nrel(area.hel)[type=route][route="%s"][ref];(._;>;>;);out body;' % (area, mode)
     log.debug(q)
-    rr = api.query(q)
+    rr = apiquery(q)
     overpy_route_cache[mode] = rr
     return rr
 
@@ -140,7 +153,7 @@ def rels_query(lineref, mode="bus"):
     """
     q = '%s\nrel(area.hel)[route="%s"][ref="%s"];(._;>;>;);out body;' % (area, mode, lineref)
     log.debug(q)
-    rr = api.query(q)
+    rr = apiquery(q)
     return rr.relations
 
 
@@ -150,7 +163,7 @@ def rels_refless(mode):
     """
     q = '[out:json][timeout:300];%s\nrel(area.hel)[type=route][route="%s"][!ref];(._;);out tags;' % (area, mode)
     log.debug(q)
-    rr = api.query(q)
+    rr = apiquery(q)
     return rr.relations
 
 
@@ -329,7 +342,7 @@ def was_routes(mode="bus"):
     Helsinki region. URLs points to the relations in OSM."""
     q = '[out:json][timeout:300];%s\nrel(area.hel)[type="was:route"]["was:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
     log.debug(q)
-    rr = api.query(q)
+    rr = apiquery(q)
     refs = defaultdict(list)
     for r in rr.relations:
         if "ref" in r.tags.keys():
@@ -342,7 +355,7 @@ def disused_routes(mode="bus"):
     Helsinki region. URLs points to the relations in OSM."""
     q = '[out:json][timeout:300];%s\nrel(area.hel)[type="disused:route"]["disused:route"="%s"][network~"HSL|Helsinki|Espoo|Vantaa"];out tags;' % (area, mode)
     log.debug(q)
-    rr = api.query(q)
+    rr = apiquery(q)
     refs = defaultdict(list)
     for r in rr.relations:
         if "ref" in r.tags.keys():
@@ -363,7 +376,7 @@ def get_route_master_dict(mode, agency):
         return overpy_route_master_dict[mode]
     q = '[out:json][timeout:300];rel[type=route_master][route_master="%s"][network="%s"];(._;>;>;);out body;' % (mode, agency)
     log.debug(q)
-    rr = api.query(q)
+    rr = apiquery(q)
     rmd = defaultdict(list)
     for rel in rr.relations:
         ref = rel.tags.get("ref", None)
@@ -381,7 +394,7 @@ def route_master(route_ids):
     q = '[out:json][timeout:60];rel(id:%s);(rel(br)["type"="route_master"];);out body;' \
       % (",".join(str(x) for x in route_ids))
     log.debug(q)
-    rr = api.query(q)
+    rr = apiquery(q)
     return rr.relations
 
 
@@ -437,7 +450,7 @@ def stops_by_refs(refs, mode="bus"):
         q += 'rel(area.hel){}[ref~"({})"];\n'.format(st, refpat)
     q += "); out tags;"
     log.debug(q)
-    rr = api.query(q)
+    rr = apiquery(q)
     stopids = []
     for ref in refs:
         ids = []
@@ -472,7 +485,7 @@ def stops(mode="bus"):
     q = "[out:json][timeout:120];\n" + area + "\n(\n" \
       + "\n".join([ qtempl.format(t, t, t) for t in qlist ]) + "\n);out body;"
     log.debug(q)
-    rr = api.query(q)
+    rr = apiquery(q)
     def sanitize_add(sd, rd, elist, etype):
         for e in elist:
             dd =  { \
@@ -519,7 +532,7 @@ def stations(mode="bus"):
     q = "[out:json][timeout:120];\n" + area + "\n(\n" \
       + "\n".join([ qtempl.format(t, t, t) for t in qlist ]) + "\n);out body;"
     log.debug(q)
-    rr = api.query(q)
+    rr = apiquery(q)
     def sanitize_addlist(sl, elist, etype):
         for e in elist:
             dd =  { \
@@ -548,7 +561,7 @@ def citybikes():
     q = "[out:json][timeout:120];\n" + area + "\n(\n" \
       + "\n".join([ qtempl.format(t, t, t) for t in qlist ]) + "\n);out body;"
     log.debug(q)
-    rr = api.query(q)
+    rr = apiquery(q)
     def sanitize_add(sd, rd, elist, etype):
         for e in elist:
             dd =  { \
