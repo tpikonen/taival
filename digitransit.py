@@ -34,6 +34,91 @@ def terminalid2url(gtfs):
 def citybike2url(latlon):
     return "https://reittiopas.hsl.fi/::{},{}".format(latlon[0], latlon[1])
 
+class RouteDict(dict):
+    """Cached access to routedict."""
+    def __init__(self, mode, dt):
+        """Init RouteDict for a given mode, use Digitransit instance dt for API calls."""
+        self.mode = mode
+        self.dt_mode = mode_from_osm[mode]
+        self.dt = dt
+        log.debug(f"Running RouteDict('{mode}') query...")
+        query = """{routes(transportModes:[%s]) {
+    shortName
+    gtfsId
+}}""" % (self.dt_mode)
+        r = self.dt.apiquery(query)
+        data = json.loads(r.text)["data"]["routes"]
+        self.gtfsids = { d["shortName"]: d["gtfsId"] for d in data }
+
+    def do_apiquery(self, key):
+        gtfsid = self.gtfsids.get(key, None)
+        if not gtfsid:
+            raise KeyError("{key} does not have a gtfsId")
+        query = """{
+    route(id:"%s") {
+        shortName
+        longName
+        mode
+        type
+        gtfsId
+        patterns {
+            code
+            directionId
+            stops {
+                code
+                name
+                lat
+                lon
+            }
+            geometry {
+                lat
+                lon
+            }
+        }
+    }}""" % (gtfsid)
+        log.debug(f"Running RouteDict.do_apiquery('{gtfsid}') query for {self.mode} {key}")
+        r = self.dt.apiquery(query)
+        data = json.loads(r.text)["data"]["route"]
+        return data
+
+    def __getitem__(self, key):
+        try:
+            val = dict.__getitem__(self, key)
+        except KeyError:
+            if key not in self.gtfsids.keys():
+                raise KeyError(f"{key} is not an existing route")
+            else:
+                val = self.do_apiquery(key)
+                dict.__setitem__(self, key, val)
+        return val
+
+    def __setitem__(self, key, val):
+        log.debug("RouteDict.__setitem__ not implemented!")
+        #dict.__setitem__(self, key, val)
+
+    def __repr__(self):
+        dictrepr = dict.__repr__(self)
+        return '%s(%s)' % (type(self).__name__, dictrepr)
+
+    def update(self, *args, **kwargs):
+        log.debug("RouteDict.__update__ not implemented!")
+        #for k, v in dict(*args, **kwargs).items():
+        #    self[k] = v
+
+    def keys(self):
+        return self.gtfsids.keys()
+
+    def values(self):
+        # fill the cache first
+        for k in self.keys():
+            _ = self[k]
+        return dict.values(self)
+
+    def items(self):
+        for k in self.keys():
+            _ = self[k]
+        return dict.items(self)
+
 class Digitransit:
     def __init__(self, agency, url, modecolors=None, peakhours=None, \
       nighthours=None, shapetols=None):
@@ -59,6 +144,8 @@ class Digitransit:
         self.shapetols = shapetols if shapetols \
           else { k: 30.0 for k in self.modecolors.keys() }
         self.taxibus_refs = None
+        self.routedicts = { m: RouteDict(m, self)
+            for m in mode_from_osm.keys() if mode_from_osm[m] }
 
 
     def apiquery(self, query, max_tries=5):
@@ -100,51 +187,10 @@ class Digitransit:
         return outhours
 
 
-    # FIXME: Make routedict_cache a lineref->data dict
-    def get_routedict(self, mode):
-        """
-        Return a (possibly cached) dict with tags and stops for all routes.
-        """
-        query = """{
-    routes(transportModes:[%s]) {
-        shortName
-        longName
-        mode
-        type
-        desc
-        gtfsId
-        patterns {
-            code
-            directionId
-            stops {
-                code
-                name
-                lat
-                lon
-            }
-            geometry {
-                lat
-                lon
-            }
-        }
-    }}""" % (self.mode_from_osm[mode])
-        if mode in self.routedict_cache.keys():
-            return self.routedict_cache[mode]
-        else:
-            log.debug(f"Running Digitransit.get_routedict('{mode}') query...")
-            r = self.apiquery(query)
-            data = json.loads(r.text)["data"]["routes"]
-            self.routedict_cache[mode] = data
-            return data
-
-
+    # FIXME: remove
     def tags(self, lineref, mode):
         """Return a dict with tag-like info for a route with given lineref."""
-        data = self.get_routedict(mode)
-        for d in data:
-            if d.get("shortName", "") == lineref:
-                return d
-        return []
+        return self.routedicts[mode][lineref]
 
 
     def tags_query(self, lineref, mode):
@@ -177,12 +223,9 @@ class Digitransit:
 
 
     def patterns(self, lineref, mode):
-        """Return a list of patterns from a (cached) routedir
+        """Return a list of patterns from a (cached) routedict
         corresponding to a given lineref and mode."""
-        rts = self.get_routedict(mode)
-        pats = [r["patterns"] for r in rts if r["shortName"] == lineref]
-        out = pats[0] if pats and len(pats) > 0 else []
-        return out
+        return self.routedicts[mode][lineref]['patterns']
 
 
     def codes_query(self, lineid, mode="bus"):
@@ -242,7 +285,7 @@ class Digitransit:
     def codes_match_stopcount(self, lineid, stopcount, mode="bus"):
         """
         Return a list pattern codes for a line with the number of stops
-        closes to the number given in 'stopcount'. The list includes the
+        closest to the number given in 'stopcount'. The list includes the
         longest pattern per direction, i.e. at least two patterns. If two
         or more patterns have the same number of stops, both are returned.
         """
@@ -312,9 +355,8 @@ class Digitransit:
         tuple (directionId, latlon).
         """
         # FIXME needs a code -> pattern dict
-        rts = self.get_routedict(mode)
-        pats = [ p for r in rts for p in r["patterns"] if p["code"] == code ]
-        pat = pats[0]
+        rts = self.routedicts[mode]
+        pat = next(p for r in rts.values() for p in r["patterns"] if p["code"] == code)
         dirid = pat["directionId"] # int
         latlon = [[c["lat"], c["lon"]] for c in pat["geometry"]] \
           if ("geometry" in pat.keys() and pat["geometry"] is not None) else []
@@ -350,22 +392,21 @@ class Digitransit:
         Return platform tuple (lat, lon, code, name) from cached routes for
         a given pattern code as list.
         """
-        routes = self.get_routedict(mode)
+        rts = self.routedicts[mode]
         # FIXME: make a pattern dict from cached data
-        pats = [ p for r in routes for p in r["patterns"] if p["code"] == code ]
-        stops = pats[0]["stops"]
+        pat = next(p for r in rts.values() for p in r["patterns"] if p["code"] == code)
+        stops = pat["stops"]
         return [(s["lat"], s["lon"], s.get("code", "<no code>"), s["name"]) for s in stops]
 
 
     def all_linerefs(self, mode="bus"):
         """Return a lineref:url dict of all linerefs for a given mode.
         URL points to a reittiopas page for the line."""
-        rts = self.get_routedict(mode)
+        rts = self.routedicts[mode]
         # Also filter out taxibuses (lähibussit) (type == 704)
-        refs = {r["shortName"]: gtfsid2url(r["gtfsId"])
-                for r in rts if r["type"] != 704}
-        self.taxibus_refs = {r["shortName"]: gtfsid2url(r["gtfsId"])
-                for r in rts if r["type"] == 704}
+        refs = { k: gtfsid2url(r["gtfsId"]) for k, r in rts.items() if r["type"] != 704 }
+        self.taxibus_refs = \
+               { k: gtfsid2url(r["gtfsId"]) for k, r in rts.items() if r["type"] == 704 }
         return refs
 
 
