@@ -1251,7 +1251,7 @@ def print_citybiketable(sd, refs=None):
     ost = sd["ocbs"].copy()
     pst = sd["pcbs"] # data from provider
 
-    refs = refs if refs else pst.keys()
+    refs = refs if refs is not None else [e for e in pst.keys()]
     refs.sort(key=linesortkey)
 
     linecounter = 0
