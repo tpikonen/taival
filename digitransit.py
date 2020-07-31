@@ -5,6 +5,18 @@ from collections import defaultdict
 
 log = logging.getLogger(__name__)
 
+# Digitransit API transportModes: BUS, RAIL, TRAM, SUBWAY, FERRY
+mode_from_osm = {
+    "train":    "RAIL",
+    "subway":   "SUBWAY",
+    "monorail": None,
+    "tram":     "TRAM",
+    "bus":      "BUS",
+    "trolleybus": None,
+    "aerialway": "FUNICULAR",
+    "ferry":    "FERRY"
+}
+mode_to_osm = { v:k for (k,v) in mode_from_osm.items() if v }
 
 def gtfsid2url(gtfs):
     return "https://www.reittiopas.fi/linjat/" + str(gtfs)
@@ -46,18 +58,6 @@ class Digitransit:
         self.nighthours = self.normalize_hours(nighthours) if nighthours else None
         self.shapetols = shapetols if shapetols \
           else { k: 30.0 for k in self.modecolors.keys() }
-        # Digitransit API transportModes: BUS, RAIL, TRAM, SUBWAY, FERRY
-        self.mode_from_osm = {
-            "train":    "RAIL",
-            "subway":   "SUBWAY",
-            "monorail": None,
-            "tram":     "TRAM",
-            "bus":      "BUS",
-            "trolleybus": None,
-            "aerialway": "FUNICULAR",
-            "ferry":    "FERRY"
-        }
-        self.mode_to_osm = { v:k for (k,v) in self.mode_from_osm.items() if v }
         self.taxibus_refs = None
 
 
@@ -167,7 +167,7 @@ class Digitransit:
         API query.
         """
         query = '{routes(name:"%s", transportModes:[%s]) {\nshortName\npatterns {code%s}}}' \
-            % (lineref, self.mode_from_osm[mode],
+            % (lineref, mode_from_osm[mode],
                 ("\n" + "\n".join(extrafields)) if extrafields else "")
         d = self.apiquery(query)
         rts = json.loads(d.text)["data"]["routes"]
@@ -420,7 +420,7 @@ class Digitransit:
             ref = d.get("code", "")
             if not ref:
                 continue
-            d["mode"] = self.mode_to_osm[d['vehicleMode']]
+            d["mode"] = mode_to_osm[d['vehicleMode']]
             d.pop('vehicleMode', None)
             d["latlon"] = (d["lat"], d["lon"])
             d.pop('lat', None)
@@ -447,7 +447,7 @@ class Digitransit:
         data = json.loads(r.text)["data"]["stations"]
         stations = defaultdict(list)
         for d in data:
-            mode = self.mode_to_osm[d.pop("vehicleMode")]
+            mode = mode_to_osm[d.pop("vehicleMode")]
             d["mode"] = mode
             d["latlon"] = (d.pop("lat"), d.pop("lon"))
             stations[mode].append(d)
