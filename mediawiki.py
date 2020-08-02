@@ -660,10 +660,12 @@ def check_dist(os, ps):
         return style_problem, "Error"
 
 
+def shorten(s, maxlen=25):
+    return s if len(s) < maxlen else s[:(maxlen-5)] + u"\u2026" + s[-3:]
+
+
 def check_name(os, ps):
     """Return (style, text, details) cell tuple comparing name value."""
-    def shorten(s, maxlen=25):
-        return s if len(s) < maxlen else s[:(maxlen-5)] + u"\u2026" + s[-3:]
     maxlen = 25
     on = os.get("name", None)
     pn = hsl.get_stopname(ps)
