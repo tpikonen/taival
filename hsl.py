@@ -91,6 +91,7 @@ zoneid2name = {
 
 synonyms = [
     ('A. Petreliuksen', 'Albert Petreliuksen'),
+    ('A.I.', 'A. I.'),
     ('Aleksant.', 'Aleksanterin'),
     ('Aurinkol.', 'Aurinkolahden'),
     ('Etel.', 'Eteläinen'),
@@ -103,6 +104,7 @@ synonyms = [
     ('Laversinti', 'Laversintie'),
     ('Luonnontiet.museo', 'Luonnontieteellinen museo'),
     ('Martinl. terv. asema', 'Martinlaakson terveysasema'),
+    ('Metrovarikko', 'metrovarikko'),
     ('Munkkin.', 'Munkkiniemen'),
     ('Mäkipellon aukio', 'Mäkipellonaukio'), # https://www.kielikello.fi/-/jatkasaarenlaituri-ja-kuninkaanhaanaukio-kaavanimien-oikeinkirjoituksesta
     ('Palokaivon aukio', 'Palokaivonaukio'),
