@@ -364,11 +364,26 @@ def collect_stations():
 
 
 def collect_citybikes():
-    csvd = csv2dict("../HSL_kaupunkipyöräasemat.csv", "id")
+    csvd_he = csv2dict("../Helsingin_ja_Espoon_kaupunkipyöräasemat-2020-06-15.csv", "ID")
+    csvd_v = csv2dict("../Vantaan_kaupunkipyöräasemat-2019-09-13.csv", "ID")
     pcbs = pvd.citybikes()
-    # Update total_slots from CSV data
-    for k in csvd.keys():
-        pcbs[k]["total_slots"] = csvd[k]["total_slot"]
+    # Add info from CSV data
+    for k in csvd_he.keys():
+        if k in pcbs.keys():
+            pcbs[k]["total_slots"] = csvd_he[k]["Kapasiteet"].strip()
+            pcbs[k]["name"] = csvd_he[k]["Nimi"].strip()
+            pcbs[k]["name:fi"] = csvd_he[k]["Nimi"].strip()
+            pcbs[k]["name:en"] = csvd_he[k]["Name"].strip()
+            pcbs[k]["name:sv"] = csvd_he[k]["Namn"].strip()
+            pcbs[k]["network"] = "Helsinki"
+    for k in csvd_v.keys():
+        if k in pcbs.keys():
+            pcbs[k]["total_slots"] = csvd_v[k]["Kapasiteet"].strip()
+            pcbs[k]["name"] = csvd_v[k]["Nimi"].strip()
+            pcbs[k]["name:fi"] = csvd_v[k]["Nimi"].strip()
+            pcbs[k]["name:en"] = csvd_v[k]["Name"].strip()
+            pcbs[k]["name:sv"] = csvd_v[k]["Namn"].strip()
+            pcbs[k]["network"] = "Vantaa"
     refcbs, rest = osm.citybikes()
     return { "ocbs": refcbs, "orest": rest, "pcbs": pcbs, "agency": pvd.agency }
 
