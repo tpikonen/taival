@@ -1125,38 +1125,40 @@ def report_stations(sd, mode=None):
 
 def check_cbname(os, ps):
     """Return (style, text, details) cell tuple comparing citybike station name value."""
-    onorig = os.get("name", None)
-    pn = ps["name"]
-    stationext_fi = " kaupunkipyöräasema"
-    stationext_en = " city bike station"
-    if onorig:
-        on = onorig.replace(stationext_fi, "")
-        if on == pn:
-            detlist = []
-            st = style_ok
-            namefi = os.get("name:fi", None)
-            if namefi and namefi != onorig:
-                detlist.append("'''name:fi'''='{}', but '''name'''='{}'."\
-                  .format(namefi, onorig))
-                st = style_problem
-#            else:
-#                nameenorig = os.get("name:en", None)
-#                nameen = nameenorig.replace(stationext_en, "") if nameenorig else None
-#                if nameen and nameen != on:
-#                    detlist.append("'''name:en'''='{}', is maybe '{}'."\
-#                      .format(nameenorig, pn + stationext_en))
-#                    st = style_maybe
-            return (st, pn, "\n".join(detlist))
+    stationext = {
+        '': " kaupunkipyöräasema",
+        ':fi': " kaupunkipyöräasema",
+        ':en': " city bike station",
+        ':sv':" stadscykelstation",
+    }
+    detlist = []
+    isok = True
+    for tagext, stext in stationext.items():
+        onorig = os.get("name"+tagext, None)
+        pn = ps.get("name"+tagext, None)
+        if not pn:
+            continue
+        if onorig:
+            on = onorig.replace(stext, "")
+            if on == pn or any(pn.replace(repl, abbr) == on for repl, abbr in hsl.synonyms):
+                isok &= True
+            else:
+                detlist.append(f"'''name{tagext}''' set to '{onorig}', should be '{pn}{stext}'.")
+                isok = False
         else:
-            for abbr, repl in hsl.synonyms:
-                if on.replace(repl, abbr) == pn:
-                    return (style_ok, shorten(on), "")
-            details = "'''name''' set to '{}', should be '{} kaupunkipyöräasema'."\
-              .format(onorig, pn)
-            return (style_problem, pn, details)
+            if tagext != ':fi':
+                detlist.append(f"'''name{tagext}''' not set in OSM, should be '{pn}{stext}'.")
+            if tagext == '':
+                isok = False
+
+    on = os.get("name", "").replace(" kaupunkipyöräasema", "")
+    pn = ps["name"]
+    if on == pn or any(pn.replace(repl, abbr) == on for repl, abbr in hsl.synonyms):
+        goodname = on
     else:
-        details = "'''name''' not set in OSM, HSL has '{} kaupunkipyöräasema'.".format(pn)
-        return (style_problem, pn, details)
+        goodname = pn
+
+    return (style_ok if isok else style_problem, goodname, "\n".join(detlist))
 
 
 def check_capacity(os, ps):
