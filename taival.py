@@ -364,8 +364,8 @@ def collect_stations():
 
 
 def collect_citybikes():
-    csvd_he = csv2dict("../Helsingin_ja_Espoon_kaupunkipyöräasemat-2020-06-15.csv", "ID")
-    csvd_v = csv2dict("../Vantaan_kaupunkipyöräasemat-2019-09-13.csv", "ID")
+    csvd_he = csv2dict("../Helsingin_ja_Espoon_kaupunkipyöräasemat-2021-04-29.csv", "ID")
+    csvd_v = csv2dict("../Vantaan_kaupunkipyöräasemat-2021-04-29.csv", "ID")
     pcbs = pvd.citybikes()
     # Add info from CSV data
     for k in csvd_he.keys():
