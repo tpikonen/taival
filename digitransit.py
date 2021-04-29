@@ -31,8 +31,8 @@ def terminalid2url(gtfs):
     return "https://reittiopas.hsl.fi/terminaalit/" + gtfs
 
 
-def citybike2url(latlon):
-    return "https://reittiopas.hsl.fi/::{},{}".format(latlon[0], latlon[1])
+def citybike2url(ref):
+    return "https://reittiopas.hsl.fi/pyoraasemat/{}".format(ref)
 
 class RouteDict(dict):
     """Cached access to routedict."""

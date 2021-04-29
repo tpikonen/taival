@@ -1188,7 +1188,7 @@ def print_citybikeline(oslist, ps, cols):
     linecounter = 1
     detlist = []
     wr("|-")
-    wr("| [{} {}]".format(citybike2url(ps["latlon"]), ref))
+    wr("| [{} {}]".format(citybike2url(ref), ref))
     isok = True
     if len(oslist) == 1:
         def wr_cell(f, o, p):
