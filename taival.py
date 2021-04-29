@@ -370,7 +370,7 @@ def collect_citybikes():
     # Add info from CSV data
     for k in csvd_he.keys():
         if k in pcbs.keys():
-            pcbs[k]["total_slots"] = csvd_he[k]["Kapasiteet"].strip()
+            pcbs[k]["capacity"] = csvd_he[k]["Kapasiteet"].strip()
             pcbs[k]["name"] = csvd_he[k]["Nimi"].strip()
             pcbs[k]["name:fi"] = csvd_he[k]["Nimi"].strip()
             pcbs[k]["name:en"] = csvd_he[k]["Name"].strip()
@@ -378,7 +378,7 @@ def collect_citybikes():
             pcbs[k]["network"] = "Helsinki"
     for k in csvd_v.keys():
         if k in pcbs.keys():
-            pcbs[k]["total_slots"] = csvd_v[k]["Kapasiteet"].strip()
+            pcbs[k]["capacity"] = csvd_v[k]["Kapasiteet"].strip()
             pcbs[k]["name"] = csvd_v[k]["Nimi"].strip()
             pcbs[k]["name:fi"] = csvd_v[k]["Nimi"].strip()
             pcbs[k]["name:en"] = csvd_v[k]["Name"].strip()

@@ -501,8 +501,7 @@ class Digitransit:
   bikeRentalStations {
     name
     stationId
-    bikesAvailable
-    spacesAvailable
+    capacity
     state
     realtime
     lat
