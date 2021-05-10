@@ -3,6 +3,7 @@ import argparse
 import datetime
 import logging
 import pickle
+import os
 import sys
 
 import gpxpy.gpx
@@ -371,8 +372,13 @@ def collect_stations():
 
 
 def collect_citybikes():
-    csvd_he = csv2dict("../Helsingin_ja_Espoon_kaupunkipyöräasemat-2021-04-29.csv", "ID")
-    csvd_v = csv2dict("../Vantaan_kaupunkipyöräasemat-2021-04-29.csv", "ID")
+    datadir = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])),
+                           hsl.datadir)
+    csvd_he = csv2dict(os.path.join(
+        datadir, "Helsingin_ja_Espoon_kaupunkipyöräasemat-2021-05-06.csv"),
+        "ID")
+    csvd_v = csv2dict(os.path.join(
+        datadir, "Vantaan_kaupunkipyöräasemat-2021-05-06.csv"), "ID")
     pcbs = pvd.citybikes()
     # Add info from CSV data
     for k in csvd_he.keys():

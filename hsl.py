@@ -1,6 +1,8 @@
 import re
 from collections import defaultdict
 
+datadir = "./data/HSL"
+
 # See https://fi.wikipedia.org/wiki/Helsingin_seudun_liikenne#J%C3%A4senkunnat
 cities = [ "Helsinki", "Espoo", "Vantaa", "Kirkkonummi", "Kerava",
     "Kauniainen", "Sipoo", "Tuusula", "Siuntio" ]

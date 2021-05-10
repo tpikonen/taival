@@ -1,0 +1,121 @@
+﻿OBJECTID,ID,Nimi,Namn,Name,Osoite,Adress,Kaupunki,Stad,Operaattor,Kapasiteet,x,y
+1,1001,Rillitori,Rilltorget,Rillitori,Tikkurilantie 30,Dickursbyvägen 30,Vantaa,Vantaa,City Bike Vantaa,20,25.0515797305299,60.2930266453553
+2,1003,Männistönpolku,Männistöstigen,Männistönpolku,Männistönpolku 3,Männistöstigen 3,Vantaa,Vantaa,City Bike Vantaa,20,25.0424261327172,60.293215872088
+3,1005,Tikkurilan asema,Dickursby station,Tikkurila station,Ratatie 13,Banvägen 13,Vantaa,Vantaa,City Bike Vantaa,30,25.0445870486865,60.2947747310183
+4,1007,Tikkuraitti,Dickurstråket,Tikkuraitti,Tikkuraitti 18,Dickurstråket 18,Vantaa,Vantaa,City Bike Vantaa,20,25.0364107363973,60.2934127240145
+5,1009,Maalitori,Målfärgstorget,Maalitori,Maalipolku 11,Målfärgsstigen 11,Vantaa,Vantaa,City Bike Vantaa,20,25.0449516168152,60.2918633585749
+6,1011,Virnatie,Vickervägen,Virnatie,Virnatie 1,Vickervägen 1,Vantaa,Vantaa,City Bike Vantaa,20,25.033285918521,60.2878287864556
+7,1013,Peltolantori,Peltolatorget,Peltolantori,Peltolantie 4a,Peltolavägen 4a,Vantaa,Vantaa,City Bike Vantaa,20,25.0299498859934,60.2935647195934
+8,1015,Kurjenpolvenpuisto,Skogsnävsparken,Kurjenpolvenpuisto,Peltolantie 19,Peltolavägen 19,Vantaa,Vantaa,City Bike Vantaa,20,25.0187079550219,60.2940256652594
+9,1277,Tikkurilan urheilupuisto,Dickursby idrottspark,Tikkurila sports park,Läntinen Valkoisenlähteentie 54,Västra Vitbäcksvägen 54,Vantaa,Vantaa,City Bike Vantaa,20,25.0284271889035,60.2996102657305
+10,1017,Suopursunaukio,Getporsplatsen,Suopursunaukio,Kielotie 23,Konvaljvägen 23,Vantaa,Vantaa,City Bike Vantaa,20,25.0418703849498,60.2994854906881
+11,1275,Hiekkaharjun liikuntapuisto,Sandkulla idrottspark,Hiekkaharju sports park,Vesijohdontie 1,Vattenledningsvägen 1,Vantaa,Vantaa,City Bike Vantaa,20,25.0548443931566,60.3009186335895
+12,1019,Jokiniemenkatu,Ånäsgatan,Jokiniemenkatu,Valkoisenlähteentie 34,Vitbäcksvägen 34,Vantaa,Vantaa,City Bike Vantaa,20,25.050164989684,60.2982375396246
+13,1021,Liljatie,Liljevägen,Liljatie,Tikkurilantie 77,Dickursbyvägen 77,Vantaa,Vantaa,City Bike Vantaa,20,25.0220121725373,60.2910976471257
+14,1023,Puutarhatie,Trädgårdsvägen,Puutarhatie,Tikkurilantie 101,Dickursbyvägen 101,Vantaa,Vantaa,City Bike Vantaa,20,25.0064559485306,60.2921602193589
+15,1025,Talkootori,Talkotorget,Talkootori,Talkooraitti 4,Talkostråket 4,Vantaa,Vantaa,City Bike Vantaa,20,25.0462299100116,60.303060366873
+16,1027,Hiekkaharjun asema,Sandkulla station,Hiekkaharju station,Metsätähdentie 1a,Skogsstjärnevägen 1a,Vantaa,Vantaa,City Bike Vantaa,20,25.0493033667583,60.3047280535581
+17,1029,Tarhurinaukio,Trädgårdsmästarplatsen,Tarhurinaukio,Tarhurintie 10,Trädgårdsmästarvägen 10,Vantaa,Vantaa,City Bike Vantaa,10,25.0444983613892,60.3124745763642
+18,1031,Malminiitynpolku,Malmängsstigen,Malminiitynpolku,Uusiniityntie 7,Nyängsvägen 7,Vantaa,Vantaa,City Bike Vantaa,20,25.0351161301312,60.3132651015627
+19,1033,Leinikkitie,Ranunkelvägen,Leinikkitie,Leinikkitie 22,Ranunkelvägen 22,Vantaa,Vantaa,City Bike Vantaa,20,25.0307302013524,60.3105341157447
+20,1035,Sananjalanpolku,Örnbräksstigen,Sananjalanpolku,Sananjalanpolku 2,Örnbräksstigen 2,Vantaa,Vantaa,City Bike Vantaa,10,25.0265758848951,60.3134573375537
+21,1037,Maitikka-aukio,Kovallplatsen,Maitikka-aukio,Kallioruohonpolku 3,Berggrässtigen 3,Vantaa,Vantaa,City Bike Vantaa,20,25.023289236635,60.3056514649386
+22,1039,Kydönaukio,Kyttlandsplatsen,Kydönaukio,Kydönkatu 4,Kyttlandsgatan 4,Vantaa,Vantaa,City Bike Vantaa,20,25.0633814360748,60.3201329471866
+23,1041,Koivutori,Björktorget,Koivutori,Hakopolku 4,Granrisstigen 4,Vantaa,Vantaa,City Bike Vantaa,20,25.0618091497629,60.3236277648183
+24,1043,Sauvatie,Stavvägen,Sauvatie,Sauvatie 1,Stavvägen 1,Vantaa,Vantaa,City Bike Vantaa,20,25.0729534440866,60.3206875248172
+25,1045,Koivukylän asema,Björkby station,Koivukylä station,Koivukylän puistotie 5,Björkbyallén 5,Vantaa,Vantaa,City Bike Vantaa,20,25.0598835139115,60.3232722125574
+26,1047,Leinelän asema,Lejle station,Leinelä station,Koivukylänväylä 54,Björkbyleden 54,Vantaa,Vantaa,City Bike Vantaa,20,25.0375223597074,60.3232031867404
+27,1049,Rekolan asema,Räckhals station,Rekola station,Ulrikankuja 5,Ulrikagränden 5,Vantaa,Vantaa,City Bike Vantaa,20,25.0674363653081,60.3330045539798
+28,1051,Sairaalakatu,Sjukhusgatan,Sairaalakatu,Sairaalakatu 5,Sjukhusgatan 5,Vantaa,Vantaa,City Bike Vantaa,10,25.061259758759,60.3317268233119
+29,1053,Teletie,Televägen,Teletie,Teletie 6,Televägen 6,Vantaa,Vantaa,City Bike Vantaa,20,24.9681386681152,60.3133865702425
+30,1055,Karhumäenportti,Karhumäkiporten,Karhumäenportti,Aviabulevardi 9,Aviabulevarden 9,Vantaa,Vantaa,City Bike Vantaa,20,24.9588307752575,60.3054332674126
+31,1057,Avia-aukio,Aviaplatsen,Avia-aukio,Aviabulevardi 2,Aviabulevarden 2,Vantaa,Vantaa,City Bike Vantaa,20,24.9547822051466,60.3025499725516
+32,1059,Teknobulevardi,Teknobulevarden,Teknobulevardi,Teknobulevardi 5,Teknobulevarden 5,Vantaa,Vantaa,City Bike Vantaa,10,24.9659588949607,60.3046698311406
+33,1061,Robert Huberin tie,Robert Hubers väg,Robert Huberin tie,Robert Huberin tie 4,Robert Hubers väg 4,Vantaa,Vantaa,City Bike Vantaa,20,24.9627965585174,60.2959171467246
+34,1063,Tasetie,Balansvägen,Tasetie,Tasetie 8,Balansvägen 8,Vantaa,Vantaa,City Bike Vantaa,20,24.9680763109005,60.2899625566156
+35,1065,Tapaninkyläntie,Staffansbyvägen,Tapaninkyläntie,Tammiston kauppatie 1a,Rosendals handelsväg 1a,Vantaa,Vantaa,City Bike Vantaa,10,24.9732547051274,60.2658548688865
+36,1101,Tammistontie,Tammistovägen,Tammistontie,Tammiston kauppatie 6c,Rosendals handelsväg 6c,Vantaa,Vantaa,City Bike Vantaa,10,24.9703213642821,60.2762182836931
+37,1103,Hagelstaminpuisto,Hagelstamparken,Hagelstaminpuisto,Hagelstamintie 26,Hagelstamvägen 26,Vantaa,Vantaa,City Bike Vantaa,20,24.9660262778589,60.2811984810469
+38,1105,Hagelstamintie,Hagelstamvägen,Hagelstamintie,Hagelstamintie 5,Hagelstamvägen 5,Vantaa,Vantaa,City Bike Vantaa,20,24.9592070169906,60.2847013161343
+39,1107,Pakkalan puistotie,Backasallén,Pakkalan puistotie,Pakkalan puistotie 10,Backasallén 10,Vantaa,Vantaa,City Bike Vantaa,20,24.94899067375,60.2895658406937
+40,1109,Antaksentie,Antasvägen,Antaksentie,Antaksentie 15,Antasvägen 15,Vantaa,Vantaa,City Bike Vantaa,10,24.9483595846111,60.2935187745543
+41,1111,Tammiston kauppatie,Rosendals handelsväg,Tammiston kauppatie,Ylästöntie 9,Övitsbölevägen 9,Vantaa,Vantaa,City Bike Vantaa,10,24.9744747867617,60.282496224649
+42,1113,Osumakuja,Träffgränden,Osumakuja,Osumakuja 1,Träffgränden 1,Vantaa,Vantaa,City Bike Vantaa,10,24.9326707607231,60.3005093882306
+43,1115,Ansatie,Snarvägen,Ansatie,Ansatie 9,Snarvägen 9,Vantaa,Vantaa,City Bike Vantaa,10,24.9223105652555,60.2947864803672
+44,1117,Kartanonkosken liikuntapuisto,Herrgårdsforsens idrottspark,Kartanonkoski sports park,Tilkuntie 9,Tilkuvägen 9,Vantaa,Vantaa,City Bike Vantaa,10,24.9563511018815,60.2795196504822
+45,1119,Väinö Tannerin tie,Väinö Tanners väg,Väinö Tannerin tie,Väinö Tannerin tie 2,Väinö Tanners väg 2,Vantaa,Vantaa,City Bike Vantaa,10,24.9592800494794,60.2896037306018
+46,1121,Jumbo P3-taso,Jumbo P3-våningen,Jumbo P3-level,Vantaanportinkatu 3,Vandaportsgatan 3,Vantaa,Vantaa,City Bike Vantaa,20,24.9623982387792,60.2909265990048
+47,1123,Jumbo P1-taso,Jumbo P1-våningen,Jumbo P1-level,Vantaanportinkatu 1,Vandaportsgatan 1,Vantaa,Vantaa,City Bike Vantaa,20,24.9643631025534,60.2902400581227
+48,1125,Rälssitie,Frälsevägen,Rälssitie,Rälssitie 3,Frälsevägen 3,Vantaa,Vantaa,City Bike Vantaa,10,24.972136526917,60.2939950188587
+49,1127,Myyrmäen asema,Myrbacka station,Myyrmäki station,Jönsaksentie 6,Jönsasvägen 6,Vantaa,Vantaa,City Bike Vantaa,28,24.8548099403193,60.2609663800809
+50,1129,Liesikuja,Eldstadsgränden,Liesikuja,Liesikuja 3,Eldstadsgränden 3,Vantaa,Vantaa,City Bike Vantaa,20,24.8546379948164,60.2627728285247
+51,1279,Energia Areena,Energia Arena,Energia Arena,Rajatorpantie 23,Råtorpsvägen 23,Vantaa,Vantaa,City Bike Vantaa,20,24.839130882268,60.2605035564887
+52,1131,Myyrmäen jäähalli,Myrbacka ishall,Myyrmäki ice hall,Raappavuorentie 10,Skrapbergsvägen 10,Vantaa,Vantaa,City Bike Vantaa,20,24.8409656618034,60.2637180237561
+53,1133,Myyrmäen uimahalli,Myrbacka simhall,Myyrmäki swimming hall,Myyrmäenraitti 7,Myrbackaleden 7,Vantaa,Vantaa,City Bike Vantaa,20,24.8521254329969,60.2655498744457
+54,1135,Louhelan asema,Klippsta station,Louhela station,Patotie 2,Dammvägen,Vantaa,Vantaa,City Bike Vantaa,20,24.853179780406,60.2701587804037
+55,1137,Kuohukuja,Svallgränden,Kuohukuja,Uomatie 15,Strömfåravägen 15,Vantaa,Vantaa,City Bike Vantaa,20,24.8462618682724,60.269918506367
+56,1139,Martinlaakson asema,Mårtensdals station,Martinlaakso station,Kivivuorentie 2,Stenbergsvägen 2,Vantaa,Vantaa,City Bike Vantaa,24,24.8530321445623,60.2774844299669
+57,1141,Martinlaakson uimahalli,Mårtensdals simhall,Martinlaakso swimming hall,Martinlaaksontie 27a,Mårtensdalsvägen 27a,Vantaa,Vantaa,City Bike Vantaa,20,24.8455118137442,60.2758398565758
+58,1143,Kiskanpuisto,Kiskaparken,Kiskanpuisto,Laajavuorenkuja 7,Bredbergsgränden 7,Vantaa,Vantaa,City Bike Vantaa,10,24.8400235826857,60.2791259594035
+59,1145,Kukinkuja,Kuggränden,Kukinkuja,Kukinkuja 7,Kuggränden 7,Vantaa,Vantaa,City Bike Vantaa,20,24.861177611285,60.2790945660536
+60,1147,Vantaankosken asema,Vandaforsens station,Vantaankoski station,Sanomakulma 2,Tidningsvinkeln 2,Vantaa,Vantaa,City Bike Vantaa,20,24.8491118009742,60.2852294161923
+61,1149,Meripihkatori,Bärnstenstorget,Meripihkatori,Liesikuja 14,Eldstadsgränden 14,Vantaa,Vantaa,City Bike Vantaa,20,24.8479958024047,60.2624796484602
+62,1151,Honkasuo,Hongamossa,Honkasuo,Raappavuorentie 1,Skrapbergsvägen 1,Vantaa,Vantaa,City Bike Vantaa,20,24.8430600593947,60.2587642817444
+63,1153,Kilterinaukio,Gillerplatsen,Kilterinaukio,Kilterinaukio 3,Gillerplatsen 3,Vantaa,Vantaa,City Bike Vantaa,20,24.8526744326898,60.257153729655
+64,1201,Nuijatie,Klubbvägen,Nuijatie,Nuijatie 14,Klubbvägen 14,Vantaa,Vantaa,City Bike Vantaa,20,24.8300790871162,60.2592730243333
+65,1203,Koivuvaarankuja,Björkbergagränden,Koivuvaarankuja,Rajatorpantie 43a,Råtorpsvägen 43a,Vantaa,Vantaa,City Bike Vantaa,10,24.814554535192,60.2546414166934
+66,1205,Pähkinärinteen kirjasto,Hasselbackens bibliotek,Pähkinärinne library,Mantelikuja 4,Mandelgränden 4,Vantaa,Vantaa,City Bike Vantaa,20,24.8056550209875,60.2565986626865
+67,1207,Lammasrinne,Lammbrinken,Lammasrinne,Lammasrinne 1,Lammbrinken 1,Vantaa,Vantaa,City Bike Vantaa,20,24.8065774431624,60.2618735770402
+68,1209,Ainontie,Ainovägen,Ainontie,Ainontie 1,Ainovägen 1,Vantaa,Vantaa,City Bike Vantaa,10,24.8038507177212,60.271084497009
+69,1211,Martinkyläntie,Mårtensbyvägen,Martinkyläntie,Martinkyläntie 47,Mårtensbyvägen 47,Vantaa,Vantaa,City Bike Vantaa,10,24.8218929725587,60.2779776017692
+70,1213,Petikontie,Petikkovägen,Petikontie,Petikontie 7,Petikkovägen 7,Vantaa,Vantaa,City Bike Vantaa,10,24.8150690189847,60.2796055892388
+71,1215,Luhtimäki,Loftbacken,Luhtimäki,Luhtimäki 4,Loftbacken 4,Vantaa,Vantaa,City Bike Vantaa,10,24.8201850916422,60.2689544141709
+72,1217,Vehkalan asema,Veckals station,Vehkala station,Härkähaantie 18,Oxhagsvägen 18,Vantaa,Vantaa,City Bike Vantaa,20,24.8442235204394,60.2948248922537
+73,1219,Vantaanpuisto,Vandaparken,Vantaanpuisto,Vantaanrinne 14,Vandabrinken 14,Vantaa,Vantaa,City Bike Vantaa,10,24.856553682452,60.3012197687463
+74,1221,Mestarintie,Mästarvägen,Mestarintie,Mestarintie 10a,Mästarvägen 10a,Vantaa,Vantaa,City Bike Vantaa,10,24.8507535873908,60.3076139998326
+75,1223,Kivistön asema,Kivistö station,Kivistö station,Keimolantie 10,Käinbyvägen 10,Vantaa,Vantaa,City Bike Vantaa,20,24.8495962498246,60.3155648677925
+76,1225,Aurinkokivenpiha,Solstensgården,Aurinkokivenpiha,Jaspiskuja 20,Jaspisgränden 20,Vantaa,Vantaa,City Bike Vantaa,20,24.8499308023298,60.3187548136145
+77,1227,Rubiinipuisto,Rubinparken,Rubiinipuisto,Lipputie 12,Flaggvägen 12,Vantaa,Vantaa,City Bike Vantaa,20,24.8534876118009,60.3217495711165
+78,1229,Lincolninaukio,Lincolnplatsen,Lincolninaukio,Keimolankaarre 9,Käinbysvängen 9,Vantaa,Vantaa,City Bike Vantaa,20,24.8312067755046,60.3184708843167
+79,1231,Suokalliontie,Mossabergsvägen,Suokalliontie,Tikkurilantie 164,Dickursbyvägen 164,Vantaa,Vantaa,City Bike Vantaa,10,24.8972976570738,60.306322595518
+80,1233,Tahkotie,Slipstensvägen,Tahkotie,Tikkurilantie 156,Dickursbyvägen 156,Vantaa,Vantaa,City Bike Vantaa,10,24.9110119104196,60.3035270832828
+81,1235,Riistakuja,Villebrådsgränden,Riistakuja,Riistakuja 5,Villebrådsgränden 5,Vantaa,Vantaa,City Bike Vantaa,10,24.9070643359901,60.2952683469488
+82,1237,Tuupakankuja,Stubbackagränden,Tuupakankuja,Tuupakantie 10,Stubbackavägen 10,Vantaa,Vantaa,City Bike Vantaa,10,24.8914872548331,60.2963001159682
+83,1239,Vantaanlaaksontie,Vandadalsvägen,Vantaanlaaksontie,Vantaanlaaksontie 42,Vandadalsvägen 42,Vantaa,Vantaa,City Bike Vantaa,10,24.8724942923909,60.283191833777
+84,1241,Vetokuja,Draggränden,Vetokuja,Vantaanlaaksontie 10,Vandadalsvägen 10,Vantaa,Vantaa,City Bike Vantaa,10,24.8789873846949,60.2694491082084
+85,1243,Silvola,Sillböle,Silvola,Vaskivuorentie 7,Kopparbergsvägen 7,Vantaa,Vantaa,City Bike Vantaa,10,24.8815985664654,60.2651189492684
+86,1245,Kaivokselantie,Gruvstavägen,Kaivokselantie,Kaivokselantie 9,Gruvstavägen 9,Vantaa,Vantaa,City Bike Vantaa,10,24.8724826235859,60.2687429742353
+87,1247,Vuorimestarintori,Bergmästartorget,Vuorimestarintori,Louhijantie 3,Malmbrytarvägen 3,Vantaa,Vantaa,City Bike Vantaa,20,24.8716414876708,60.2639194409395
+88,1249,Aapraminkaari,Abramsbågen,Aapraminkaari,Aapraminkaari 1,Abramsbågen 1,Vantaa,Vantaa,City Bike Vantaa,10,24.8671398715297,60.2579401947044
+89,1251,Ollaksentie,Ollasvägen,Ollaksentie,Ylästöntie 106,Övitsbölevägen 106,Vantaa,Vantaa,City Bike Vantaa,10,24.9107004790928,60.2846073425347
+90,1253,Laajavuorentie,Bredbergsvägen,Laajavuorentie,Laajavuorentie 4,Bredbergsvägen 4,Vantaa,Vantaa,City Bike Vantaa,10,24.8483852194779,60.2817800725658
+91,1255,Martinlaaksontie,Mårtensdalsvägen,Martinlaaksontie,Martinlaaksontie 1,Mårtensdalsvägen 1,Vantaa,Vantaa,City Bike Vantaa,10,24.867402890928,60.2778248956229
+92,1257,Kauppalaivurintie,Handelsskepparvägen,Kauppalaivurintie,Martinkyläntie 1,Mårtensbyvägen 1,Vantaa,Vantaa,City Bike Vantaa,10,24.8663430820633,60.2903328758013
+93,1259,Malminiitynpuisto,Malmängsparken,Malminiitynpuisto,Malminiityntie 11,Malmängsvägen 11,Vantaa,Vantaa,City Bike Vantaa,20,25.0406925490905,60.3155675812435
+94,1261,Oljenkorsi,Halmstrået,Oljenkorsi,Oljenkorsi 6,Halmstrået 6,Vantaa,Vantaa,City Bike Vantaa,10,25.0625997674166,60.2987730125672
+95,1263,Urheilutie,Idrottsvägen,Urheilutie,Urheilutie 2,Idrottsvägen 2,Vantaa,Vantaa,City Bike Vantaa,20,25.0595055310412,60.2956960967312
+96,1265,Hernetie,Ärtvägen,Hernetie,Hernetie 2,Ärtvägen 2,Vantaa,Vantaa,City Bike Vantaa,20,25.0333627332086,60.2958318880297
+97,1269,Heureka,Heureka,Heureka,Tiedepuisto 1,Vetenskapsparken 1,Vantaa,Vantaa,City Bike Vantaa,20,25.0419032738833,60.288621540095
+98,1271,Keimolantie,Käinbyvägen,Keimolantie,Keimolantie 51,Käinbyvägen 51,Vantaa,Vantaa,City Bike Vantaa,10,24.8407742319481,60.3229952775996
+99,1273,Tammistonkatu,Tammistogatan,Tammistonkatu,Tammistonkatu 3,Tammistogatan 3,Vantaa,Vantaa,City Bike Vantaa,20,24.9667526017197,60.2690918057701
+100,1267,Pyhtäänkorventie,Pyttistådet,Pyhtäänkorventie,Pyhtäänkorventie 10,Pyttistådet 10,Vantaa,Vantaa,City Bike Vantaa,10,24.9734810817143,60.2998958185948
+101,1300,Kirjastopuisto, Biblioteksparken,Kirjastopuisto,Lummekuja 8,Näckrosgränden 8,Vantaa,Vantaa,City Bike Vantaa,8,25.04185949,60.2947203399999
+102,1301,Eric Von Rettingin puisto,Eric Von Rettigs park,Eric Von Rettigs park,Jokiniemenkatu 14,Ånäsgatan 14,Vantaa,Vantaa,City Bike Vantaa,8,25.04895926,60.29523753
+103,1302,Hiekkaharjun koulu,Hiekkaharju skola,Hiekkaharju school,Talkootie 37,Talkovägen 37,Vantaa,Vantaa,City Bike Vantaa,8,25.0359393,60.3075037499999
+104,1303,Lummetie,Näckrosvägen,Lummetie,Lummetie 36,Näckrosvägen 36,Vantaa,Vantaa,City Bike Vantaa,8,25.01763663,60.2983565499999
+105,1304,Vantaan aikuisopisto,Vanda vuxenutbildningsinstitut,Vantaa adult education center,Lummetie 5,Näckrosvägen 5,Vantaa,Vantaa,City Bike Vantaa,8,25.0397834599999,60.2963209199999
+106,1305,Ratatie,Banvägen,Ratatie,Ratatie 7,Banvägen 7,Vantaa,Vantaa,City Bike Vantaa,8,25.0419878399999,60.2910471399999
+107,1306,Metsänhenki,Skogslyckan,Metsänhenki,Leineläntie 13,Lejlevägen 13,Vantaa,Vantaa,City Bike Vantaa,8,25.04096055,60.3244631699999
+108,1307,Kuusijärvi,Hanaböle träsk,Kuusijärvi,Kuusijärventie 1,Hanaböleträskvägen 1,Vantaa,Vantaa,City Bike Vantaa,8,24.8570990499999,60.2735361499999
+109,1308,Jokiuomanpuisto,Adalsparken,Jokiuomanpuisto,Eräkuja 7,Jaktgränden 7,Vantaa,Vantaa,City Bike Vantaa,8,25.11253774,60.31423764
+110,1309,Tikkurilantie,Dickursbyvägen,Tikkurilantie,Tikkurilantie 54,Dickursbyvägen 54,Vantaa,Vantaa,City Bike Vantaa,8,25.03010299,60.2892091499999
+111,1310,Osmankäämintie,Kaveldunsvägen,Osmankäämintie,Tikkurilantie 74,Dickursbyvägen 74,Vantaa,Vantaa,City Bike Vantaa,8,25.0175648199999,60.29155043
+112,1311,Läntinen Valkoisenlähteentie,Västra Vitbäcksvägen,Läntinen Valkoisenlähteentie,Läntinen Valkoisenlähteentie 56,Västra Vitbäcksvägen 56,Vantaa,Vantaa,City Bike Vantaa,8,25.0230220999999,60.30185653
+113,1312,Kielotie,Konvaljvägen,Kielotie,Tikkurilantie 46,Dickursbyvägen 46,Vantaa,Vantaa,City Bike Vantaa,8,25.03590434,60.2893069299999
+114,1313,Möskärinmäki,Mösskärrsbacken,Möskärinmäki,Kallioimarteentie 26,Stensötsvägen 26,Vantaa,Vantaa,City Bike Vantaa,8,25.02653248,60.3170411899999
+115,1314,Raatetie,Vattenklövervägen,Raatetie,Raatetie 25,Vattenklövervägen 25,Vantaa,Vantaa,City Bike Vantaa,8,25.0286342,60.30615516
+116,1315,Hiekkatie,Sandvägen,Hiekkatie,Hiekkatie 1,Sandvägen 1,Vantaa,Vantaa,City Bike Vantaa,8,25.04152289,60.3047884599999
+117,1316,Kukkakimpunpuisto,Blombukettsparken,Kukkakimpunpuisto,Hiekkaharjuntie 19,Sandkullavägen 19,Vantaa,Vantaa,City Bike Vantaa,8,25.04101005,60.30146253
+118,1317,Leinelän Puistotie,Lejleallén,Leinelän Puistotie,Leinelän Puistotie 8,Lejleallén 8,Vantaa,Vantaa,City Bike Vantaa,8,25.0417413799999,60.32220249
+119,1318,Koiruohonpuisto,Malörtsparken,Koiruohonpuisto,Koiruohonpolku 5,Malörtsstigen 5,Vantaa,Vantaa,City Bike Vantaa,8,25.02538416,60.2936028999999
+120,1319,Peijaksentie,Pejasvägen,Peijaksentie,Peijaksentie 2,Pejasvägen 2,Vantaa,Vantaa,City Bike Vantaa,8,25.0996490199999,60.31567979
