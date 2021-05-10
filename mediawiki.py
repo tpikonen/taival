@@ -1136,6 +1136,7 @@ def check_cbname(os, ps):
     for tagext, stext in stationext.items():
         onorig = os.get("name"+tagext, None)
         pn = ps.get("name"+tagext, None)
+        pn = pn.replace('\xa0', ' ') if pn else pn
         if not pn:
             continue
         if onorig:
