@@ -1167,7 +1167,7 @@ def check_capacity(os, ps):
     if ps["state"] != 'Station on':
         cell = "{} / N/A".format(oc if oc else "-")
         return (style_maybe, cell, "")
-    pc = ps.get("capacity", "?")
+    pc = str(ps.get("capacity", "?"))
     if oc:
         if oc == pc:
             return (style_ok, pc, "")
