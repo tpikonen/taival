@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-import sys, datetime, gpxpy.gpx, argparse, logging, pickle
+import argparse
+import datetime
+import logging
+import pickle
+import sys
+
+import gpxpy.gpx
+
 import digitransit, osm, hsl
 import mediawiki as mw
 from util import *
