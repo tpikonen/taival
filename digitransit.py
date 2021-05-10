@@ -509,6 +509,10 @@ class Digitransit:
     networks
   }
 }"""
+        networks2network = {
+            "smoove": "Helsinki",
+            "vantaa": "Vantaa",
+        }
         r = self.apiquery(query)
         data = json.loads(r.text)["data"]["bikeRentalStations"]
         cbs = {}
@@ -518,6 +522,8 @@ class Digitransit:
             d["latlon"] = (d["lat"], d["lon"])
             d.pop('lat', None)
             d.pop('lon', None)
+            d["network"] = networks2network.get(
+                d["networks"][0], d["networks"][0])
             cbs[d['stationId']] = d
         return cbs
 
