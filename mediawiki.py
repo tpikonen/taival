@@ -1,3 +1,10 @@
+# Copyright (C) 2018-2021 Teemu Ikonen <tpikonen@gmail.com>
+
+# This file is part of Taival.
+# Taival is free software: you can redistribute it and/or modify it under the
+# terms of the GNU Affero General Public License version 3 as published by the
+# Free Software Foundation. See the file COPYING for license text.
+
 import difflib, sys, logging
 import osm, hsl
 from util import *

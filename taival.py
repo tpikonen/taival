@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+
+# Copyright (C) 2018-2021 Teemu Ikonen <tpikonen@gmail.com>
+
+# This file is part of Taival.
+# Taival is free software: you can redistribute it and/or modify it under the
+# terms of the GNU Affero General Public License version 3 as published by the
+# Free Software Foundation. See the file COPYING for license text.
+
 import argparse
 import datetime
 import logging
