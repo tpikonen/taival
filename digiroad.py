@@ -6,9 +6,23 @@
 # Free Software Foundation. See the file COPYING for license text.
 
 import csv
+import os
+import sys
 from collections import defaultdict
 
-gtfs_stops_file = "/home/tpikonen/src/taival/digiroad_stops/hsl/stops.txt"
+_basedir = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])))
+datadir = './data/digiroad/'
+
+# For the data file included below:
+# Source: Digiroad, Finnish Transport Infrastructure Agency. Data is downloaded
+# from the Download- and Viewing Service of Finnish Transport Infrastructure
+# Agency under the license CC 4.0 BY.
+# URL: https://aineistot.vayla.fi/joukkoliikenne/waltti/HSL_kuntayhtyma.zip
+# License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+# Copyright 2019 Väylävirasto / Finnish Transport Infrastructure Agency
+# See https://vayla.fi/vaylista/aineistot/avoindata
+gtfs_stops_file = os.path.join(_basedir,
+                               os.path.join(datadir, "./stops/HSL/stops.txt"))
 
 def read_digiroad_stops(filename):
     dialect = 'excel'
